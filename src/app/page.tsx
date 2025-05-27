@@ -12,6 +12,7 @@ import { goalsApi, milestonesApi, tasksApi, todosApi } from '@/lib/api';
 import { GoalForm } from '@/components/dashboard/GoalForm';
 import { MilestoneForm } from '@/components/dashboard/MilestoneForm';
 import { TaskTodoForm } from '@/components/dashboard/TaskTodoForm';
+import { QuickGoalForm } from '@/components/dashboard/QuickGoalForm';
 
 const Home = () => {
   const [currentView, setCurrentView] = useState<'dashboard' | 'goal-detail'>('dashboard');
@@ -19,13 +20,14 @@ const Home = () => {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   
-  // Состояния для форм создания
+  // States for form creation
   const [isCreatingGoal, setIsCreatingGoal] = useState(false);
+  const [isCreatingQuickGoal, setIsCreatingQuickGoal] = useState(false);
   const [isCreatingMilestone, setIsCreatingMilestone] = useState(false);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [isCreatingTodo, setIsCreatingTodo] = useState(false);
 
-  // Добавляем состояния для выбора
+  // States for selection
   const [isSelectingGoal, setIsSelectingGoal] = useState(false);
   const [isSelectingMilestone, setIsSelectingMilestone] = useState(false);
   const [isSelectingTask, setIsSelectingTask] = useState(false);
@@ -49,12 +51,26 @@ const Home = () => {
     }
   };
 
-  // Функции для создания новых элементов
+
   const handleCreateGoal = async (newGoal: Goal) => {
+    try {
+
+      const createdGoal = await goalsApi.create(newGoal);
+
+      setGoals(prevGoals => [...prevGoals, createdGoal]);
+
+      setIsCreatingGoal(false);
+      setIsCreatingQuickGoal(false);
+    } catch (error) {
+      console.error('Failed to create goal:', error);
+    }
+  };
+
+  const handleCreateQuickGoal = async (newGoal: Goal) => {
     try {
       const createdGoal = await goalsApi.create(newGoal);
       setGoals(prevGoals => [...prevGoals, createdGoal]);
-      setIsCreatingGoal(false);
+      setIsCreatingQuickGoal(false);
     } catch (error) {
       console.error('Failed to create goal:', error);
     }
@@ -78,8 +94,8 @@ const Home = () => {
   };
 
   const handleCreateTask = async (item: Task | Todo) => {
-    if (!selectedGoalId || 'todos' in item) return; // Проверяем, что это Task, а не Todo
-    const task = item as Task; // Приводим к типу Task, так как мы уже проверили, что это Task
+    if (!selectedGoalId || 'todos' in item) return; // Check if it's a Task, not a Todo
+    const task = item as Task; // Cast to Task type since we've already checked it's a Task
     try {
       const createdTask = await tasksApi.create({
         ...task,
@@ -97,18 +113,18 @@ const Home = () => {
   };
 
   const handleCreateTodo = async (item: Task | Todo) => {
-    if ('todos' in item) return; // Проверяем, что это Todo, а не Task
-    const todo = item as Todo; // Приводим к типу Todo, так как мы уже проверили, что это Todo
+    if ('todos' in item) return; // Check if it's a Todo, not a Task
+    const todo = item as Todo; // Cast to Todo type since we've already checked it's a Todo
     try {
       const createdTodo = await todosApi.create(todo);
-      await fetchGoals(); // Обновляем все цели, так как todo может быть связан с любой целью
+      await fetchGoals(); // Update all goals since todo can be related to any goal
       setIsCreatingTodo(false);
     } catch (error) {
       console.error('Failed to create todo:', error);
     }
   };
 
-  // Обновляем обработчики для QuickActions
+  // Update handlers for QuickActions
   const handleQuickAction = (action: 'milestone' | 'task' | 'todo' | 'subtask') => {
     if (goals.length === 0) {
       alert('Please create a goal first');
@@ -141,7 +157,7 @@ const Home = () => {
     }
   };
 
-  // Обработчик выбора цели
+  // Goal selection handler
   const handleGoalSelect = (goalId: string) => {
     setSelectedGoalId(goalId);
     setIsSelectingGoal(false);
@@ -153,7 +169,7 @@ const Home = () => {
     }
   };
 
-  // Обработчик выбора milestone
+  // Milestone selection handler
   const handleMilestoneSelect = (milestoneId: string) => {
     setSelectedMilestoneId(milestoneId);
     setIsSelectingMilestone(false);
@@ -165,14 +181,14 @@ const Home = () => {
     }
   };
 
-  // Обработчик выбора task
+  // Task selection handler
   const handleTaskSelect = (taskId: string) => {
     setSelectedTaskId(taskId);
     setIsSelectingTask(false);
     setIsCreatingTodo(true);
   };
 
-  // Добавляем обратно удаленные функции
+  // Add back previously removed functions
   const handleSelectGoal = (goalId: string) => {
     setSelectedGoalId(goalId);
     setCurrentView('goal-detail');
@@ -206,7 +222,12 @@ const Home = () => {
           ) : currentView === 'dashboard' ? (
             <DashboardView
               onSelectGoal={handleSelectGoal}
-              onGoalUpdate={handleGoalsUpdate}
+              onGoalUpdate={setGoals}
+              onCreateGoal={() => setIsCreatingGoal(true)}
+              goals={goals}
+              isLoading={isLoading}
+              error={null}
+              onRetry={fetchGoals}
             />
           ) : (
             selectedGoal && (
@@ -223,7 +244,7 @@ const Home = () => {
         <aside className="lg:col-span-1 space-y-6">
           <CalendarWidget />
           <QuickActions
-            onAddGoal={() => setIsCreatingGoal(true)}
+            onAddGoal={() => setIsCreatingQuickGoal(true)}
             onAddMilestone={() => handleQuickAction('milestone')}
             onAddTask={() => handleQuickAction('task')}
             onAddTodo={() => handleQuickAction('todo')}
@@ -384,6 +405,19 @@ const Home = () => {
                   setSelectedMilestoneId(null);
                   setPendingAction(null);
                 }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Модальное окно для быстрого создания цели */}
+        {isCreatingQuickGoal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <h3 className="text-lg font-semibold mb-4">Quick Create Goal</h3>
+              <GoalForm
+                onSuccess={handleCreateGoal}
+                onCancel={() => setIsCreatingQuickGoal(false)}
               />
             </div>
           </div>

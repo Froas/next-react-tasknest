@@ -1,49 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { GoalItem as Goal, StatusType } from '@/lib/types';
 import { GoalCard } from './GoalCard';
-import { GoalForm } from './GoalForm';
-import { goalsApi } from '@/lib/api';
 
 interface DashboardViewProps {
   onSelectGoal: (goalId: string) => void;
   onGoalUpdate: (updatedGoals: Goal[]) => void;
+  onCreateGoal: () => void;
+  goals: Goal[];
+  isLoading: boolean;
+  error: string | null;
+  onRetry: () => void;
 }
 
-export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectGoal, onGoalUpdate }) => {
-  const [isCreatingGoal, setIsCreatingGoal] = useState(false);
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchGoals();
-  }, []);
-
-  const fetchGoals = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await goalsApi.getAll();
-      setGoals(data);
-      onGoalUpdate(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch goals');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleCreateGoal = async (newGoal: Goal) => {
-    try {
-      const updatedGoals = [...goals, newGoal];
-      setGoals(updatedGoals);
-      onGoalUpdate(updatedGoals);
-      setIsCreatingGoal(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create goal');
-    }
-  };
-
+export const DashboardView: React.FC<DashboardViewProps> = ({ 
+  onSelectGoal, 
+  onGoalUpdate,
+  onCreateGoal,
+  goals,
+  isLoading,
+  error,
+  onRetry
+}) => {
   const totalGoals = goals.length;
   const completedGoals = goals.filter((g) => g.status === StatusType.FINISHED).length;
   const overallProgress = totalGoals > 0 ? (completedGoals / totalGoals) * 100 : 0;
@@ -67,7 +44,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectGoal, onGo
         <p className="font-medium">Error loading goals</p>
         <p className="text-sm mt-1">{error}</p>
         <button
-          onClick={fetchGoals}
+          onClick={onRetry}
           className="mt-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
         >
           Try Again
@@ -81,24 +58,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectGoal, onGo
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">Dashboard Overview</h2>
         <button
-          onClick={() => setIsCreatingGoal(true)}
+          onClick={onCreateGoal}
           className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-gray-800 text-white hover:bg-gray-900"
         >
           Create New Goal
         </button>
       </div>
-
-      {isCreatingGoal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">Create New Goal</h3>
-            <GoalForm
-              onSuccess={handleCreateGoal}
-              onCancel={() => setIsCreatingGoal(false)}
-            />
-          </div>
-        </div>
-      )}
 
       {/* Daily Check-in Card */}
       <div className="bg-white rounded-xl shadow-sm p-6 mb-6 flex flex-col sm:flex-row items-center justify-between">

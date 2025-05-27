@@ -3,21 +3,18 @@ import { GoalItem as Goal, StatusType, PriorityType } from '@/lib/types';
 import { goalsApi } from '@/lib/api';
 import { useSession } from 'next-auth/react';
 
-interface GoalFormProps {
+interface QuickGoalFormProps {
   onSuccess: (goal: Goal) => void;
   onCancel: () => void;
-  initialData?: Partial<Goal>;
 }
 
-export const GoalForm: React.FC<GoalFormProps> = ({ onSuccess, onCancel, initialData }) => {
+export const QuickGoalForm: React.FC<QuickGoalFormProps> = ({ onSuccess, onCancel }) => {
   const { data: session } = useSession();
   const [formData, setFormData] = useState({
-    title: initialData?.title || '',
-    description: initialData?.description || '',
-    status: initialData?.status || StatusType.OUTSTANDING,
-    priority: initialData?.priority || PriorityType.MEDIUM,
-    start_datetime: initialData?.start_datetime ? new Date(initialData.start_datetime).toISOString().split('T')[0] : '',
-    end_datetime: initialData?.end_datetime ? new Date(initialData.end_datetime).toISOString().split('T')[0] : '',
+    title: '',
+    description: '',
+    status: StatusType.OUTSTANDING,
+    priority: PriorityType.MEDIUM,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,12 +28,11 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSuccess, onCancel, initial
     try {
       const goalData = {
         ...formData,
-        start_datetime: formData.start_datetime ? new Date(formData.start_datetime).toISOString() : undefined,
-        end_datetime: formData.end_datetime ? new Date(formData.end_datetime).toISOString() : undefined,
         user_id: session?.user?.email || '',
       };
 
-      onSuccess(goalData as Goal);
+      const goal = await goalsApi.create(goalData);
+      onSuccess(goal);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save goal');
     } finally {
@@ -88,25 +84,6 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSuccess, onCancel, initial
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
-            Status
-          </label>
-          <select
-            id="status"
-            name="status"
-            value={formData.status}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
-          >
-            {Object.values(StatusType).map(status => (
-              <option key={status} value={status}>
-                {status.replace('_', ' ')}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
           <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-1">
             Priority
           </label>
@@ -126,36 +103,6 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSuccess, onCancel, initial
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="start_datetime" className="block text-sm font-medium text-gray-700 mb-1">
-            Start Date
-          </label>
-          <input
-            type="date"
-            id="start_datetime"
-            name="start_datetime"
-            value={formData.start_datetime}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="end_datetime" className="block text-sm font-medium text-gray-700 mb-1">
-            End Date
-          </label>
-          <input
-            type="date"
-            id="end_datetime"
-            name="end_datetime"
-            value={formData.end_datetime}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
-          />
-        </div>
-      </div>
-
       <div className="flex justify-end space-x-3 pt-4">
         <button
           type="button"
@@ -169,7 +116,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSuccess, onCancel, initial
           disabled={isSubmitting}
           className="px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50"
         >
-          {isSubmitting ? 'Saving...' : initialData?.id ? 'Update Goal' : 'Create Goal'}
+          {isSubmitting ? 'Saving...' : 'Create Goal'}
         </button>
       </div>
     </form>

@@ -38,7 +38,7 @@ export const MilestoneCard: React.FC<MilestoneCardProps> = ({
     todos.filter(t => t.status === StatusType.FINISHED).length;
   const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
-  // Добавляем useEffect для синхронизации состояния
+  // Add useEffect for state synchronization
   useEffect(() => {
     setCurrentMilestone(milestone);
   }, [milestone]);
@@ -98,8 +98,12 @@ export const MilestoneCard: React.FC<MilestoneCardProps> = ({
 
       if (!parentTask) return;
 
-      // Определяем новый статус на основе текущего
-      const newStatus = currentStatus ? StatusType.OUTSTANDING : StatusType.FINISHED;
+      // Determine new status based on current one
+      const getNextStatus = (currentStatus: StatusType): StatusType => {
+        return currentStatus === StatusType.FINISHED ? StatusType.OUTSTANDING : StatusType.FINISHED;
+      };
+
+      const newStatus = getNextStatus(parentTask.status);
 
       switch (type) {
         case 'task':

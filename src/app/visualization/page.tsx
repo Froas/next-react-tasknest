@@ -54,7 +54,7 @@ const GoalVisualization = () => {
       const goalMilestones = data.filter(m => m.goal_id === goalId);
       console.log('Filtered milestones for goal:', goalMilestones);
       
-      // Получаем полные данные для каждой вехи, включая задачи
+      // Get full data for each milestone, including tasks
       const fullMilestones = await Promise.all(
         goalMilestones.map(milestone => 
           milestonesApi.getById(milestone.id, true, true, true)
@@ -363,15 +363,15 @@ const GoalVisualization = () => {
     );
   };
 
-  // Функция для отрисовки вехи
+  // Function to render milestone
   const renderMilestone = (milestone: Milestone, x: number, y: number) => {
     const isHovered = hoveredMilestone === milestone.id;
     const isActive = activeMilestone === milestone.id;
     
     const baseSize = 6;
     const padding = 8;
-    const width = 160; // Уменьшаем ширину для лучшего отображения текста
-    const height = 32; // Уменьшаем высоту
+    const width = 160; // Reduce width for better text display
+    const height = 32; // Reduce height
     
     return (
       <g
@@ -431,7 +431,7 @@ const GoalVisualization = () => {
     );
   };
 
-  // Функция для отрисовки подзадачи или задачи
+  // Function to render subtask or task
   const renderSubtaskOrTodo = (
     item: Task | Todo,
     x: number,
@@ -454,14 +454,14 @@ const GoalVisualization = () => {
     const width = 160;
     const height = 32;
     
-    // Определяем направление от родителя
+    // Determine direction from parent
     const direction = x > parentX ? 1 : -1;
-    // Если родитель активен или на него наведен курсор, начинаем линию от середины прямоугольника
+    // If parent is active or hovered, start line from the middle of the rectangle
     const lineStartX = (isParentActive || isParentHovered) ? 
       parentX + (width/2 * direction) : 
       parentX;
     
-    // Рассчитываем контрольные точки для линии
+    // Calculate control points for the line
     const { controlPoint1, controlPoint2 } = calculateTaskBezierPoints(
       lineStartX,
       parentY,
@@ -546,8 +546,8 @@ const GoalVisualization = () => {
     );
   };
 
-  // Обновляем функцию renderTask
-  const renderTask = (task: Task, x: number, y: number, milestoneX: number, milestoneY: number) => {
+  // Update renderTask function
+  const renderTask = (task: Task, x: number, y: number, parentX: number, parentY: number) => {
     const isHovered = hoveredTask === task.id;
     const isActive = activeTask === task.id;
     const showDetails = isHovered || isActive || hoveredMilestone === task.milestone_id;
@@ -557,15 +557,15 @@ const GoalVisualization = () => {
     const width = 160;
     const height = 32;
     
-    const direction = x > milestoneX ? 1 : -1;
-    // Если веха активна или на неё наведен курсор, начинаем линию от середины прямоугольника вехи
-    const lineStartX = (activeMilestone === task.milestone_id || hoveredMilestone === task.milestone_id) ? 
-      milestoneX + (width/2 * direction) : 
-      milestoneX;
+    // If milestone is active or hovered, start line from the middle of the milestone rectangle
+    const startX = parentX + width / 2;
+    const startY = parentY + height;
+    
+    const direction = x > parentX ? 1 : -1;
     
     const { controlPoint1, controlPoint2 } = calculateTaskBezierPoints(
-      lineStartX,
-      milestoneY,
+      startX,
+      startY,
       x,
       y
     );
@@ -591,7 +591,7 @@ const GoalVisualization = () => {
         
         {/* Линия от вехи к задаче */}
         <path
-          d={`M ${lineStartX},${milestoneY} 
+          d={`M ${startX},${startY} 
               C ${controlPoint1.x},${controlPoint1.y} 
                 ${controlPoint2.x},${controlPoint2.y} 
                 ${x},${y}`}
