@@ -23,7 +23,7 @@ export function  withAuth<T extends JSX.IntrinsicAttributes>(WrappedComponent: C
 
        
         if (!session) {
-            return <p>Перенаправляем на вход...</p>;
+            return <p>Redirect to login...</p>;
         }
 
      

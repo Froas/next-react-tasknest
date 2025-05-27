@@ -5,7 +5,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import axios from "axios";
 import { useState } from "react";
-import { Input } from "@/components/ui/input"; // Компоненты Shadcn
+import { Input } from "@/components/ui/input"; 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
@@ -18,9 +18,9 @@ interface SignUpFormInputs {
 }
 
 const signUpSchema = yup.object().shape({
-  email: yup.string().email("Неверный формат email").required("Email обязателен"),
+  email: yup.string().email("Incorrect format form email").required("Email is required"),
   username: yup.string().min(4, 'Incorrect username').required("Username should be more than 4 symbols"),
-  password_hash: yup.string().min(6, "Пароль должен быть не менее 6 символов").required("Пароль обязателен"),
+  password_hash: yup.string().min(6, "Password should be longer than 6 symbols").required("Password is required"),
 });
 
 const SignUp = () => {
@@ -38,10 +38,10 @@ const SignUp = () => {
   const onSubmit = async (data: SignUpFormInputs) => {
     try {
       const response = await axios.post("http://localhost:8000/users", data); 
-      setSuccessMessage("Регистрация прошла успешно!");
+      setSuccessMessage("Registration has completed");
       setErrorMessage(null);
     } catch (error) {
-      setErrorMessage("Произошла ошибка при регистрации.");
+      setErrorMessage("Something went wrong. Please retry");
       setSuccessMessage(null);
     }
   };
@@ -56,17 +56,17 @@ const SignUp = () => {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" {...register("email")} placeholder="Введите ваш email" />
+              <Input id="email" type="email" {...register("email")} placeholder="Enter your email" />
               {errors.email && <p className="text-red-500">{errors.email.message}</p>}
             </div>
             <div>
               <Label htmlFor="username">Username</Label>
-              <Input id="username" type="username" {...register("username")} placeholder="Введите ваш username" />
+              <Input id="username" type="username" {...register("username")} placeholder="Enter your username" />
               {errors.email && <p className="text-red-500">{errors.email.message}</p>}
             </div>
             <div>
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" {...register("password_hash")} placeholder="Введите пароль" />
+              <Input id="password" type="password" {...register("password_hash")} placeholder="Enter your password" />
               {errors.password_hash && <p className="text-red-500">{errors.password_hash.message}</p>}
             </div>
             {successMessage && <p className="text-green-500">{successMessage}</p>}

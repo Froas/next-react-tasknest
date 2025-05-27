@@ -1,36 +1,107 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TaskNest
+
+**TaskNest** is a modern frontend application for creating, visualizing, and managing universal roadmaps as flexible task lists. Built with [Next.js](https://nextjs.org) and React, TaskNest helps you plan learning, projects, personal goals, or any multi-step process with ease.
+
+---
+
+## Features
+
+* **Custom roadmaps** for anything: learning paths, project planning, career development, and more.
+* **Task organization** into stages and categories.
+* **Progress tracking** with clear visual indicators.
+* **Roadmap sharing** with other users *(planned)*.
+* **Google Calendar integration** – sync key roadmap tasks with your Google Calendar.
+* Integrations with other calendars (Outlook, Apple, etc.) are **in development**.
+* **Telegram Bot integration** – receive task notifications and interact with your roadmap via Telegram.
+* Integrations with other bots (Slack, Discord, Microsoft Teams) are **in development**.
+
+---
+
+## Screenshots
+
+> *Add later*
+
+---
 
 ## Getting Started
 
-First, run the development server:
+1. **Install dependencies**
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+   ```bash
+   npm install       # or yarn install / pnpm install / bun install
+   ```
+
+2. **Run the development server**
+
+   ```bash
+   npm run dev       # or yarn dev / pnpm dev / bun dev
+   ```
+
+3. Open **[http://localhost:3000](http://localhost:3000)** in your browser to view the app.
+
+4. Edit `app/page.tsx` (or any component) and save to see hot-reloaded updates.
+
+---
+
+## Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+NEXTAUTH_SECRET=
+ALGORITHM=
+NEXTAUTH_URL=
+GOOGLE_CALENDAR_API_KEY=
+TELEGRAM_BOT_TOKEN=
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+> Replace placeholders with real credentials for your environment and integrations.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Tech Stack
+
+* **Next.js** — Framework for SSR / SSG
+* **React** — UI library
+* **Tailwind CSS** — Utility-first CSS framework for rapid UI development
+* **TypeScript** — Static typing
+* **next/font** — Font optimization ([Geist](https://vercel.com/font))
+* **NextAuth** — Authentication (Google, Telegram, more)
+* **Google Calendar API** — Calendar sync
+* **Telegram Bot API** — Chatbot notifications
+* *(Slack, Discord, MS Teams integrations coming soon)*
+
+---
+
+## Deployment
+
+The fastest way to deploy is with **[Vercel](https://vercel.com/new?filter=next.js)** (creators of Next.js).
+
+1. Push your repo to GitHub/GitLab/Bitbucket.
+2. Import the project into Vercel.
+3. Set the environment variables in the Vercel dashboard.
+4. Deploy — your app will be live on a **vercel.app** domain.
+
+See the [Next.js deployment guide](https://nextjs.org/docs/app/building-your-application/deploying) for details.
+
+---
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
+* [Next.js Documentation](https://nextjs.org/docs)
+* [Interactive Next.js Tutorial](https://nextjs.org/learn)
+* [Next.js GitHub Repository](https://github.com/vercel/next.js)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Feedback & Contributions
 
-## Deploy on Vercel
+Contributions, issues, and feature requests are welcome!
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/YourFeature`)
+3. Commit your changes (`git commit -m 'Add YourFeature'`)
+4. Push to the branch (`git push origin feature/YourFeature`)
+5. Open a Pull Request
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Thanks for helping make **TaskNest** better! \:rocket:

@@ -17,7 +17,7 @@ const LogoutPage = () => {
 
   return (
     <div className="flex items-center justify-center min-h-screen">
-      <p>Выход из системы...</p>
+      <p>Log out from system..</p>
     </div>
   );
 };

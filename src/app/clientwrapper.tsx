@@ -7,8 +7,11 @@ import { usePathname } from 'next/navigation';
 export default function ClientWrapper({ children }: { children: React.ReactNode }) {
     const pathname = usePathname() || ""
     const noHeaderPages = ['/login', '/signup']
-  return ( <>
-    {!noHeaderPages.includes(pathname) && <Header />}
-    <SessionProvider>{children}</SessionProvider>;
-  </>
-)}
+
+    return (
+        <SessionProvider>
+            {!noHeaderPages.includes(pathname) && <Header />}
+            {children}
+        </SessionProvider>
+    );
+}
