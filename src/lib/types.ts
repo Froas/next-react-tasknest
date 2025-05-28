@@ -10,9 +10,9 @@ export enum StatusType {
 }
 
 export enum PriorityType {
-  LOW = 'LOW',
-  MEDIUM = 'MEDIUM',
-  HIGH = 'HIGH'
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high'
 }
 
 // Base interfaces

@@ -1,22 +1,16 @@
 import React, { useState } from 'react';
-import { TaskItem as Task, TodoItem as Todo, StatusType, PriorityType, SubtaskItem as Subtask } from '@/lib/types';
-import { tasksApi, todosApi } from '@/lib/api';
+import { SubtaskItem as Subtask, StatusType, PriorityType } from '@/lib/types';
+import { subtasksApi } from '@/lib/api';
 
-interface TaskTodoFormProps {
-  goalId: string;
-  milestoneId: string;
-  taskId?: string;
-  type: 'task' | 'todo';
-  onSuccess: (item: Task | Todo) => void;
+interface SubtaskFormProps {
+  taskId: string;
+  onSuccess: (subtask: Subtask) => void;
   onCancel: () => void;
-  initialData?: Partial<Task | Todo>;
+  initialData?: Partial<Subtask>;
 }
 
-export const TaskTodoForm: React.FC<TaskTodoFormProps> = ({
-  goalId,
-  milestoneId,
+export const SubtaskForm: React.FC<SubtaskFormProps> = ({
   taskId,
-  type,
   onSuccess,
   onCancel,
   initialData,
@@ -27,7 +21,8 @@ export const TaskTodoForm: React.FC<TaskTodoFormProps> = ({
     status: initialData?.status || StatusType.OUTSTANDING,
     priority: initialData?.priority || PriorityType.MEDIUM,
     due_date: initialData?.due_date ? new Date(initialData.due_date).toISOString().split('T')[0] : '',
-    is_completed: initialData?.is_completed || false,
+    start_datetime: initialData?.start_datetime ? new Date(initialData.start_datetime).toISOString().split('T')[0] + 'T09:00:00' : '',
+    end_datetime: initialData?.end_datetime ? new Date(initialData.end_datetime).toISOString().split('T')[0] + 'T16:00:00' : '',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,37 +34,26 @@ export const TaskTodoForm: React.FC<TaskTodoFormProps> = ({
     setError(null);
 
     try {
-      const itemData = type === 'task' 
-        ? {
-            ...formData,
-            due_date: formData.due_date ? new Date(formData.due_date).toISOString() : undefined,
-            milestone_id: milestoneId,
-            todos: [] as Todo[],
-            subtasks: [] as Subtask[]
-          } as Omit<Task, 'id'>
-        : {
-            ...formData,
-            due_date: formData.due_date ? new Date(formData.due_date).toISOString() : undefined,
-            task_id: taskId
-          } as Omit<Todo, 'id'>;
+      const subtaskData = {
+        title: formData.title,
+        description: formData.description,
+        status: formData.status.toLowerCase(),
+        priority: formData.priority,
+        due_date: formData.due_date,
+        start_datetime: formData.start_datetime,
+        end_datetime: formData.end_datetime,
+        task_id: taskId
+      } as Omit<Subtask, 'id'>;
 
-      let item: Task | Todo;
+      let subtask: Subtask;
       if (initialData?.id) {
-        if (type === 'task') {
-          item = await tasksApi.update({ ...itemData, id: initialData.id } as Partial<Task> & { id: string });
-        } else {
-          item = await todosApi.update({ ...itemData, id: initialData.id } as Partial<Todo> & { id: string });
-        }
+        subtask = await subtasksApi.update({ ...subtaskData, id: initialData.id } as Partial<Subtask> & { id: string });
       } else {
-        if (type === 'task') {
-          item = await tasksApi.create(itemData as Omit<Task, 'id'>);
-        } else {
-          item = await todosApi.create(itemData as Omit<Todo, 'id'>);
-        }
+        subtask = await subtasksApi.create(subtaskData);
       }
-      onSuccess(item);
+      onSuccess(subtask);
     } catch (err) {
-      setError(err instanceof Error ? err.message : `Failed to save ${type}`);
+      setError(err instanceof Error ? err.message : 'Failed to save subtask');
     } finally {
       setIsSubmitting(false);
     }
@@ -78,10 +62,10 @@ export const TaskTodoForm: React.FC<TaskTodoFormProps> = ({
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    const { name, value, type } = e.target;
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
+      [name]: value,
     }));
   };
 
@@ -135,13 +119,34 @@ export const TaskTodoForm: React.FC<TaskTodoFormProps> = ({
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
           >
             {Object.values(StatusType).map(status => (
-              <option key={status} value={status}>
+              <option key={status} value={status.toLowerCase()}>
                 {status.replace('_', ' ')}
               </option>
             ))}
           </select>
         </div>
 
+        <div>
+          <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-1">
+            Priority
+          </label>
+          <select
+            id="priority"
+            name="priority"
+            value={formData.priority}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+          >
+            {Object.values(PriorityType).map(priority => (
+              <option key={priority} value={priority}>
+                {priority}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
         <div>
           <label htmlFor="due_date" className="block text-sm font-medium text-gray-700 mb-1">
             Due Date
@@ -155,20 +160,34 @@ export const TaskTodoForm: React.FC<TaskTodoFormProps> = ({
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
           />
         </div>
-      </div>
 
-      <div className="flex items-center">
-        <input
-          type="checkbox"
-          id="is_completed"
-          name="is_completed"
-          checked={formData.is_completed}
-          onChange={handleChange}
-          className="h-4 w-4 text-gray-800 focus:ring-gray-400 border-gray-300 rounded"
-        />
-        <label htmlFor="is_completed" className="ml-2 block text-sm text-gray-700">
-          Mark as completed
-        </label>
+        <div>
+          <label htmlFor="start_datetime" className="block text-sm font-medium text-gray-700 mb-1">
+            Start Time
+          </label>
+          <input
+            type="datetime-local"
+            id="start_datetime"
+            name="start_datetime"
+            value={formData.start_datetime}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="end_datetime" className="block text-sm font-medium text-gray-700 mb-1">
+            End Time
+          </label>
+          <input
+            type="datetime-local"
+            id="end_datetime"
+            name="end_datetime"
+            value={formData.end_datetime}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+          />
+        </div>
       </div>
 
       <div className="flex justify-end space-x-3 pt-4">
@@ -184,7 +203,7 @@ export const TaskTodoForm: React.FC<TaskTodoFormProps> = ({
           disabled={isSubmitting}
           className="px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50"
         >
-          {isSubmitting ? 'Saving...' : initialData?.id ? `Update ${type}` : `Create ${type}`}
+          {isSubmitting ? 'Saving...' : initialData?.id ? 'Update Subtask' : 'Create Subtask'}
         </button>
       </div>
     </form>

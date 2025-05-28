@@ -7,11 +7,13 @@ import { DashboardView } from '@/components/dashboard/DashboardView';
 import { GoalDetailView } from '@/components/dashboard/GoalDetailView';
 import { CalendarWidget } from '@/components/dashboard/CalendarWidget';
 import { QuickActions } from '@/components/dashboard/QuickActions';
-import { GoalItem as Goal, MilestoneItem as Milestone, TaskItem as Task, TodoItem as Todo, StatusType, PriorityType } from '@/lib/types';
+import { GoalItem as Goal, MilestoneItem as Milestone, TaskItem as Task, TodoItem as Todo, SubtaskItem as Subtask } from '@/lib/types';
 import { goalsApi, milestonesApi, tasksApi, todosApi } from '@/lib/api';
 import { GoalForm } from '@/components/dashboard/GoalForm';
 import { MilestoneForm } from '@/components/dashboard/MilestoneForm';
-import { TaskTodoForm } from '@/components/dashboard/TaskTodoForm';
+import { TaskForm } from '@/components/dashboard/TaskForm';
+import { TodoForm } from '@/components/dashboard/TodoForm';
+import { SubtaskForm } from '@/components/dashboard/SubtaskForm';
 import { QuickGoalForm } from '@/components/dashboard/QuickGoalForm';
 
 const Home = () => {
@@ -35,6 +37,12 @@ const Home = () => {
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [showTodoForm, setShowTodoForm] = useState(false);
+  const [showSubtaskForm, setShowSubtaskForm] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null);
+
   useEffect(() => {
     fetchGoals();
   }, []);
@@ -43,7 +51,11 @@ const Home = () => {
     setIsLoading(true);
     try {
       const data = await goalsApi.getAll();
-      setGoals(data);
+      // Get full data for each goal including milestones
+      const fullGoals = await Promise.all(
+        data.map(goal => goalsApi.getById(goal.id))
+      );
+      setGoals(fullGoals);
     } catch (error) {
       console.error('Failed to fetch goals:', error);
     } finally {
@@ -94,19 +106,24 @@ const Home = () => {
   };
 
   const handleCreateTask = async (item: Task | Todo) => {
-    if (!selectedGoalId || 'todos' in item) return; // Check if it's a Task, not a Todo
-    const task = item as Task; // Cast to Task type since we've already checked it's a Task
+    if (!selectedGoalId || !selectedMilestoneId || 'todos' in item) return;
+    const task = item as Task;
     try {
       const createdTask = await tasksApi.create({
         ...task,
+        milestone_id: selectedMilestoneId,
         todos: [],
         subtasks: []
       });
+      
       const updatedGoal = await goalsApi.getById(selectedGoalId);
       setGoals(prevGoals => prevGoals.map(goal => 
         goal.id === selectedGoalId ? updatedGoal : goal
       ));
+      
       setIsCreatingTask(false);
+      setPendingAction(null);
+      setSelectedMilestoneId(null);
     } catch (error) {
       console.error('Failed to create task:', error);
     }
@@ -158,14 +175,35 @@ const Home = () => {
   };
 
   // Goal selection handler
-  const handleGoalSelect = (goalId: string) => {
-    setSelectedGoalId(goalId);
-    setIsSelectingGoal(false);
-    
-    if (pendingAction === 'milestone') {
-      setIsCreatingMilestone(true);
-    } else if (pendingAction === 'task' || pendingAction === 'todo' || pendingAction === 'subtask') {
-      setIsSelectingMilestone(true);
+  const handleGoalSelect = async (goalId: string) => {
+    try {
+      // Get full goal data with milestones
+      const fullGoal = await goalsApi.getById(goalId, {
+        include_milestones: true,
+        include_tasks: true,
+        include_todos: true
+      });
+      
+      setSelectedGoalId(goalId);
+      setIsSelectingGoal(false);
+      
+      if (pendingAction === 'milestone') {
+        setIsCreatingMilestone(true);
+      } else if (pendingAction === 'task') {
+        // Update goals state with full goal data
+        setGoals(prevGoals => prevGoals.map(goal => 
+          goal.id === goalId ? fullGoal : goal
+        ));
+        setIsSelectingMilestone(true);
+      } else if (pendingAction === 'todo' || pendingAction === 'subtask') {
+        // Update goals state with full goal data
+        setGoals(prevGoals => prevGoals.map(goal => 
+          goal.id === goalId ? fullGoal : goal
+        ));
+        setIsSelectingMilestone(true);
+      }
+    } catch (error) {
+      console.error('Failed to fetch goal details:', error);
     }
   };
 
@@ -175,7 +213,16 @@ const Home = () => {
     setIsSelectingMilestone(false);
     
     if (pendingAction === 'task') {
-      setIsCreatingTask(true);
+      setCurrentView('goal-detail');
+      setTimeout(() => {
+        const goalDetailView = document.querySelector('[data-testid="goal-detail-view"]');
+        if (goalDetailView) {
+          const addTaskButton = goalDetailView.querySelector('[data-testid="add-task-button"]');
+          if (addTaskButton) {
+            (addTaskButton as HTMLButtonElement).click();
+          }
+        }
+      }, 100);
     } else if (pendingAction === 'todo' || pendingAction === 'subtask') {
       setIsSelectingTask(true);
     }
@@ -211,6 +258,16 @@ const Home = () => {
 
   const selectedGoal = selectedGoalId ? goals.find((goal) => goal.id === selectedGoalId) : null;
 
+  const handleCreateSubtask = async (subtask: Subtask) => {
+    try {
+      const updatedTask = await tasksApi.get(selectedTask!.id, true, true);
+      setSelectedTask(updatedTask);
+      setShowSubtaskForm(false);
+    } catch (err) {
+      console.error('Failed to update task with new subtask:', err);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 font-sans text-gray-900">
       <Header/>
@@ -236,6 +293,7 @@ const Home = () => {
                 onBack={handleBackToDashboard}
                 onSelectMilestone={handleMilestoneSelect}
                 onGoalUpdate={handleGoalUpdate}
+                selectedMilestoneId={selectedMilestoneId}
               />
             )
           )}
@@ -282,21 +340,27 @@ const Home = () => {
         )}
 
         {/* Модальное окно выбора milestone */}
-        {isSelectingMilestone && selectedGoalId && (
+        {isSelectingMilestone && selectedGoalId && selectedGoal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl p-6 max-w-md w-full">
               <h3 className="text-lg font-semibold mb-4">Select Milestone</h3>
               <div className="space-y-2">
-                {selectedGoal?.milestones.map(milestone => (
-                  <button
-                    key={milestone.id}
-                    onClick={() => handleMilestoneSelect(milestone.id)}
-                    className="w-full text-left p-3 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    <div className="font-medium text-gray-900">{milestone.title}</div>
-                    <div className="text-sm text-gray-600">{milestone.description}</div>
-                  </button>
-                ))}
+                {selectedGoal.milestones && selectedGoal.milestones.length > 0 ? (
+                  selectedGoal.milestones.map(milestone => (
+                    <button
+                      key={milestone.id}
+                      onClick={() => handleMilestoneSelect(milestone.id)}
+                      className="w-full text-left p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="font-medium text-gray-900">{milestone.title}</div>
+                      <div className="text-sm text-gray-600">{milestone.description}</div>
+                    </button>
+                  ))
+                ) : (
+                  <div className="text-center py-4 text-gray-500">
+                    No milestones available. Create a milestone first.
+                  </div>
+                )}
               </div>
               <button
                 onClick={() => {
@@ -369,43 +433,35 @@ const Home = () => {
           </div>
         )}
 
-        {isCreatingTask && selectedGoalId && selectedMilestoneId && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <h3 className="text-lg font-semibold mb-4">Create New Task</h3>
-              <TaskTodoForm
-                goalId={selectedGoalId}
-                milestoneId={selectedMilestoneId}
-                type="task"
-                onSuccess={handleCreateTask}
-                onCancel={() => {
-                  setIsCreatingTask(false);
-                  setSelectedMilestoneId(null);
-                }}
-              />
-            </div>
-          </div>
-        )}
-
         {isCreatingTodo && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-semibold mb-4">
                 {pendingAction === 'subtask' ? 'Create New Subtask' : 'Create New Todo'}
               </h3>
-              <TaskTodoForm
-                goalId={selectedGoalId || ''}
-                milestoneId={selectedMilestoneId || ''}
-                taskId={selectedTaskId || undefined}
-                type={pendingAction === 'subtask' ? 'task' : 'todo'}
-                onSuccess={handleCreateTodo}
-                onCancel={() => {
-                  setIsCreatingTodo(false);
-                  setSelectedTaskId(null);
-                  setSelectedMilestoneId(null);
-                  setPendingAction(null);
-                }}
-              />
+              {pendingAction === 'subtask' ? (
+                <SubtaskForm
+                  taskId={selectedTaskId || ''}
+                  onSuccess={handleCreateSubtask}
+                  onCancel={() => {
+                    setIsCreatingTodo(false);
+                    setSelectedTaskId(null);
+                    setSelectedMilestoneId(null);
+                    setPendingAction(null);
+                  }}
+                />
+              ) : (
+                <TodoForm
+                  taskId={selectedTaskId || ''}
+                  onSuccess={handleCreateTodo}
+                  onCancel={() => {
+                    setIsCreatingTodo(false);
+                    setSelectedTaskId(null);
+                    setSelectedMilestoneId(null);
+                    setPendingAction(null);
+                  }}
+                />
+              )}
             </div>
           </div>
         )}
@@ -418,6 +474,55 @@ const Home = () => {
               <GoalForm
                 onSuccess={handleCreateGoal}
                 onCancel={() => setIsCreatingQuickGoal(false)}
+              />
+            </div>
+          </div>
+        )}
+
+        {showTaskForm && selectedGoal && selectedMilestone && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <h3 className="text-lg font-semibold mb-4">Add Task</h3>
+              <TaskForm
+                goalId={selectedGoal.id}
+                milestoneId={selectedMilestone.id}
+                onSuccess={handleCreateTask}
+                onCancel={() => {
+                  setShowTaskForm(false);
+                  setSelectedMilestone(null);
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {showTodoForm && selectedTask && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <h3 className="text-lg font-semibold mb-4">Add Todo</h3>
+              <TodoForm
+                taskId={selectedTask.id}
+                onSuccess={handleCreateTodo}
+                onCancel={() => {
+                  setShowTodoForm(false);
+                  setSelectedTask(null);
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {showSubtaskForm && selectedTask && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <h3 className="text-lg font-semibold mb-4">Add Subtask</h3>
+              <SubtaskForm
+                taskId={selectedTask.id}
+                onSuccess={handleCreateSubtask}
+                onCancel={() => {
+                  setShowSubtaskForm(false);
+                  setSelectedTask(null);
+                }}
               />
             </div>
           </div>

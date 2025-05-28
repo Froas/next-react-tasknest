@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { MilestoneItem as Milestone, StatusType, PriorityType } from '@/lib/types';
-import { milestonesApi } from '@/lib/api';
+import { TaskItem as Task, StatusType, PriorityType } from '@/lib/types';
+import { tasksApi } from '@/lib/api';
 
-interface MilestoneFormProps {
+interface TaskFormProps {
   goalId: string;
-  onSuccess: (milestone: Milestone) => void;
+  milestoneId: string;
+  onSuccess: (task: Task) => void;
   onCancel: () => void;
-  initialData?: Partial<Milestone>;
+  initialData?: Partial<Task>;
 }
 
-export const MilestoneForm: React.FC<MilestoneFormProps> = ({
+export const TaskForm: React.FC<TaskFormProps> = ({
   goalId,
+  milestoneId,
   onSuccess,
   onCancel,
   initialData,
@@ -19,8 +21,10 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({
     title: initialData?.title || '',
     description: initialData?.description || '',
     status: initialData?.status || StatusType.OUTSTANDING,
-    due_date: initialData?.due_date ? new Date(initialData.due_date).toISOString().split('T')[0] : '',
-    end_datetime: initialData?.end_datetime ? new Date(initialData.end_datetime).toISOString().split('T')[0] + 'T18:00:00' : '',
+    priority: initialData?.priority || PriorityType.MEDIUM,
+    due_date: initialData?.due_date ? new Date(initialData.due_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+    start_datetime: initialData?.start_datetime ? new Date(initialData.start_datetime).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+    end_datetime: initialData?.end_datetime ? new Date(initialData.end_datetime).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,27 +36,42 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({
     setError(null);
 
     try {
-      const milestoneData = {
+      const taskData = {
         title: formData.title,
-        description: formData.description || '',
-        status: formData.status,
+        description: formData.description,
+        status: formData.status.toLowerCase(),
+        priority: formData.priority,
         due_date: formData.due_date,
-        end_datetime: formData.end_datetime || formData.due_date + 'T18:00:00',
-        goal_id: goalId
-      };
+        start_datetime: formData.start_datetime,
+        end_datetime: formData.end_datetime,
+        milestone_id: milestoneId,
+        todos: [],
+        subtasks: [],
+        is_completed: false
+      } as Omit<Task, 'id'>;
 
-      onSuccess(milestoneData as Milestone);
+      let task: Task;
+      if (initialData?.id) {
+        task = await tasksApi.update({ ...taskData, id: initialData.id } as Partial<Task> & { id: string });
+      } else {
+        task = await tasksApi.create(taskData);
+      }
+      onSuccess(task);
     } catch (err) {
-      console.error('Milestone creation error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to save milestone');
+      setError(err instanceof Error ? err.message : 'Failed to save task');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   return (
@@ -113,6 +132,27 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({
         </div>
 
         <div>
+          <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-1">
+            Priority
+          </label>
+          <select
+            id="priority"
+            name="priority"
+            value={formData.priority}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+          >
+            {Object.values(PriorityType).map(priority => (
+              <option key={priority} value={priority}>
+                {priority}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div>
           <label htmlFor="due_date" className="block text-sm font-medium text-gray-700 mb-1">
             Due Date
           </label>
@@ -121,6 +161,34 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({
             id="due_date"
             name="due_date"
             value={formData.due_date}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="start_datetime" className="block text-sm font-medium text-gray-700 mb-1">
+            Start Date
+          </label>
+          <input
+            type="date"
+            id="start_datetime"
+            name="start_datetime"
+            value={formData.start_datetime}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="end_datetime" className="block text-sm font-medium text-gray-700 mb-1">
+            End Date
+          </label>
+          <input
+            type="date"
+            id="end_datetime"
+            name="end_datetime"
+            value={formData.end_datetime}
             onChange={handleChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
           />
@@ -140,7 +208,7 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({
           disabled={isSubmitting}
           className="px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50"
         >
-          {isSubmitting ? 'Saving...' : initialData?.id ? 'Update Milestone' : 'Create Milestone'}
+          {isSubmitting ? 'Saving...' : initialData?.id ? 'Update Task' : 'Create Task'}
         </button>
       </div>
     </form>

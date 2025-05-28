@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {  GoalItem as Goal, MilestoneItem as Milestone, StatusType, PriorityType, TaskItem as Task, TodoItem as Todo, Event } from '@/lib/types';
 import { MilestoneCard } from './MilestoneCard';
 import { MilestoneForm } from './MilestoneForm';
-import { TaskTodoForm } from './TaskTodoForm';
+import { TaskForm } from './TaskForm';
 import { milestonesApi, tasksApi, todosApi, eventsApi } from '@/lib/api';
 
 interface GoalDetailViewProps {
@@ -10,6 +10,7 @@ interface GoalDetailViewProps {
   onBack: () => void;
   onSelectMilestone: (milestoneId: string) => void;
   onGoalUpdate: (updatedGoal: Goal) => void;
+  selectedMilestoneId: string | null;
 }
 
 export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
@@ -17,10 +18,11 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
   onBack,
   onSelectMilestone,
   onGoalUpdate,
+  selectedMilestoneId: initialMilestoneId,
 }) => {
   const [isCreatingMilestone, setIsCreatingMilestone] = useState(false);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
-  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
+  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(initialMilestoneId);
   const [isSyncingCalendar, setIsSyncingCalendar] = useState(false);
   const [milestones, setMilestones] = useState<Milestone[]>(goal.milestones || []);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,7 +30,14 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
 
   useEffect(() => {
     fetchMilestones();
-  }, [goal.id]);
+  }, [goal.id, goal.milestones?.length]);
+
+  // Add new useEffect for handling task creation
+  useEffect(() => {
+    if (selectedMilestoneId) {
+      setIsCreatingTask(true);
+    }
+  }, [selectedMilestoneId]);
 
   const fetchMilestones = async () => {
     setIsLoading(true);
@@ -51,7 +60,8 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
 
   const handleCreateMilestone = async (newMilestone: Milestone) => {
     try {
-      const updatedMilestones = [...milestones, newMilestone];
+      const createdMilestone = await milestonesApi.create(newMilestone);
+      const updatedMilestones = [...milestones, createdMilestone];
       setMilestones(updatedMilestones);
       const updatedGoal = {
         ...goal,
@@ -71,10 +81,12 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
 
       const updatedMilestone = {
         ...milestones[milestoneIndex],
-        tasks: 'milestone_id' in newTask 
-          ? [...milestones[milestoneIndex].tasks, newTask as Task]
-          : milestones[milestoneIndex].tasks,
+        tasks: milestones[milestoneIndex].tasks || []
       };
+
+      if ('milestone_id' in newTask) {
+        updatedMilestone.tasks = [...updatedMilestone.tasks, newTask as Task];
+      }
 
       const updatedMilestones = [...milestones];
       updatedMilestones[milestoneIndex] = updatedMilestone;
@@ -170,7 +182,7 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
   }
 
   return (
-    <div>
+    <div data-testid="goal-detail-view">
       <div className="flex justify-between items-center mb-6">
         <button
           className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-gray-200 text-gray-800 hover:bg-gray-300 flex items-center"
@@ -220,11 +232,10 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
       {isCreatingTask && selectedMilestoneId && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">Add Task/Todo</h3>
-            <TaskTodoForm
+            <h3 className="text-lg font-semibold mb-4">Add Task</h3>
+            <TaskForm
               goalId={goal.id}
               milestoneId={selectedMilestoneId}
-              type="task"
               onSuccess={handleCreateTask}
               onCancel={() => {
                 setIsCreatingTask(false);
@@ -276,6 +287,7 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
                 <h3 className="text-lg font-semibold capitalize">{status.toLowerCase()} Milestones</h3>
                 {milestones.length > 0 && (
                   <button
+                    data-testid="add-task-button"
                     onClick={() => {
                       setSelectedMilestoneId(milestones[0].id);
                       setIsCreatingTask(true);

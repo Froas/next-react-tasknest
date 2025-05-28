@@ -143,9 +143,19 @@ export const goalsApi = {
     return response.json();
   },
 
-  getById: async (goalId: string): Promise<Goal> => {
+  getById: async (goalId: string, options?: { 
+    include_milestones?: boolean;
+    include_tasks?: boolean;
+    include_todos?: boolean;
+  }): Promise<Goal> => {
     const headers = await getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/goals/${goalId}`, { headers });
+    const params = new URLSearchParams();
+    if (options?.include_milestones) params.append('include_milestones', 'true');
+    if (options?.include_tasks) params.append('include_tasks', 'true');
+    if (options?.include_todos) params.append('include_todos', 'true');
+    
+    const url = `${API_BASE_URL}/user/goals/${goalId}${params.toString() ? `?${params.toString()}` : ''}`;
+    const response = await fetch(url, { headers });
     if (!response.ok) throw new Error('Failed to fetch goal');
     return response.json();
   },
@@ -171,6 +181,7 @@ export const milestonesApi = {
 
   create: async (milestoneData: Omit<Milestone, 'id' | 'tasks' | 'todos'>): Promise<Milestone> => {
     const headers = await getAuthHeaders();
+    console.log(milestoneData);
     const response = await fetch(`${API_BASE_URL}/user/milestones`, {
       method: 'POST',
       headers,

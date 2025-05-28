@@ -249,15 +249,10 @@ export const MilestoneCard: React.FC<MilestoneCardProps> = ({
                     <span className={`flex-1 font-medium ${task.status === StatusType.FINISHED ? 'line-through text-gray-500' : 'text-gray-800'}`}>
                       {task.title}
                     </span>
-                    {task.due_date && (
-                      <span className="text-sm text-gray-500">
-                        {new Date(task.due_date).toLocaleDateString()}
-                      </span>
-                    )}
                   </div>
 
                   {/* Subtasks */}
-                  {task.subtasks.length > 0 && (
+                  {task.subtasks && task.subtasks.length > 0 && (
                     <div className="ml-6 mb-2 space-y-1 border-l-2 border-gray-200 pl-3">
                       {task.subtasks.map((subtask) => (
                         <div key={subtask.id} className="flex items-center space-x-2">
@@ -268,7 +263,7 @@ export const MilestoneCard: React.FC<MilestoneCardProps> = ({
                             disabled={isUpdating}
                             className="h-3 w-3 rounded border-gray-300 cursor-pointer accent-gray-900"
                           />
-                          <span className={`text-sm ${subtask.status === StatusType.FINISHED ? 'line-through text-gray-500' : 'text-gray-700'}`}>
+                          <span className={`text-sm ${subtask.status === StatusType.FINISHED ? 'line-through text-gray-500' : 'text-gray-600'}`}>
                             {subtask.title}
                           </span>
                         </div>
@@ -277,7 +272,7 @@ export const MilestoneCard: React.FC<MilestoneCardProps> = ({
                   )}
 
                   {/* Todos */}
-                  {task.todos.length > 0 && (
+                  {task.todos && task.todos.length > 0 && (
                     <div className="ml-6 space-y-1 border-l-2 border-gray-200 pl-3">
                       {task.todos.map((todo) => (
                         <div key={todo.id} className="flex items-center space-x-2">
@@ -288,7 +283,7 @@ export const MilestoneCard: React.FC<MilestoneCardProps> = ({
                             disabled={isUpdating}
                             className="h-3 w-3 rounded border-gray-300 cursor-pointer accent-gray-900"
                           />
-                          <span className={`text-sm ${todo.status === StatusType.FINISHED ? 'line-through text-gray-500' : 'text-gray-700'}`}>
+                          <span className={`text-sm ${todo.status === StatusType.FINISHED ? 'line-through text-gray-500' : 'text-gray-600'}`}>
                             {todo.title}
                           </span>
                         </div>
@@ -298,54 +293,80 @@ export const MilestoneCard: React.FC<MilestoneCardProps> = ({
                 </div>
               ))}
 
-              {totalTasks === 0 && (
-                <p className="text-gray-500 text-sm text-center py-2">
-                  No tasks or todos yet. Add some to get started!
-                </p>
-              )}
-            </div>
-          )}
+              {todos.map((todo) => (
+                <div key={todo.id} className="bg-gray-50 rounded-lg p-3">
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={todo.status === StatusType.FINISHED}
+                      onChange={() => handleTaskToggle(todo.id, 'todo', todo.status === StatusType.FINISHED)}
+                      disabled={isUpdating}
+                      className="h-4 w-4 rounded border-gray-300 cursor-pointer accent-gray-900"
+                    />
+                    <span className={`flex-1 ${todo.status === StatusType.FINISHED ? 'line-through text-gray-500' : 'text-gray-800'}`}>
+                      {todo.title}
+                    </span>
+                  </div>
+                </div>
+              ))}
 
-          <button
-            className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-gray-800 text-white hover:bg-gray-900 mt-4 flex items-center justify-center"
-            onClick={handleSuggestTasks}
-            disabled={isGeneratingTasks}
-          >
-            {isGeneratingTasks ? (
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            ) : (
-              '✨ Suggest Tasks'
-            )}
-          </button>
+              {tasks.length === 0 && todos.length === 0 && (
+                <div className="text-center py-4 text-gray-500">
+                  No tasks or todos yet. Add some to track your progress!
+                </div>
+              )}
 
-          {generatedTasks && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
-              <h6 className="font-semibold mb-2 text-gray-700">Suggested Tasks:</h6>
-              {generatedTasks.dailyTasks.length > 0 && (
-                <>
-                  <p className="text-sm font-medium text-gray-600 mb-1">Daily Tasks:</p>
-                  <ul className="list-disc list-inside text-sm text-gray-800 mb-2">
-                    {generatedTasks.dailyTasks.map((task, index) => (
-                      <li key={`gen-daily-${index}`}>{task}</li>
-                    ))}
-                  </ul>
-                </>
-              )}
-              {generatedTasks.oneTimeTodos.length > 0 && (
-                <>
-                  <p className="text-sm font-medium text-gray-600 mb-1">One-time Todos:</p>
-                  <ul className="list-disc list-inside text-sm text-gray-800">
-                    {generatedTasks.oneTimeTodos.map((todo, index) => (
-                      <li key={`gen-todo-${index}`}>{todo}</li>
-                    ))}
-                  </ul>
-                </>
-              )}
-              {generatedTasks.dailyTasks.length === 0 && generatedTasks.oneTimeTodos.length === 0 && (
-                <p className="text-sm text-gray-500">No suggestions generated.</p>
+              <div className="flex justify-between items-center pt-4">
+                <button
+                  onClick={handleSuggestTasks}
+                  disabled={isGeneratingTasks}
+                  className="text-sm text-gray-600 hover:text-gray-800 flex items-center space-x-1"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                    ></path>
+                  </svg>
+                  <span>{isGeneratingTasks ? 'Generating...' : 'Suggest Tasks'}</span>
+                </button>
+              </div>
+
+              {generatedTasks && (
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                  <h5 className="text-sm font-medium text-gray-800 mb-2">Suggested Tasks</h5>
+                  {generatedTasks.dailyTasks.length > 0 && (
+                    <>
+                      <p className="text-sm font-medium text-gray-600 mb-1">Daily Tasks:</p>
+                      <ul className="list-disc list-inside text-sm text-gray-800 mb-2">
+                        {generatedTasks.dailyTasks.map((task, index) => (
+                          <li key={`gen-daily-${index}`}>{task}</li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                  {generatedTasks.oneTimeTodos.length > 0 && (
+                    <>
+                      <p className="text-sm font-medium text-gray-600 mb-1">One-time Todos:</p>
+                      <ul className="list-disc list-inside text-sm text-gray-800">
+                        {generatedTasks.oneTimeTodos.map((todo, index) => (
+                          <li key={`gen-todo-${index}`}>{todo}</li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                  {generatedTasks.dailyTasks.length === 0 && generatedTasks.oneTimeTodos.length === 0 && (
+                    <p className="text-sm text-gray-500">No suggestions generated.</p>
+                  )}
+                </div>
               )}
             </div>
           )}
@@ -353,4 +374,4 @@ export const MilestoneCard: React.FC<MilestoneCardProps> = ({
       )}
     </div>
   );
-}; 
+};
