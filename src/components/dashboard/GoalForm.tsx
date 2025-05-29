@@ -4,20 +4,21 @@ import { goalsApi } from '@/lib/api';
 import { useSession } from 'next-auth/react';
 
 interface GoalFormProps {
-  onSuccess: (goal: Goal) => void;
-  onCancel: () => void;
-  initialData?: Partial<Goal>;
+  goal: Goal | null;
+  isEditMode: boolean;
+  onClose: () => void;
+  onSubmit: (goalData: Partial<Goal>) => Promise<void>;
 }
 
-export const GoalForm: React.FC<GoalFormProps> = ({ onSuccess, onCancel, initialData }) => {
+export const GoalForm: React.FC<GoalFormProps> = ({ goal, isEditMode, onClose, onSubmit }) => {
   const { data: session } = useSession();
   const [formData, setFormData] = useState({
-    title: initialData?.title || '',
-    description: initialData?.description || '',
-    status: initialData?.status || StatusType.OUTSTANDING,
-    priority: initialData?.priority || PriorityType.MEDIUM,
-    start_datetime: initialData?.start_datetime ? new Date(initialData.start_datetime).toISOString().split('T')[0] : '',
-    end_datetime: initialData?.end_datetime ? new Date(initialData.end_datetime).toISOString().split('T')[0] : '',
+    title: goal?.title || '',
+    description: goal?.description || '',
+    status: goal?.status || StatusType.OUTSTANDING,
+    priority: goal?.priority || PriorityType.MEDIUM,
+    start_datetime: goal?.start_datetime ? new Date(goal.start_datetime).toISOString().split('T')[0] : '',
+    end_datetime: goal?.end_datetime ? new Date(goal.end_datetime).toISOString().split('T')[0] : '',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,7 +37,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSuccess, onCancel, initial
         user_id: session?.user?.email || '',
       };
 
-      onSuccess(goalData as Goal);
+      await onSubmit(goalData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save goal');
     } finally {
@@ -159,7 +160,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSuccess, onCancel, initial
       <div className="flex justify-end space-x-3 pt-4">
         <button
           type="button"
-          onClick={onCancel}
+          onClick={onClose}
           className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400"
         >
           Cancel
@@ -169,7 +170,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({ onSuccess, onCancel, initial
           disabled={isSubmitting}
           className="px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50"
         >
-          {isSubmitting ? 'Saving...' : initialData?.id ? 'Update Goal' : 'Create Goal'}
+          {isSubmitting ? 'Saving...' : isEditMode ? 'Update Goal' : 'Create Goal'}
         </button>
       </div>
     </form>

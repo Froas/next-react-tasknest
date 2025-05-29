@@ -46,8 +46,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
         end_datetime: formData.end_datetime,
         milestone_id: milestoneId,
         todos: [],
-        subtasks: [],
-        is_completed: false
+        subtasks: []
       } as Omit<Task, 'id'>;
 
       let task: Task;

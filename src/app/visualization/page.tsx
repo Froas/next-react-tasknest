@@ -370,8 +370,8 @@ const GoalVisualization = () => {
     
     const baseSize = 6;
     const padding = 8;
-    const width = 160; // Reduce width for better text display
-    const height = 32; // Reduce height
+    const width = 160;
+    const height = 32;
     
     return (
       <g
@@ -456,15 +456,17 @@ const GoalVisualization = () => {
     
     // Determine direction from parent
     const direction = x > parentX ? 1 : -1;
-    // If parent is active or hovered, start line from the middle of the rectangle
+    
+    // Start line from the side if parent is hovered or active
     const lineStartX = (isParentActive || isParentHovered) ? 
       parentX + (width/2 * direction) : 
       parentX;
+    const lineStartY = parentY;
     
     // Calculate control points for the line
     const { controlPoint1, controlPoint2 } = calculateTaskBezierPoints(
       lineStartX,
-      parentY,
+      lineStartY,
       x,
       y
     );
@@ -496,7 +498,7 @@ const GoalVisualization = () => {
         
         {/* Линия от родителя */}
         <path
-          d={`M ${lineStartX},${parentY} 
+          d={`M ${lineStartX},${lineStartY} 
               C ${controlPoint1.x},${controlPoint1.y} 
                 ${controlPoint2.x},${controlPoint2.y} 
                 ${x},${y}`}
@@ -557,11 +559,13 @@ const GoalVisualization = () => {
     const width = 160;
     const height = 32;
     
-    // If milestone is active or hovered, start line from the middle of the milestone rectangle
-    const startX = parentX + width / 2;
-    const startY = parentY + height;
-    
     const direction = x > parentX ? 1 : -1;
+    
+    // Start line from the side if milestone is hovered or active
+    const startX = (isHovered || isActive) ? 
+      parentX + (width/2 * direction) : 
+      parentX;
+    const startY = parentY;
     
     const { controlPoint1, controlPoint2 } = calculateTaskBezierPoints(
       startX,
@@ -779,7 +783,6 @@ const GoalVisualization = () => {
         </div>
       </div>
 
-      {/* Добавляем стили для скрытия скроллбара */}
       <style jsx global>{`
         .scrollbar-hide {
           -ms-overflow-style: none;

@@ -1,377 +1,301 @@
-import React, { useState, useEffect } from 'react';
-import { MilestoneItem as Milestone, StatusType, PriorityType, TaskItem as Task, TodoItem as Todo } from '@/lib/types';
-import { callGeminiAPI } from '@/lib/geminiApi';
-import { tasksApi, todosApi, subtasksApi, milestonesApi } from '@/lib/api';
+'use client';
 
-interface GeneratedTasks {
-  dailyTasks: string[];
-  oneTimeTodos: string[];
-}
+import { useState } from 'react';
+import { MilestoneItem as Milestone, TaskItem as Task, TodoItem as Todo, StatusType, PriorityType } from '@/lib/types';
+import { useStore } from '@/store/useStore';
+import { formatDate } from '@/lib/utils';
+import { tasksApi } from '@/lib/api';
 
 interface MilestoneCardProps {
   milestone: Milestone;
-  onSelectMilestone: (milestoneId: string) => void;
-  onAddTask: () => void;
-  onMilestoneUpdate: (updatedMilestone: Milestone) => void;
+  onUpdate: (data: Partial<Milestone>) => void;
+  onDelete: () => void;
+  onSelectMilestone?: (milestoneId: string) => void;
+  onAddTask?: () => void;
+  onMilestoneUpdate?: (data: Partial<Milestone>) => Promise<void>;
+  onMilestoneDelete?: () => Promise<void>;
 }
 
-export const MilestoneCard: React.FC<MilestoneCardProps> = ({
-  milestone,
-  onSelectMilestone,
-  onAddTask,
-  onMilestoneUpdate,
-}) => {
+export default function MilestoneCard({ milestone, onUpdate, onDelete }: MilestoneCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [generatedTasks, setGeneratedTasks] = useState<GeneratedTasks | null>(null);
-  const [isGeneratingTasks, setIsGeneratingTasks] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentMilestone, setCurrentMilestone] = useState<Milestone>(milestone);
-  
-  // Initialize tasks and todos with empty arrays if undefined
-  const tasks = currentMilestone.tasks || [];
-  const todos = currentMilestone.todos || [];
-  
-  // Calculate progress based on completed tasks
-  const totalTasks = tasks.length + todos.length;
-  const completedTasks = tasks.filter(t => t.status === StatusType.FINISHED).length +
-    todos.filter(t => t.status === StatusType.FINISHED).length;
-  const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
+  const { addTask, updateTask, deleteTask } = useStore();
 
-  // Add useEffect for state synchronization
-  useEffect(() => {
-    setCurrentMilestone(milestone);
-  }, [milestone]);
-
-  const handleExpand = async () => {
-    if (!isExpanded) {
-      setIsLoading(true);
-      try {
-
-        const fullMilestone = await milestonesApi.getById(milestone.id, true, true, true);
-        setCurrentMilestone(fullMilestone);
-        onMilestoneUpdate(fullMilestone);
-      } catch (error) {
-        console.error('Failed to load milestone details:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    setIsExpanded(!isExpanded);
-  };
-
-  const handleSuggestTasks = async () => {
-    setIsGeneratingTasks(true);
-    setGeneratedTasks(null);
-
-    const prompt = `Generate a list of daily tasks and one-time todos for a milestone named "${milestone.title}". Provide the output as a JSON object with two arrays: "dailyTasks" and "oneTimeTodos".`;
-    const schema = {
-      type: "OBJECT",
-      properties: {
-        dailyTasks: {
-          type: "ARRAY",
-          items: { type: "STRING" }
-        },
-        oneTimeTodos: {
-          type: "ARRAY",
-          items: { type: "STRING" }
-        }
-      },
-      propertyOrdering: ["dailyTasks", "oneTimeTodos"]
-    };
-
-    const result = await callGeminiAPI<GeneratedTasks>(prompt, schema);
-    if (result) {
-      setGeneratedTasks(result);
-    }
-    setIsGeneratingTasks(false);
-  };
-
-  const handleTaskToggle = async (itemId: string, type: 'task' | 'subtask' | 'todo', currentStatus: boolean) => {
-    setIsUpdating(true);
+  const handleCreateTask = async (taskData: Partial<Task>) => {
     try {
-      const parentTask = milestone.tasks.find(t => 
-        t.id === itemId || 
-        t.subtasks.some(st => st.id === itemId) || 
-        t.todos.some(td => td.id === itemId)
-      );
-
-      if (!parentTask) return;
-
-      // Determine new status based on current one
-      const getNextStatus = (currentStatus: StatusType): StatusType => {
-        return currentStatus === StatusType.FINISHED ? StatusType.OUTSTANDING : StatusType.FINISHED;
-      };
-
-      const newStatus = getNextStatus(parentTask.status);
-
-      switch (type) {
-        case 'task':
-          await tasksApi.update({ 
-            id: itemId, 
-            status: newStatus,
-            ...(newStatus === StatusType.FINISHED && { end_datetime: new Date().toISOString() })
-          });
-          break;
-        case 'subtask':
-          await subtasksApi.update({ 
-            id: itemId, 
-            status: newStatus,
-            ...(newStatus === StatusType.FINISHED && { end_datetime: new Date().toISOString() })
-          });
-          break;
-        case 'todo':
-          await todosApi.update({ 
-            id: itemId, 
-            status: newStatus,
-            ...(newStatus === StatusType.FINISHED && { end_datetime: new Date().toISOString() })
-          });
-          break;
+      const { title, description, status, priority, due_date } = taskData;
+      if (!title || !description || !status || !priority) {
+        throw new Error('Missing required fields');
       }
-
-      const updatedTask = await tasksApi.get(parentTask.id, true, true);
-      
-      const updatedMilestone = {
-        ...milestone,
-        tasks: milestone.tasks.map(t => t.id === parentTask.id ? updatedTask : t)
-      };
-      onMilestoneUpdate(updatedMilestone);
+      const newTask = await tasksApi.create({
+        title,
+        description,
+        status,
+        priority,
+        due_date,
+        milestone_id: milestone.id,
+        todos: [],
+        subtasks: []
+      });
+      addTask(newTask);
+      setIsCreatingTask(false);
     } catch (error) {
-      console.error('Failed to update task status:', error);
-    } finally {
-      setIsUpdating(false);
+      console.error('Error creating task:', error);
     }
+  };
+
+  const handleTaskUpdate = async (taskId: string, taskData: Partial<Task>) => {
+    try {
+      const updatedTask = await tasksApi.update({
+        id: taskId,
+        ...taskData
+      });
+      updateTask(updatedTask);
+    } catch (error) {
+      console.error('Error updating task:', error);
+    }
+  };
+
+  const handleTaskDelete = async (taskId: string) => {
+    try {
+      await tasksApi.delete(taskId);
+      deleteTask(taskId);
+    } catch (error) {
+      console.error('Error deleting task:', error);
+    }
+  };
+
+  const getStatusColor = (status: StatusType) => {
+    switch (status) {
+      case StatusType.OUTSTANDING:
+        return 'bg-gray-100 text-gray-800';
+      case StatusType.IN_PROGRESS:
+        return 'bg-blue-100 text-blue-800';
+      case StatusType.FINISHED:
+        return 'bg-green-100 text-green-800';
+      case StatusType.CANCELLED:
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getPriorityColor = (priority: PriorityType) => {
+    switch (priority) {
+      case PriorityType.HIGH:
+        return 'bg-red-100 text-red-800';
+      case PriorityType.MEDIUM:
+        return 'bg-yellow-100 text-yellow-800';
+      case PriorityType.LOW:
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const calculateProgress = () => {
+    if (!milestone.tasks || milestone.tasks.length === 0) return 0;
+    const completedTasks = milestone.tasks.filter(
+      task => task.status === StatusType.FINISHED
+    ).length;
+    return (completedTasks / milestone.tasks.length) * 100;
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-      <div
-        className="p-4 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
-        onClick={handleExpand}
-      >
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <h4 className="text-lg font-medium mb-1">{milestone.title}</h4>
-            <p className="text-gray-600 text-sm mb-2">{milestone.description}</p>
-            <div className="flex items-center space-x-2 text-sm text-gray-500">
-              <span>Due: {new Date(milestone.due_date || '').toLocaleDateString()}</span>
-              <span>•</span>
-              <span className="capitalize">{milestone.status.toLowerCase()}</span>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddTask();
-              }}
-              className="p-2 text-gray-600 hover:text-gray-800 rounded-lg hover:bg-gray-100"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                ></path>
-              </svg>
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelectMilestone(milestone.id);
-              }}
-              className="p-2 text-gray-600 hover:text-gray-800 rounded-lg hover:bg-gray-100"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                ></path>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                ></path>
-              </svg>
-            </button>
-          </div>
+    <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex-1">
+          <h3 className="text-lg font-semibold text-gray-900">{milestone.title}</h3>
+          {milestone.description && (
+            <p className="text-gray-600 text-sm mt-1">{milestone.description}</p>
+          )}
         </div>
+        <div className="flex space-x-2">
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(milestone.status)}`}>
+            {milestone.status}
+          </span>
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(milestone.priority)}`}>
+            {milestone.priority}
+          </span>
+        </div>
+      </div>
 
-        <div className="mt-3">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-sm text-gray-600">Progress</span>
-            <span className="text-sm font-medium text-gray-800">{Math.round(progress)}%</span>
-          </div>
-          <div className="bg-gray-200 rounded-full h-2 overflow-hidden">
-            <div
-              className="bg-gray-800 h-full rounded-full transition-all duration-300 ease-in-out"
-              style={{ width: `${progress}%` }}
-            ></div>
-          </div>
+      <div className="space-y-3">
+        <div className="flex justify-between text-sm text-gray-500">
+          <span>Progress</span>
+          <span>{Math.round(calculateProgress())}%</span>
+        </div>
+        <div className="bg-gray-200 rounded-full h-2">
+          <div
+            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+            style={{ width: `${calculateProgress()}%` }}
+          />
+        </div>
+      </div>
+
+      {milestone.due_date && (
+        <div className="mt-4 text-sm text-gray-500">
+          Due: {formatDate(milestone.due_date)}
+        </div>
+      )}
+
+      <div className="mt-4 flex justify-between items-center">
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="text-blue-500 hover:text-blue-600 text-sm font-medium"
+        >
+          {isExpanded ? 'Hide Tasks' : 'Show Tasks'}
+        </button>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setIsCreatingTask(true)}
+            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Add Task
+          </button>
+          <button
+            onClick={onDelete}
+            className="px-3 py-1 text-sm text-red-500 hover:text-red-600"
+          >
+            Delete
+          </button>
         </div>
       </div>
 
       {isExpanded && (
-        <div className="border-t border-gray-100 p-4">
-          {isLoading ? (
-            <div className="flex justify-center items-center py-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-800"></div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {tasks.map((task) => (
-                <div key={task.id} className="bg-gray-50 rounded-lg p-3">
-                  {/* Task Header */}
-                  <div className="flex items-center space-x-3 mb-2">
-                    <input
-                      type="checkbox"
-                      checked={task.status === StatusType.FINISHED}
-                      onChange={() => handleTaskToggle(task.id, 'task', task.status === StatusType.FINISHED)}
-                      disabled={isUpdating}
-                      className="h-4 w-4 rounded border-gray-300 cursor-pointer accent-gray-900"
-                    />
-                    <span className={`flex-1 font-medium ${task.status === StatusType.FINISHED ? 'line-through text-gray-500' : 'text-gray-800'}`}>
-                      {task.title}
-                    </span>
-                  </div>
-
-                  {/* Subtasks */}
-                  {task.subtasks && task.subtasks.length > 0 && (
-                    <div className="ml-6 mb-2 space-y-1 border-l-2 border-gray-200 pl-3">
-                      {task.subtasks.map((subtask) => (
-                        <div key={subtask.id} className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            checked={subtask.status === StatusType.FINISHED}
-                            onChange={() => handleTaskToggle(subtask.id, 'subtask', subtask.status === StatusType.FINISHED)}
-                            disabled={isUpdating}
-                            className="h-3 w-3 rounded border-gray-300 cursor-pointer accent-gray-900"
-                          />
-                          <span className={`text-sm ${subtask.status === StatusType.FINISHED ? 'line-through text-gray-500' : 'text-gray-600'}`}>
-                            {subtask.title}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Todos */}
-                  {task.todos && task.todos.length > 0 && (
-                    <div className="ml-6 space-y-1 border-l-2 border-gray-200 pl-3">
-                      {task.todos.map((todo) => (
-                        <div key={todo.id} className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            checked={todo.status === StatusType.FINISHED}
-                            onChange={() => handleTaskToggle(todo.id, 'todo', todo.status === StatusType.FINISHED)}
-                            disabled={isUpdating}
-                            className="h-3 w-3 rounded border-gray-300 cursor-pointer accent-gray-900"
-                          />
-                          <span className={`text-sm ${todo.status === StatusType.FINISHED ? 'line-through text-gray-500' : 'text-gray-600'}`}>
-                            {todo.title}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+        <div className="mt-4 space-y-4">
+          {milestone.tasks?.map((task) => (
+            <div
+              key={task.id}
+              className="bg-gray-50 rounded-lg p-4"
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <h4 className="font-medium text-gray-900">{task.title}</h4>
+                  {task.description && (
+                    <p className="text-sm text-gray-600 mt-1">{task.description}</p>
                   )}
                 </div>
-              ))}
-
-              {todos.map((todo) => (
-                <div key={todo.id} className="bg-gray-50 rounded-lg p-3">
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      checked={todo.status === StatusType.FINISHED}
-                      onChange={() => handleTaskToggle(todo.id, 'todo', todo.status === StatusType.FINISHED)}
-                      disabled={isUpdating}
-                      className="h-4 w-4 rounded border-gray-300 cursor-pointer accent-gray-900"
-                    />
-                    <span className={`flex-1 ${todo.status === StatusType.FINISHED ? 'line-through text-gray-500' : 'text-gray-800'}`}>
-                      {todo.title}
-                    </span>
-                  </div>
+                <div className="flex space-x-2">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
+                    {task.status}
+                  </span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>
+                    {task.priority}
+                  </span>
                 </div>
-              ))}
-
-              {tasks.length === 0 && todos.length === 0 && (
-                <div className="text-center py-4 text-gray-500">
-                  No tasks or todos yet. Add some to track your progress!
+              </div>
+              {task.due_date && (
+                <div className="mt-2 text-sm text-gray-500">
+                  Due: {formatDate(task.due_date)}
                 </div>
               )}
+            </div>
+          ))}
+        </div>
+      )}
 
-              <div className="flex justify-between items-center pt-4">
-                <button
-                  onClick={handleSuggestTasks}
-                  disabled={isGeneratingTasks}
-                  className="text-sm text-gray-600 hover:text-gray-800 flex items-center space-x-1"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
+      {isCreatingTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-4">Create New Task</h3>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              handleCreateTask({
+                title: formData.get('title') as string,
+                description: formData.get('description') as string,
+                status: formData.get('status') as StatusType,
+                priority: formData.get('priority') as PriorityType,
+                due_date: formData.get('due_date') as string,
+              });
+            }}>
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                    Title
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    id="title"
+                    required
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                    Description
+                  </label>
+                  <textarea
+                    name="description"
+                    id="description"
+                    rows={3}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+                    Status
+                  </label>
+                  <select
+                    name="status"
+                    id="status"
+                    required
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    ></path>
-                  </svg>
-                  <span>{isGeneratingTasks ? 'Generating...' : 'Suggest Tasks'}</span>
+                    <option value={StatusType.OUTSTANDING}>Not Started</option>
+                    <option value={StatusType.IN_PROGRESS}>In Progress</option>
+                    <option value={StatusType.FINISHED}>Finished</option>
+                    <option value={StatusType.CANCELLED}>Cancelled</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="priority" className="block text-sm font-medium text-gray-700">
+                    Priority
+                  </label>
+                  <select
+                    name="priority"
+                    id="priority"
+                    required
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value={PriorityType.LOW}>Low</option>
+                    <option value={PriorityType.MEDIUM}>Medium</option>
+                    <option value={PriorityType.HIGH}>High</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="due_date" className="block text-sm font-medium text-gray-700">
+                    Due Date
+                  </label>
+                  <input
+                    type="date"
+                    name="due_date"
+                    id="due_date"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setIsCreatingTask(false)}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-900"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                  Create
                 </button>
               </div>
-
-              {generatedTasks && (
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                  <h5 className="text-sm font-medium text-gray-800 mb-2">Suggested Tasks</h5>
-                  {generatedTasks.dailyTasks.length > 0 && (
-                    <>
-                      <p className="text-sm font-medium text-gray-600 mb-1">Daily Tasks:</p>
-                      <ul className="list-disc list-inside text-sm text-gray-800 mb-2">
-                        {generatedTasks.dailyTasks.map((task, index) => (
-                          <li key={`gen-daily-${index}`}>{task}</li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-                  {generatedTasks.oneTimeTodos.length > 0 && (
-                    <>
-                      <p className="text-sm font-medium text-gray-600 mb-1">One-time Todos:</p>
-                      <ul className="list-disc list-inside text-sm text-gray-800">
-                        {generatedTasks.oneTimeTodos.map((todo, index) => (
-                          <li key={`gen-todo-${index}`}>{todo}</li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-                  {generatedTasks.dailyTasks.length === 0 && generatedTasks.oneTimeTodos.length === 0 && (
-                    <p className="text-sm text-gray-500">No suggestions generated.</p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
+            </form>
+          </div>
         </div>
       )}
     </div>
   );
-};
+}

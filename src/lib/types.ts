@@ -30,7 +30,6 @@ export interface BaseEntity {
 export interface SubtaskItem extends BaseEntity {
   task_id: string;
   due_date?: string;
-  is_completed: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -40,7 +39,6 @@ export interface TodoItem extends BaseEntity {
   due_date?: string;
   next_due_date?: string;
   repeat_interval?: string;
-  is_completed: boolean;
 }
 
 export interface TaskItem extends BaseEntity {
@@ -48,7 +46,6 @@ export interface TaskItem extends BaseEntity {
   due_date?: string;
   todos: TodoItem[];
   subtasks: SubtaskItem[];
-  is_completed: boolean;
 }
 
 // Milestone type

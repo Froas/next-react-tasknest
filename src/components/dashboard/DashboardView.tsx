@@ -1,26 +1,24 @@
+'use client';
+
 import React from 'react';
 import { GoalItem as Goal, StatusType } from '@/lib/types';
-import { GoalCard } from './GoalCard';
+import GoalCard from './GoalCard';
+import { useStore } from '@/store/useStore';
 
 interface DashboardViewProps {
   onSelectGoal: (goalId: string) => void;
   onGoalUpdate: (updatedGoals: Goal[]) => void;
   onCreateGoal: () => void;
-  goals: Goal[];
-  isLoading: boolean;
-  error: string | null;
-  onRetry: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ 
   onSelectGoal, 
   onGoalUpdate,
   onCreateGoal,
-  goals,
-  isLoading,
-  error,
-  onRetry
 }) => {
+  // Берём данные из Zustand
+  const { goals, isLoadingGoals, goalsError, fetchGoals } = useStore();
+
   const totalGoals = goals.length;
   const completedGoals = goals.filter((g) => g.status === StatusType.FINISHED).length;
   const overallProgress = totalGoals > 0 ? (completedGoals / totalGoals) * 100 : 0;
@@ -30,7 +28,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     goal => goal.status !== StatusType.FINISHED && goal.status !== StatusType.CANCELLED
   );
 
-  if (isLoading) {
+  if (isLoadingGoals) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800"></div>
@@ -38,13 +36,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     );
   }
 
-  if (error) {
+  if (goalsError) {
     return (
       <div className="bg-red-50 text-red-800 p-4 rounded-lg">
         <p className="font-medium">Error loading goals</p>
-        <p className="text-sm mt-1">{error}</p>
+        <p className="text-sm mt-1">{goalsError}</p>
         <button
-          onClick={onRetry}
+          onClick={fetchGoals}
           className="mt-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
         >
           Try Again
@@ -119,7 +117,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <GoalCard
               key={goal.id}
               goal={goal}
-              onSelectGoal={onSelectGoal}
+              onClick={() => onSelectGoal(goal.id)}
             />
           ))
         ) : (

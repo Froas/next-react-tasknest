@@ -115,10 +115,18 @@ export const usersApi = {
 // Goals API
 export const goalsApi = {
   getAll: async (): Promise<Goal[]> => {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/goals`, { headers });
-    if (!response.ok) throw new Error('Failed to fetch goals');
-    return response.json();
+    try {
+      const headers = await getAuthHeaders();
+      const response = await fetch(`${API_BASE_URL}/user/goals`, { headers });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: 'Failed to fetch goals' }));
+        throw new Error(error.detail || 'Failed to fetch goals');
+      }
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching goals:', error);
+      throw error;
+    }
   },
 
   create: async (goalData: Omit<Goal, 'id' | 'milestones'>): Promise<Goal> => {

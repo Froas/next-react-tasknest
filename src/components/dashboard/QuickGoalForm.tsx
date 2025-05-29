@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { GoalItem as Goal, StatusType, PriorityType } from '@/lib/types';
 import { goalsApi } from '@/lib/api';
 import { useSession } from 'next-auth/react';
+import { useStore } from '@/store/useStore';
 
 interface QuickGoalFormProps {
   onSuccess: (goal: Goal) => void;
@@ -10,6 +11,7 @@ interface QuickGoalFormProps {
 
 export const QuickGoalForm: React.FC<QuickGoalFormProps> = ({ onSuccess, onCancel }) => {
   const { data: session } = useSession();
+  const { addGoal } = useStore();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -32,6 +34,7 @@ export const QuickGoalForm: React.FC<QuickGoalFormProps> = ({ onSuccess, onCance
       };
 
       const goal = await goalsApi.create(goalData);
+      addGoal(goal);
       onSuccess(goal);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save goal');
