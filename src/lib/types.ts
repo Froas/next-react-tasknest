@@ -26,6 +26,16 @@ export interface BaseEntity {
   priority: PriorityType;
 }
 
+
+export interface GoalEntity {
+  id: string;
+  title: string;
+  description: string;
+  start_datetime?: string;
+  end_datetime?: string;
+  priority: PriorityType;
+}
+
 // Task related types
 export interface SubtaskItem extends BaseEntity {
   task_id: string;
@@ -60,13 +70,13 @@ export interface TaskItem extends BaseEntity {
 export interface MilestoneItem extends BaseEntity {
   goal_id?: string;
   due_date?: string;
-  position: number;
+  position?: number;
   tasks: TaskItem[];
   todos: TodoItem[];
 }
 
 // Goal type
-export interface GoalItem extends BaseEntity {
+export interface GoalItem extends GoalEntity {
   user_id: string;
   milestones: MilestoneItem[];
 }
@@ -126,7 +136,6 @@ export interface GoalUpdate {
   id: string;
   title?: string;
   description?: string;
-  status?: StatusType;
   priority?: PriorityType;
   start_datetime?: string;
   end_datetime?: string;

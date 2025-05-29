@@ -111,7 +111,6 @@ const Home = () => {
           title: createData.title,
           description: createData.description,
           user_id: createData.user_id,
-          status: createData.status || StatusType.OUTSTANDING,
           priority: createData.priority || PriorityType.MEDIUM,
           start_datetime: createData.start_datetime,
           end_datetime: createData.end_datetime
@@ -373,7 +372,7 @@ const Home = () => {
         <aside className="lg:col-span-1 space-y-6">
           <CalendarWidget />
           <QuickActions
-            onAddGoal={() => setIsCreatingQuickGoal(true)}
+            onAddGoal={handleAddGoal}
             onAddMilestone={() => handleQuickAction('milestone')}
             onAddTask={() => handleQuickAction('task')}
             onAddTodo={() => handleQuickAction('todo')}
