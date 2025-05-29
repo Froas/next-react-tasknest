@@ -4,7 +4,7 @@ import { milestonesApi } from '@/lib/api';
 
 interface MilestoneFormProps {
   goalId: string;
-  onSuccess: (milestone: Milestone) => void;
+  onSuccess: (milestone: Omit<Milestone, 'id' | 'tasks' | 'todos'>) => void;
   onCancel: () => void;
   initialData?: Partial<Milestone>;
 }
@@ -36,13 +36,15 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({
       const milestoneData = {
         title: formData.title,
         description: formData.description || '',
-        status: formData.status,
+        status: formData.status as StatusType,
+        priority: PriorityType.MEDIUM,
         due_date: formData.due_date,
         end_datetime: formData.end_datetime || `${formData.due_date}T18:00:00`,
-        goal_id: goalId
+        goal_id: goalId,
+        position: 0
       };
 
-      onSuccess(milestoneData as Milestone);
+      onSuccess(milestoneData);
     } catch (err) {
       console.error('Milestone creation error:', err);
       setError(err instanceof Error ? err.message : 'Failed to save milestone');
