@@ -42,10 +42,18 @@ export interface TodoItem extends BaseEntity {
 }
 
 export interface TaskItem extends BaseEntity {
-  milestone_id?: string;
+  id: string;
+  title: string;
+  description: string;
+  status: StatusType;
+  priority: PriorityType;
+  start_datetime?: string;
+  end_datetime?: string;
   due_date?: string;
+  milestone_id: string;
+  parent_id?: string;
   todos: TodoItem[];
-  subtasks: SubtaskItem[];
+  subtasks: TaskItem[];
 }
 
 // Milestone type
@@ -107,7 +115,11 @@ export interface TaskResponse extends TaskItem {
 
 export interface TodoResponse extends TodoItem {}
 
-export interface SubtaskResponse extends SubtaskItem {}
+export interface SubtaskResponse extends TaskItem {
+  task_id: string;
+  created_at: string;
+  updated_at: string;
+}
 
 // Update types for API requests
 export interface GoalUpdate {
