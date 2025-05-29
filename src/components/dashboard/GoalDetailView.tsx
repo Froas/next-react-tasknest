@@ -61,17 +61,21 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
     const loadGoalDetails = async () => {
       try {
         setIsLoading(true);
+        console.log('Loading goal details for goal:', goal.id);
         const fullGoal = await goalsApi.getById(goal.id, {
           include_milestones: true,
           include_tasks: true,
           include_subtasks: true,
           include_todos: true
         });
+        console.log('Received full goal data:', fullGoal);
+        console.log('Milestones in full goal:', fullGoal.milestones);
         
         // Обновляем goal в store с полными данными
         updateGoal(fullGoal);
         // Обновляем локальное состояние milestones
         setMilestones(fullGoal.milestones || []);
+        console.log('Updated local milestones state:', fullGoal.milestones || []);
       } catch (error) {
         console.error('Error loading goal details:', error);
         setError('Failed to load goal details');
@@ -81,6 +85,17 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
     };
     loadGoalDetails();
   }, [goal.id, updateGoal]);
+
+  // Add effect to log milestone state changes
+  useEffect(() => {
+    console.log('Current milestones state:', milestones);
+  }, [milestones]);
+
+  // Add effect to log goal changes
+  useEffect(() => {
+    console.log('Current goal data:', goal);
+    console.log('Goal milestones:', goal.milestones);
+  }, [goal]);
 
   // Add new useEffect for handling task creation
   useEffect(() => {

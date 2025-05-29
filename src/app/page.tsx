@@ -73,9 +73,20 @@ const Home = () => {
     fetchGoals();
   }, [fetchGoals]);
 
-  const handleGoalClick = (goal: Goal) => {
-    setSelectedGoalId(goal.id);
-    setCurrentView('goal-detail');
+  const handleGoalClick = async (goal: Goal) => {
+    try {
+      const fullGoal = await goalsApi.getById(goal.id, {
+        include_milestones: true,
+        include_tasks: true,
+        include_subtasks: true,
+        include_todos: true
+      });
+      updateGoal(fullGoal);
+      setSelectedGoalId(goal.id);
+      setCurrentView('goal-detail');
+    } catch (error) {
+      console.error('Failed to load goal details:', error);
+    }
   };
 
   const handleAddGoal = () => {
