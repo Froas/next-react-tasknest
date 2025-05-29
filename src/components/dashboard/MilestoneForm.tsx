@@ -37,7 +37,7 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({
         description: formData.description || '',
         status: formData.status,
         due_date: formData.due_date,
-        end_datetime: formData.end_datetime || formData.due_date + 'T18:00:00',
+        end_datetime: formData.end_datetime || `${formData.due_date}T18:00:00`,
         goal_id: goalId
       };
 
@@ -125,6 +125,20 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
           />
         </div>
+      </div>
+
+      <div>
+        <label htmlFor="end_datetime" className="block text-sm font-medium text-gray-700 mb-1">
+          End Time
+        </label>
+        <input
+          type="datetime-local"
+          id="end_datetime"
+          name="end_datetime"
+          value={formData.end_datetime}
+          onChange={handleChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+        />
       </div>
 
       <div className="flex justify-end space-x-3 pt-4">
