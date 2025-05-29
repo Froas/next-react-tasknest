@@ -53,14 +53,21 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
     fetchMilestones,
     addMilestone,
     updateMilestone,
-    deleteMilestone
+    deleteMilestone,
+    updateGoal
   } = useStore();
 
   useEffect(() => {
     const loadMilestones = async () => {
       try {
         setIsLoading(true);
-        await fetchMilestones(goal.id);
+        const fullGoal = await goalsApi.getById(goal.id, {
+          include_milestones: true,
+          include_tasks: true,
+          include_subtasks: true,
+          include_todos: true
+        });
+        updateGoal(fullGoal);
       } catch (error) {
         console.error('Error loading milestones:', error);
         setError('Failed to load milestones');
@@ -69,7 +76,7 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
       }
     };
     loadMilestones();
-  }, [goal.id, fetchMilestones]);
+  }, [goal.id, updateGoal]);
 
   // Add separate effect to update local state when store changes
   useEffect(() => {

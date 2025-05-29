@@ -154,12 +154,14 @@ export const goalsApi = {
   getById: async (goalId: string, options?: { 
     include_milestones?: boolean;
     include_tasks?: boolean;
+    include_subtasks?: boolean;
     include_todos?: boolean;
   }): Promise<Goal> => {
     const headers = await getAuthHeaders();
     const params = new URLSearchParams();
     if (options?.include_milestones) params.append('include_milestones', 'true');
     if (options?.include_tasks) params.append('include_tasks', 'true');
+    if (options?.include_subtasks) params.append('include_subtasks', 'true');
     if (options?.include_todos) params.append('include_todos', 'true');
     
     const url = `${API_BASE_URL}/user/goals/${goalId}${params.toString() ? `?${params.toString()}` : ''}`;
