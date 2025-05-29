@@ -37,6 +37,7 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
   const [isSyncingCalendar, setIsSyncingCalendar] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [shouldRefresh, setShouldRefresh] = useState(false);
 
   // States for inline editing
   const [editingField, setEditingField] = useState<string | null>(null);
@@ -45,48 +46,29 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
   const [showDeleteGoalConfirm, setShowDeleteGoalConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const { 
-    updateGoal
-  } = useStore();
+  const { updateGoal } = useStore();
 
   useEffect(() => {
     const loadGoalDetails = async () => {
       try {
         setIsLoading(true);
-        console.log('Loading goal details for goal:', goal.id);
         const fullGoal = await goalsApi.getById(goal.id, {
           include_milestones: true,
           include_tasks: true,
           include_subtasks: true,
           include_todos: true
         });
-        console.log('Received full goal data:', fullGoal);
-        console.log('Milestones in full goal:', fullGoal.milestones);
-        
-        // Обновляем goal в store с полными данными
         updateGoal(fullGoal);
-      } catch (error) {
-        console.error('Error loading goal details:', error);
-        setError('Failed to load goal details');
+      } catch (err) {
+        console.error('Error loading goal details:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load goal details');
       } finally {
         setIsLoading(false);
       }
     };
+
     loadGoalDetails();
   }, [goal.id, updateGoal]);
-
-  // Add effect to log goal changes
-  useEffect(() => {
-    console.log('Current goal data:', goal);
-    console.log('Goal milestones:', goal.milestones);
-  }, [goal]);
-
-  // Add new useEffect for handling task creation
-  useEffect(() => {
-    if (selectedMilestoneId) {
-      setIsCreatingTask(true);
-    }
-  }, [selectedMilestoneId]);
 
   const handleCreateMilestone = async (milestoneData: Partial<Milestone>) => {
     try {
@@ -101,14 +83,11 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
         position: goal.milestones?.length || 0
       });
       
-      // Refresh goal data to get updated milestones
-      const fullGoal = await goalsApi.getById(goal.id, {
-        include_milestones: true,
-        include_tasks: true,
-        include_subtasks: true,
-        include_todos: true
-      });
-      updateGoal(fullGoal);
+      const updatedGoal = {
+        ...goal,
+        milestones: [...(goal.milestones || []), newMilestone]
+      };
+      updateGoal(updatedGoal);
       setIsCreatingMilestone(false);
     } catch (error) {
       console.error('Error creating milestone:', error);
@@ -116,32 +95,35 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
     }
   };
 
-  const handleCreateTask = async (newTask: Task | Todo) => {
+  const handleMilestoneUpdate = async (milestoneId: string, data: Partial<Milestone>) => {
     try {
-      const milestoneIndex = goal.milestones.findIndex(m => m.id === selectedMilestoneId);
-      if (milestoneIndex === -1) return;
-
-      const updatedMilestone = {
-        ...goal.milestones[milestoneIndex],
-        tasks: goal.milestones[milestoneIndex].tasks || []
-      };
-
-      if ('milestone_id' in newTask) {
-        updatedMilestone.tasks = [...updatedMilestone.tasks, newTask as Task];
-      }
-
-      // Refresh goal data to get updated tasks
-      const fullGoal = await goalsApi.getById(goal.id, {
-        include_milestones: true,
-        include_tasks: true,
-        include_subtasks: true,
-        include_todos: true
+      const updatedMilestone = await milestonesApi.update({
+        id: milestoneId,
+        ...data
       });
-      updateGoal(fullGoal);
-      setIsCreatingTask(false);
-      setSelectedMilestoneId(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create task');
+      
+      const updatedGoal = {
+        ...goal,
+        milestones: goal.milestones.map(m => 
+          m.id === milestoneId ? { ...m, ...updatedMilestone } : m
+        )
+      };
+      updateGoal(updatedGoal);
+    } catch (error) {
+      console.error('Error updating milestone:', error);
+    }
+  };
+
+  const handleMilestoneDelete = async (milestoneId: string) => {
+    try {
+      await milestonesApi.delete(milestoneId);
+      const updatedGoal = {
+        ...goal,
+        milestones: goal.milestones.filter(m => m.id !== milestoneId)
+      };
+      updateGoal(updatedGoal);
+    } catch (error) {
+      console.error('Error deleting milestone:', error);
     }
   };
 
@@ -186,40 +168,28 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
     }
   };
 
-  const handleMilestoneUpdate = async (milestoneId: string, data: Partial<Milestone>) => {
+  const handleCreateTask = async (newTask: Task | Todo) => {
     try {
-      await milestonesApi.update({
-        id: milestoneId,
-        ...data
-      });
-      
-      // Refresh goal data to get updated milestone
-      const fullGoal = await goalsApi.getById(goal.id, {
-        include_milestones: true,
-        include_tasks: true,
-        include_subtasks: true,
-        include_todos: true
-      });
-      updateGoal(fullGoal);
-    } catch (error) {
-      console.error('Error updating milestone:', error);
-    }
-  };
+      const milestoneIndex = goal.milestones.findIndex(m => m.id === selectedMilestoneId);
+      if (milestoneIndex === -1) return;
 
-  const handleMilestoneDelete = async (milestoneId: string) => {
-    try {
-      await milestonesApi.delete(milestoneId);
+      const updatedMilestone = {
+        ...goal.milestones[milestoneIndex],
+        tasks: [...(goal.milestones[milestoneIndex].tasks || []), newTask as Task]
+      };
+
+      const updatedGoal = {
+        ...goal,
+        milestones: goal.milestones.map((m, index) => 
+          index === milestoneIndex ? updatedMilestone : m
+        )
+      };
       
-      // Refresh goal data after deletion
-      const fullGoal = await goalsApi.getById(goal.id, {
-        include_milestones: true,
-        include_tasks: true,
-        include_subtasks: true,
-        include_todos: true
-      });
-      updateGoal(fullGoal);
-    } catch (error) {
-      console.error('Error deleting milestone:', error);
+      updateGoal(updatedGoal);
+      setIsCreatingTask(false);
+      setSelectedMilestoneId(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create task');
     }
   };
 
