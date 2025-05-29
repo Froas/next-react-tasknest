@@ -35,7 +35,6 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(initialMilestoneId ?? null);
   const [isSyncingCalendar, setIsSyncingCalendar] = useState(false);
-  const [milestones, setMilestones] = useState<Milestone[]>(goal.milestones || []);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,13 +46,6 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const { 
-    milestones: storeMilestones,
-    isLoadingMilestones,
-    milestonesError,
-    fetchMilestones,
-    addMilestone,
-    updateMilestone,
-    deleteMilestone,
     updateGoal
   } = useStore();
 
@@ -78,11 +70,6 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
     loadMilestones();
   }, [goal.id, updateGoal]);
 
-  // Add separate effect to update local state when store changes
-  useEffect(() => {
-    setMilestones(storeMilestones);
-  }, [storeMilestones]);
-
   // Add new useEffect for handling task creation
   useEffect(() => {
     if (selectedMilestoneId) {
@@ -100,11 +87,16 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
         due_date: milestoneData.due_date,
         end_datetime: milestoneData.end_datetime,
         goal_id: goal.id,
-        position: storeMilestones.length
       });
       
-      // Update store after successful API call
-      addMilestone(newMilestone);
+      // Fetch updated goal data after creating milestone
+      const updatedGoal = await goalsApi.getById(goal.id, {
+        include_milestones: true,
+        include_tasks: true,
+        include_subtasks: true,
+        include_todos: true
+      });
+      updateGoal(updatedGoal);
       setIsCreatingMilestone(false);
     } catch (error) {
       console.error('Error creating milestone:', error);
@@ -114,27 +106,28 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
 
   const handleCreateTask = async (newTask: Task | Todo) => {
     try {
-      const milestoneIndex = milestones.findIndex(m => m.id === selectedMilestoneId);
+      const milestoneIndex = goal.milestones.findIndex(m => m.id === selectedMilestoneId);
       if (milestoneIndex === -1) return;
 
       const updatedMilestone = {
-        ...milestones[milestoneIndex],
-        tasks: milestones[milestoneIndex].tasks || []
+        ...goal.milestones[milestoneIndex],
+        tasks: goal.milestones[milestoneIndex].tasks || []
       };
 
       if ('milestone_id' in newTask) {
         updatedMilestone.tasks = [...updatedMilestone.tasks, newTask as Task];
       }
 
-      const updatedMilestones = [...milestones];
+      const updatedMilestones = [...goal.milestones];
       updatedMilestones[milestoneIndex] = updatedMilestone;
-      setMilestones(updatedMilestones);
 
-      const updatedGoal = {
-        ...goal,
-        milestones: updatedMilestones,
-      };
-      onEdit();
+      const updatedGoal = await goalsApi.getById(goal.id, {
+        include_milestones: true,
+        include_tasks: true,
+        include_subtasks: true,
+        include_todos: true
+      });
+      updateGoal(updatedGoal);
       setIsCreatingTask(false);
       setSelectedMilestoneId(null);
     } catch (err) {
@@ -148,7 +141,7 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
     try {
       // Create events for milestones
       const events = await Promise.all(
-        milestones.map(milestone =>
+        goal.milestones.map(milestone =>
           eventsApi.create({
             title: milestone.title,
             description: milestone.description,
@@ -185,11 +178,19 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
 
   const handleMilestoneUpdate = async (milestoneId: string, data: Partial<Milestone>) => {
     try {
-      const updatedMilestone = await milestonesApi.update({
+      await milestonesApi.update({
         id: milestoneId,
         ...data
       });
-      updateMilestone(updatedMilestone);
+      
+      // Fetch updated goal data after updating milestone
+      const updatedGoal = await goalsApi.getById(goal.id, {
+        include_milestones: true,
+        include_tasks: true,
+        include_subtasks: true,
+        include_todos: true
+      });
+      updateGoal(updatedGoal);
     } catch (error) {
       console.error('Error updating milestone:', error);
     }
@@ -198,19 +199,27 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
   const handleMilestoneDelete = async (milestoneId: string) => {
     try {
       await milestonesApi.delete(milestoneId);
-      deleteMilestone(milestoneId);
+      
+      // Fetch updated goal data after deleting milestone
+      const updatedGoal = await goalsApi.getById(goal.id, {
+        include_milestones: true,
+        include_tasks: true,
+        include_subtasks: true,
+        include_todos: true
+      });
+      updateGoal(updatedGoal);
     } catch (error) {
       console.error('Error deleting milestone:', error);
     }
   };
 
   // Calculate progress based on completed milestones
-  const totalMilestones = milestones.length;
-  const completedMilestones = milestones.filter(m => m.status === StatusType.FINISHED).length;
+  const totalMilestones = goal.milestones?.length || 0;
+  const completedMilestones = goal.milestones?.filter(m => m.status === StatusType.FINISHED).length || 0;
   const progress = totalMilestones > 0 ? (completedMilestones / totalMilestones) * 100 : 0;
 
   // Group milestones by status
-  const groupedMilestones = milestones.reduce((acc, milestone) => {
+  const groupedMilestones = (goal.milestones || []).reduce((acc, milestone) => {
     const status = milestone.status;
     if (!acc[status]) {
       acc[status] = [];
@@ -237,7 +246,26 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
         <p className="font-medium">Error loading goal details</p>
         <p className="text-sm mt-1">{error}</p>
         <button
-          onClick={() => fetchMilestones(goal.id)}
+          onClick={() => {
+            const loadMilestones = async () => {
+              try {
+                setIsLoading(true);
+                const fullGoal = await goalsApi.getById(goal.id, {
+                  include_milestones: true,
+                  include_tasks: true,
+                  include_subtasks: true,
+                  include_todos: true
+                });
+                updateGoal(fullGoal);
+              } catch (error) {
+                console.error('Error loading milestones:', error);
+                setError('Failed to load milestones');
+              } finally {
+                setIsLoading(false);
+              }
+            };
+            loadMilestones();
+          }}
           className="mt-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
         >
           Try Again
