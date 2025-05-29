@@ -381,7 +381,7 @@ const GoalVisualization = () => {
         onClick={() => setActiveMilestone(activeMilestone === milestone.id ? null : milestone.id)}
         className="cursor-pointer"
       >
-        {/* Круг (всегда виден) */}
+
         <circle
           cx={x}
           cy={y}
@@ -392,7 +392,7 @@ const GoalVisualization = () => {
           className="transition-all duration-300"
         />
         
-        {/* Фон с анимацией (появляется при наведении) */}
+
         <rect
           x={x - width / 2}
           y={y - height / 2}
@@ -409,7 +409,6 @@ const GoalVisualization = () => {
           }}
         />
         
-        {/* Текст (появляется при наведении) */}
         <foreignObject
           x={x - width / 2 + padding}
           y={y - height / 2 + padding}
@@ -485,7 +484,7 @@ const GoalVisualization = () => {
           setActiveTodo(activeTodo === item.id ? null : item.id)}
         className="cursor-pointer"
       >
-        {/* Круг (всегда виден) */}
+
         <circle
           cx={x}
           cy={y}
@@ -496,7 +495,7 @@ const GoalVisualization = () => {
           className="transition-all duration-300"
         />
         
-        {/* Линия от родителя */}
+
         <path
           d={`M ${lineStartX},${lineStartY} 
               C ${controlPoint1.x},${controlPoint1.y} 
@@ -509,7 +508,7 @@ const GoalVisualization = () => {
           className="transition-all duration-300"
         />
         
-        {/* Фон с анимацией (появляется при наведении) */}
+
         <rect
           x={x - width / 2}
           y={y - height / 2}
@@ -526,7 +525,7 @@ const GoalVisualization = () => {
           }}
         />
         
-        {/* Текст (появляется при наведении) */}
+
         <foreignObject
           x={x - width / 2 + padding}
           y={y - height / 2 + padding}
@@ -582,7 +581,7 @@ const GoalVisualization = () => {
         onClick={() => setActiveTask(activeTask === task.id ? null : task.id)}
         className={`cursor-pointer transition-all duration-300 ${showDetails ? 'opacity-100' : 'opacity-50'}`}
       >
-        {/* Круг (всегда виден) */}
+
         <circle
           cx={x}
           cy={y}
@@ -593,7 +592,6 @@ const GoalVisualization = () => {
           className="transition-all duration-300"
         />
         
-        {/* Линия от вехи к задаче */}
         <path
           d={`M ${startX},${startY} 
               C ${controlPoint1.x},${controlPoint1.y} 
@@ -606,7 +604,6 @@ const GoalVisualization = () => {
           className="transition-all duration-300"
         />
         
-        {/* Фон с анимацией (появляется при наведении) */}
         <rect
           x={x - width / 2}
           y={y - height / 2}
@@ -623,7 +620,6 @@ const GoalVisualization = () => {
           }}
         />
         
-        {/* Текст (появляется при наведении) */}
         <foreignObject
           x={x - width / 2 + padding}
           y={y - height / 2 + padding}
@@ -642,7 +638,6 @@ const GoalVisualization = () => {
           </div>
         </foreignObject>
         
-        {/* Подзадачи и задачи */}
         {showDetails && (
           <>
             {task.subtasks?.map((subtask, index) => {

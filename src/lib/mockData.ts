@@ -9,7 +9,6 @@ export const simulatedApiGoals: Goal[] = [
     priority: PriorityType.HIGH,
     start_datetime: '2024-01-01T00:00:00Z',
     end_datetime: '2024-12-31T23:59:59Z',
-    user_id: 'user1',
     milestones: [
       {
         id: 'm1',
@@ -99,7 +98,6 @@ export const simulatedApiGoals: Goal[] = [
     priority: PriorityType.MEDIUM,
     start_datetime: '2023-11-01T00:00:00Z',
     end_datetime: '2024-01-31T23:59:59Z',
-    user_id: 'user1',
     milestones: [
       {
         id: 'm3',

@@ -346,6 +346,25 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
             )}
           </div>
           <div className="flex gap-2">
+            {editingField === 'status' ? (
+              <InlineSelect
+                value={goal.status}
+                options={Object.values(StatusType).map(status => ({
+                  value: status,
+                  label: status.replace('_', ' '),
+                }))}
+                onSave={(value) => handleGoalUpdate('status', value)}
+                onCancel={() => setEditingField(null)}
+                className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800"
+              />
+            ) : (
+              <span 
+                className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 cursor-pointer hover:bg-gray-200"
+                onClick={() => setEditingField('status')}
+              >
+                {goal.status}
+              </span>
+            )}
             {editingField === 'priority' ? (
               <InlineSelect
                 value={goal.priority}

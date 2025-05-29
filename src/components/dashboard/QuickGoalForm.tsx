@@ -29,8 +29,7 @@ export const QuickGoalForm: React.FC<QuickGoalFormProps> = ({ onSuccess, onCance
 
     try {
       const goalData = {
-        ...formData,
-        user_id: session?.user?.email || '',
+        ...formData
       };
 
       const goal = await goalsApi.create(goalData);

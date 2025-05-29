@@ -95,14 +95,14 @@ const Home = () => {
 
   const handleGoalSubmit = async (goalData: Partial<Goal>) => {
     try {
+      console.log(session);
       const newGoal = await goalsApi.create({
         title: goalData.title!,
         description: goalData.description!,
         status: goalData.status || StatusType.OUTSTANDING,
         priority: goalData.priority || PriorityType.HIGH,
         start_datetime: goalData.start_datetime,
-        end_datetime: goalData.end_datetime,
-        user_id: session?.user?.email || ''
+        end_datetime: goalData.end_datetime
       });
       addGoal(newGoal);
       setIsCreatingGoal(false);
