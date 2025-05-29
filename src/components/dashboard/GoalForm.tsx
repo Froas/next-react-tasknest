@@ -4,13 +4,22 @@ import { goalsApi } from '@/lib/api';
 import { useSession } from 'next-auth/react';
 
 interface GoalFormProps {
-  goal: Goal | null;
-  isEditMode: boolean;
-  onClose: () => void;
-  onSubmit: (goalData: Partial<Goal>) => Promise<void>;
+  goal?: Goal;
+  isEditMode?: boolean;
+  onClose?: () => void;
+  onSubmit?: (goalData: Partial<Goal>) => Promise<void>;
+  onSuccess?: (goalData: Partial<Goal>) => Promise<void>;
+  onCancel?: () => void;
 }
 
-export const GoalForm: React.FC<GoalFormProps> = ({ goal, isEditMode, onClose, onSubmit }) => {
+export const GoalForm: React.FC<GoalFormProps> = ({ 
+  goal, 
+  isEditMode, 
+  onClose, 
+  onSubmit,
+  onSuccess,
+  onCancel 
+}) => {
   const { data: session } = useSession();
   const [formData, setFormData] = useState({
     title: goal?.title || '',
@@ -37,7 +46,17 @@ export const GoalForm: React.FC<GoalFormProps> = ({ goal, isEditMode, onClose, o
         user_id: session?.user?.email || '',
       };
 
-      await onSubmit(goalData);
+      if (onSubmit) {
+        await onSubmit(goalData);
+      } else if (onSuccess) {
+        await onSuccess(goalData);
+      }
+      
+      if (onClose) {
+        onClose();
+      } else if (onCancel) {
+        onCancel();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save goal');
     } finally {
