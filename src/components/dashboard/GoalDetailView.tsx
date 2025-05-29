@@ -61,7 +61,6 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
       try {
         setIsLoading(true);
         await fetchMilestones(goal.id);
-        setMilestones(storeMilestones);
       } catch (error) {
         console.error('Error loading milestones:', error);
         setError('Failed to load milestones');
@@ -70,7 +69,12 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
       }
     };
     loadMilestones();
-  }, [goal.id, fetchMilestones, storeMilestones]);
+  }, [goal.id, fetchMilestones]);
+
+  // Add separate effect to update local state when store changes
+  useEffect(() => {
+    setMilestones(storeMilestones);
+  }, [storeMilestones]);
 
   // Add new useEffect for handling task creation
   useEffect(() => {
@@ -538,6 +542,7 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
               {milestones.map((milestone) => (
                 <MilestoneCard
                   key={milestone.id}
+                  goalId={goal.id}
                   milestone={milestone}
                   onUpdate={(data) => handleMilestoneUpdate(milestone.id, data)}
                   onDelete={() => handleMilestoneDelete(milestone.id)}
