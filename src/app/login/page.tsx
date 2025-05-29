@@ -51,6 +51,7 @@ const SignIn = () => {
     if (result?.error) {
       setErrorMessage("Ошибка при входе. Проверьте свои данные.");
     } else {
+      // console.log(result)
       router.push("/");
     }
   };
