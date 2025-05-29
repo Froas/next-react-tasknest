@@ -76,7 +76,14 @@ export interface MilestoneItem extends BaseEntity {
 }
 
 // Goal type
-export interface GoalItem extends GoalEntity {
+export interface GoalItem {
+  id: string;
+  title: string;
+  description: string;
+  status: StatusType;
+  priority: PriorityType;
+  start_datetime?: string;
+  end_datetime?: string;
   user_id: string;
   milestones: MilestoneItem[];
 }
