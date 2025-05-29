@@ -16,15 +16,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onGoalUpdate,
   onCreateGoal,
 }) => {
+  // Берём данные из Zustand
   const { goals, isLoadingGoals, goalsError, fetchGoals } = useStore();
 
   const totalGoals = goals.length;
-  const completedGoals = goals.filter((g) => g.status === StatusType.FINISHED).length;
+  const completedGoals = goals.filter((g: Goal) => g.status === StatusType.FINISHED).length;
   const overallProgress = totalGoals > 0 ? (completedGoals / totalGoals) * 100 : 0;
 
   // Get active goals (not completed or cancelled)
   const activeGoals = goals.filter(
-    goal => goal.status !== StatusType.FINISHED && goal.status !== StatusType.CANCELLED
+    (goal: Goal) => goal.status !== StatusType.FINISHED && goal.status !== StatusType.CANCELLED
   );
 
   if (isLoadingGoals) {
@@ -112,7 +113,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="space-y-6">
         <h3 className="text-xl font-semibold mb-4">Active Goals</h3>
         {activeGoals.length > 0 ? (
-          activeGoals.map(goal => (
+          activeGoals.map((goal: Goal) => (
             <GoalCard
               key={goal.id}
               goal={goal}
