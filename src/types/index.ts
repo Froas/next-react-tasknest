@@ -64,7 +64,6 @@ export interface Goal {
   priority: PriorityType;
   due_date?: string;
   end_datetime?: string;
-  user_id: string;
   milestones: Milestone[];
   created_at: string;
   updated_at: string;

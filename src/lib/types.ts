@@ -26,7 +26,6 @@ export interface BaseEntity {
   priority: PriorityType;
 }
 
-
 export interface GoalEntity {
   id: string;
   title: string;
@@ -34,6 +33,7 @@ export interface GoalEntity {
   start_datetime?: string;
   end_datetime?: string;
   priority: PriorityType;
+  status: StatusType;
 }
 
 // Task related types
@@ -76,15 +76,8 @@ export interface MilestoneItem extends BaseEntity {
 }
 
 // Goal type
-export interface GoalItem {
-  id: string;
-  title: string;
-  description: string;
-  status: StatusType;
-  priority: PriorityType;
-  start_datetime?: string;
-  end_datetime?: string;
-  user_id: string;
+export interface GoalItem extends BaseEntity {
+
   milestones: MilestoneItem[];
 }
 

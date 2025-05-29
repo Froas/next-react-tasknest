@@ -25,9 +25,15 @@ export const GoalForm: React.FC<GoalFormProps> = ({
   const [formData, setFormData] = useState({
     title: goal?.title || '',
     description: goal?.description || '',
+    status: goal?.status || StatusType.OUTSTANDING,
     priority: goal?.priority || PriorityType.MEDIUM,
-    start_datetime: goal?.start_datetime ? new Date(goal.start_datetime).toISOString().split('T')[0] : today,
-    end_datetime: goal?.end_datetime ? new Date(goal.end_datetime).toISOString().split('T')[0] : today,
+    start_datetime: goal?.start_datetime
+      ? new Date(goal.start_datetime).toISOString()
+      : today,
+
+    end_datetime: goal?.end_datetime
+      ? new Date(goal.end_datetime).toISOString()
+      : today,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,8 +48,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
       const goalData = {
         ...formData,
         start_datetime: formData.start_datetime ? new Date(formData.start_datetime).toISOString() : undefined,
-        end_datetime: formData.end_datetime ? new Date(formData.end_datetime).toISOString() : undefined,
-        user_id: session?.user?.email || '',
+        end_datetime: formData.end_datetime ? new Date(formData.end_datetime).toISOString() : undefined
       };
       if (onSubmit) {
         await onSubmit(goalData);
@@ -106,6 +111,25 @@ export const GoalForm: React.FC<GoalFormProps> = ({
       </div>
 
       <div className="grid grid-cols-2 gap-4">
+         <div>
+          <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+            Status
+          </label>
+          <select
+            id="status"
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+          >
+            {Object.values(StatusType).map(status => (
+              <option key={status} value={status}>
+                {status.replace('_', ' ')}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div>
           <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-1">
             Priority
