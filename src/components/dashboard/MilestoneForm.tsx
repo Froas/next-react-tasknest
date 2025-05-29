@@ -15,12 +15,13 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({
   onCancel,
   initialData,
 }) => {
+  const today = new Date().toISOString().split('T')[0];
   const [formData, setFormData] = useState({
     title: initialData?.title || '',
     description: initialData?.description || '',
     status: initialData?.status || StatusType.OUTSTANDING,
-    due_date: initialData?.due_date ? new Date(initialData.due_date).toISOString().split('T')[0] : '',
-    end_datetime: initialData?.end_datetime ? new Date(initialData.end_datetime).toISOString().split('T')[0] + 'T18:00:00' : '',
+    due_date: initialData?.due_date ? new Date(initialData.due_date).toISOString().split('T')[0] : today,
+    end_datetime: initialData?.end_datetime ? new Date(initialData.end_datetime).toISOString().split('T')[0]  : today,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -92,8 +93,7 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
+      <div>
           <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
             Status
           </label>
@@ -110,7 +110,9 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({
               </option>
             ))}
           </select>
-        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        
 
         <div>
           <label htmlFor="due_date" className="block text-sm font-medium text-gray-700 mb-1">
@@ -125,20 +127,20 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
           />
         </div>
-      </div>
 
-      <div>
-        <label htmlFor="end_datetime" className="block text-sm font-medium text-gray-700 mb-1">
-          End Time
-        </label>
-        <input
-          type="datetime-local"
-          id="end_datetime"
-          name="end_datetime"
-          value={formData.end_datetime}
-          onChange={handleChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
-        />
+        <div>
+          <label htmlFor="end_datetime" className="block text-sm font-medium text-gray-700 mb-1">
+            End Time
+          </label>
+          <input
+            type="date"
+            id="end_datetime"
+            name="end_datetime"
+            value={formData.end_datetime}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+          />
+      </div>
       </div>
 
       <div className="flex justify-end space-x-3 pt-4">

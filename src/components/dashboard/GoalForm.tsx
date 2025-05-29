@@ -21,13 +21,14 @@ export const GoalForm: React.FC<GoalFormProps> = ({
   onCancel 
 }) => {
   const { data: session } = useSession();
+  const today = new Date().toISOString().split('T')[0];
   const [formData, setFormData] = useState({
     title: goal?.title || '',
     description: goal?.description || '',
     status: goal?.status || StatusType.OUTSTANDING,
     priority: goal?.priority || PriorityType.MEDIUM,
-    start_datetime: goal?.start_datetime ? new Date(goal.start_datetime).toISOString().split('T')[0] : '',
-    end_datetime: goal?.end_datetime ? new Date(goal.end_datetime).toISOString().split('T')[0] : '',
+    start_datetime: goal?.start_datetime ? new Date(goal.start_datetime).toISOString().split('T')[0] : today,
+    end_datetime: goal?.end_datetime ? new Date(goal.end_datetime).toISOString().split('T')[0] : today,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,7 +46,6 @@ export const GoalForm: React.FC<GoalFormProps> = ({
         end_datetime: formData.end_datetime ? new Date(formData.end_datetime).toISOString() : undefined,
         user_id: session?.user?.email || '',
       };
-
       if (onSubmit) {
         await onSubmit(goalData);
       } else if (onSuccess) {
