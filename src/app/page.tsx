@@ -18,8 +18,10 @@ import { QuickGoalForm } from '@/components/dashboard/QuickGoalForm';
 import { useStore } from '@/store/useStore';
 import { useRouter } from 'next/navigation';
 import { StatusType, PriorityType } from '@/types';
+import { useSession } from 'next-auth/react';
 
 const Home = () => {
+  const { data: session } = useSession();
   const router = useRouter();
   
   // View States
@@ -77,10 +79,7 @@ const Home = () => {
   };
 
   const handleAddGoal = () => {
-    setSelectedGoalId(null);
-    setIsEditMode(false);
-    setIsFormOpen(true);
-    setCurrentView('form');
+    setIsCreatingGoal(true);
   };
 
   const handleEditGoal = () => {
@@ -96,40 +95,26 @@ const Home = () => {
 
   const handleGoalSubmit = async (goalData: Partial<Goal>) => {
     try {
-      if (isEditMode && selectedGoalId) {
-        const updatedGoal = await goalsApi.update({
-          id: selectedGoalId,
-          ...goalData
-        });
-        updateGoal(updatedGoal);
-      } else {
-        const { id, milestones, ...createData } = goalData;
-        if (!createData.title || !createData.description || !createData.user_id) {
-          throw new Error('Missing required fields');
-        }
-        const newGoal = await goalsApi.create({
-          title: createData.title,
-          description: createData.description,
-          user_id: createData.user_id,
-          priority: createData.priority || PriorityType.MEDIUM,
-          start_datetime: createData.start_datetime,
-          end_datetime: createData.end_datetime
-        });
-        addGoal(newGoal);
-      }
-      handleFormClose();
+      const newGoal = await goalsApi.create({
+        title: goalData.title!,
+        description: goalData.description!,
+        status: goalData.status || StatusType.OUTSTANDING,
+        priority: goalData.priority || PriorityType.HIGH,
+        start_datetime: goalData.start_datetime,
+        end_datetime: goalData.end_datetime,
+        user_id: session?.user?.email || ''
+      });
+      addGoal(newGoal);
+      setIsCreatingGoal(false);
     } catch (error) {
       console.error('Error saving goal:', error);
     }
   };
 
-  const handleCreateMilestone = async (newMilestone: Milestone) => {
+  const handleCreateMilestone = async (milestoneData: Omit<Milestone, 'id' | 'tasks' | 'todos'>) => {
     if (!selectedGoalId) return;
     try {
-      const createdMilestone = await milestonesApi.create({
-        ...newMilestone,
-        goal_id: selectedGoalId
-      });
+      const createdMilestone = await milestonesApi.create(milestoneData);
       const updatedGoal = await goalsApi.getById(selectedGoalId);
       updateGoal(updatedGoal);
       setIsCreatingMilestone(false);
