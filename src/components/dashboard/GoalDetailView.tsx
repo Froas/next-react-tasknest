@@ -85,19 +85,18 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
 
   const handleCreateMilestone = async (milestoneData: Partial<Milestone>) => {
     try {
-      const { title, description, status, priority, due_date } = milestoneData;
-      if (!title || !description || !status || !priority) {
-        throw new Error('Missing required fields');
-      }
       const newMilestone = await milestonesApi.create({
-        title,
-        description,
-        status,
-        priority,
-        due_date,
+        title: milestoneData.title!,
+        description: milestoneData.description!,
+        status: milestoneData.status || StatusType.OUTSTANDING,
+        priority: milestoneData.priority || PriorityType.MEDIUM,
+        due_date: milestoneData.due_date,
+        end_datetime: milestoneData.end_datetime,
         goal_id: goal.id,
         position: storeMilestones.length
       });
+      
+      // Update store after successful API call
       addMilestone(newMilestone);
       setIsCreatingMilestone(false);
     } catch (error) {
