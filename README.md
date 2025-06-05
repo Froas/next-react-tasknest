@@ -53,6 +53,9 @@ ALGORITHM=
 NEXTAUTH_URL=
 GOOGLE_CALENDAR_API_KEY=
 TELEGRAM_BOT_TOKEN=
+GOOGLE_CLIENT_ID=
+SCOPE=
+REDIRECT_URL=
 ```
 
 > Replace placeholders with real credentials for your environment and integrations.
