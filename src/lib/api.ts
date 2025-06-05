@@ -99,10 +99,10 @@ export const usersApi = {
     if (!response.ok) throw new Error('Failed to fetch current user');
     return response.json();
   },
-
+  
   saveGoogleCalendar: async (googleCalendarData: any): Promise<{ message: string }> => {
     const headers = await getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/google-calendar`, {
+    const response = await fetch(`${API_BASE_URL}/calendars/google-calendar/token`, {
       method: 'POST',
       headers,
       body: JSON.stringify(googleCalendarData),

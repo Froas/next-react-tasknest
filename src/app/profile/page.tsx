@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { usersApi } from "@/lib/api";
+import { redirect } from "next/dist/server/api-utils";
 
 const ProfilePage = () => {
   const { data: session } = useSession();
@@ -57,20 +58,15 @@ const ProfilePage = () => {
   };
 
   const handleGoogleCalendar = async () => {
-    setMessage("");
-    try {
-
-      const res = await usersApi.saveGoogleCalendar({
-        google_user_id: "test_id",
-        access_token: "test_access_token",
-        refresh_token: "test_refresh_token",
-        expires_at: Date.now() + 3600 * 1000,
-      });
-      setMessage(res.message || "Google Calendar integrated!");
-    } catch (e) {
-      setMessage("Failed to integrate Google Calendar");
-    }
-  };
+  const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+    `client_id=${process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}` +
+    `&redirect_uri=${process.env.NEXT_PUBLIC_REDIRECT_URL}` +
+    `&response_type=code` +
+    `&scope=${process.env.NEXT_PUBLIC_SCOPE}` +
+    `&access_type=offline` +
+    `&prompt=consent`;
+  window.location.href = googleAuthUrl;
+};
 
   // Minimalist field renderer
   const renderField = (label: string, value: string, field: string, editable = true) => (
