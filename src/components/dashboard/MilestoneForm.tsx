@@ -22,6 +22,7 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({
     status: initialData?.status || StatusType.OUTSTANDING,
     due_date: initialData?.due_date ? new Date(initialData.due_date).toISOString().split('T')[0] : today,
     end_datetime: initialData?.end_datetime ? new Date(initialData.end_datetime).toISOString().split('T')[0]  : today,
+    priority: initialData?.priority || PriorityType.MEDIUM,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
