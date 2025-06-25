@@ -5,13 +5,13 @@ import { tasksApi } from '@/lib/api';
 interface TaskFormProps {
   goalId: string;
   milestoneId: string;
-  onSuccess: (task: Task) => void;
+  onSuccess: (task: Task, goalId: string, milestoneId: string) => void;
   onCancel: () => void;
   initialData?: Partial<Task>;
 }
 
 export const TaskForm: React.FC<TaskFormProps> = ({
-  goalId,
+  goalId, // Keep goalId for context, even if passed back in onSuccess
   milestoneId,
   onSuccess,
   onCancel,
@@ -51,11 +51,17 @@ export const TaskForm: React.FC<TaskFormProps> = ({
 
       let task: Task;
       if (initialData?.id) {
+        // For updates, the existing store update mechanism might be sufficient,
+        // or a specific update action could be called.
+        // For now, focusing on creation, so we assume onSuccess handles updates if necessary.
         task = await tasksApi.update({ ...taskData, id: initialData.id } as Partial<Task> & { id: string });
+        // If optimistic update for edits is needed, this would also change.
+        // For now, assuming existing behavior for updates is fine or will be handled by a full refresh.
+        onSuccess(task, goalId, milestoneId); // Pass IDs for updates too if handler expects it
       } else {
         task = await tasksApi.create(taskData);
+        onSuccess(task, goalId, milestoneId); // Pass goalId and milestoneId for optimistic update
       }
-      onSuccess(task);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save task');
     } finally {

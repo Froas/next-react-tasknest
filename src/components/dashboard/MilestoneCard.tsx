@@ -28,7 +28,17 @@ interface MilestoneCardProps {
 
 export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, onSelectMilestone, onAddTask }: MilestoneCardProps) {
   // Store integration
-  const { addTask, updateTask, deleteTask } = useStore();
+  const {
+    addTask,
+    updateTask,
+    deleteTask,
+    // Import new actions for optimistic updates for todos and subtasks
+    addTodoToTaskInMilestoneInGoal,
+    addSubtaskToTaskInMilestoneInGoal,
+    // addTaskToMilestoneInGoal will be used if tasks are created directly from here
+    // and not via GoalDetailView's TaskForm
+    addTaskToMilestoneInGoal
+  } = useStore();
 
   // UI State
   const [isExpanded, setIsExpanded] = useState(false);
@@ -49,94 +59,72 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
   const [currentMilestone, setCurrentMilestone] = useState<Milestone>(milestone);
 
   // Initialize tasks and todos with empty arrays if undefined
-  const tasks = currentMilestone.tasks || [];
-  const todos = currentMilestone.todos || [];
+  // These will now primarily be driven by the store-updated milestone prop for consistency
+  // const tasks = currentMilestone.tasks || [];
+  // const todos = currentMilestone.todos || [];
 
   useEffect(() => {
     setCurrentMilestone(milestone);
   }, [milestone]);
 
-  const handleCreateTask = async (taskData: Partial<Task>) => {
+  // This is the new onSuccess handler for the TaskForm invoked from MilestoneCard
+  const handleTaskFormSuccess = (newTask: Task, taskGoalId: string, taskMilestoneId: string) => {
     try {
-      const { title, description, status, priority, due_date, start_datetime, end_datetime } = taskData;
-      if (!title || !description) {
-        throw new Error('Missing required fields');
-      }
-      const newTask = await tasksApi.create({
-        title,
-        description,
-        status: status || StatusType.OUTSTANDING,
-        priority: priority || PriorityType.MEDIUM,
-        due_date,
-        start_datetime,
-        end_datetime,
-        milestone_id: milestone.id,
-        todos: [],
-        subtasks: []
-      });
-      
-      // Refresh milestone data to get updated tasks
-      const updatedMilestone = await milestonesApi.getById(milestone.id, true, true, true);
-      setCurrentMilestone(updatedMilestone);
-      onUpdate(updatedMilestone);
-      
-      // Обязательно закрываем форму после успешного создания
+      addTaskToMilestoneInGoal(newTask, taskMilestoneId, taskGoalId);
       setIsCreatingTask(false);
+      // Optionally, trigger a background refresh of the milestone itself if needed
+      // milestonesApi.getById(taskMilestoneId, true, true, true).then(updatedM => {
+      //   setCurrentMilestone(updatedM); // Update local state if still used directly
+      //   onUpdate(updatedM); // Propagate to parent if necessary
+      // });
     } catch (error) {
-      console.error('Error creating task:', error);
+      console.error('Error optimistically adding task from MilestoneCard:', error);
+      // Handle error (e.g., show a notification)
     }
   };
 
-  const handleCreateTodo = async (todoData: Partial<Todo>) => {
-    if (!selectedTask) return;
+  const handleCreateTodo = (newTodo: Todo, newTodoGoalId: string, newTodoMilestoneId: string, newTodoTaskId: string) => {
+    if (!selectedTask || selectedTask.id !== newTodoTaskId) {
+      console.error("Selected task mismatch or not found for creating todo");
+      return;
+    }
     try {
-      const todoToCreate: Omit<Todo, 'id'> = {
-        title: todoData.title!,
-        description: todoData.description!,
-        status: todoData.status || StatusType.OUTSTANDING,
-        priority: todoData.priority || PriorityType.MEDIUM,
-        task_id: selectedTask.id,
-        due_date: todoData.due_date,
-        next_due_date: todoData.next_due_date,
-        repeat_interval: todoData.repeat_interval,
-        start_datetime: todoData.start_datetime,
-        end_datetime: todoData.end_datetime
-      };
-      const createdTodo = await todosApi.create(todoToCreate);
-      const updatedTask = await tasksApi.get(selectedTask.id, true, true);
-      updateTask(updatedTask);
+      addTodoToTaskInMilestoneInGoal(newTodo, newTodoTaskId, newTodoMilestoneId, newTodoGoalId);
       setIsCreatingTodo(false);
       setSelectedTask(null);
+      // The optimistic update should handle UI change.
+      // Full refresh of task or milestone can be a secondary background effect if needed.
+      // e.g., tasksApi.get(newTodoTaskId, true, true).then(updatedT => updateTask(updatedT));
     } catch (error) {
-      console.error('Error creating todo:', error);
+      console.error('Error optimistically adding todo:', error);
+      // Potentially set an error state to show in the UI
     }
   };
 
-  const handleCreateSubtask = async (subtaskData: Partial<Task>) => {
-    if (!selectedTask) return;
+  const handleCreateSubtask = (newSubtask: Task, newSubtaskGoalId: string, newSubtaskMilestoneId: string, newSubtaskParentTaskId: string) => {
+    // Note: The Subtask type might be different from Task (e.g. SubtaskItem)
+    // Assuming SubtaskForm sends a Subtask-like object that fits what addSubtaskToTaskInMilestoneInGoal expects.
+    // The Subtask type in types.ts is SubtaskItem which is based on TaskBase.
+    // tasksApi.create was used for subtasks before, implying they are structurally similar to tasks.
+    if (!selectedTask || selectedTask.id !== newSubtaskParentTaskId) {
+      console.error("Selected task mismatch or not found for creating subtask");
+      return;
+    }
     try {
-      const subtaskToCreate: Omit<Task, 'id'> = {
-        title: subtaskData.title!,
-        description: subtaskData.description!,
-        status: subtaskData.status || StatusType.OUTSTANDING,
-        priority: subtaskData.priority || PriorityType.MEDIUM,
-        milestone_id: selectedTask.milestone_id,
-        parent_id: selectedTask.id,
-        todos: [],
-        subtasks: [],
-        start_datetime: subtaskData.start_datetime,
-        end_datetime: subtaskData.end_datetime,
-        due_date: subtaskData.due_date
-      };
-      const createdSubtask = await tasksApi.create(subtaskToCreate);
-      const updatedTask = await tasksApi.get(selectedTask.id, true, true);
-      updateTask(updatedTask);
+      // We need to ensure `newSubtask` is compatible with the `Subtask` type expected by the store.
+      // If SubtaskForm provides a `Task` object, we might need to adapt it or ensure the store action handles it.
+      // For now, assuming the structure is compatible enough.
+      addSubtaskToTaskInMilestoneInGoal(newSubtask as any, newSubtaskParentTaskId, newSubtaskMilestoneId, newSubtaskGoalId);
       setIsCreatingSubtask(false);
       setSelectedTask(null);
+      // Optimistic update handles UI. Background refresh if needed:
+      // e.g., tasksApi.get(newSubtaskParentTaskId, true, true).then(updatedT => updateTask(updatedT));
     } catch (error) {
-      console.error('Error creating subtask:', error);
+      console.error('Error optimistically adding subtask:', error);
+      // Potentially set an error state
     }
   };
+
 
   const handleTaskUpdate = async (taskId: string, taskData: Partial<Task>) => {
     try {
@@ -507,9 +495,9 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-semibold mb-4">Create New Task</h3>
             <TaskForm
-              goalId={goalId}
-              milestoneId={milestone.id}
-              onSuccess={handleCreateTask}
+              goalId={goalId} // Pass goalId
+              milestoneId={milestone.id} // Pass milestoneId
+              onSuccess={handleTaskFormSuccess} // Use the new handler
               onCancel={() => setIsCreatingTask(false)}
             />
           </div>
@@ -521,8 +509,10 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-semibold mb-4">Create New Todo</h3>
             <TodoForm
+              goalId={goalId}
+              milestoneId={milestone.id}
               taskId={selectedTask.id}
-              onSuccess={handleCreateTodo}
+              onSuccess={handleCreateTodo} // This now expects (todo, goalId, milestoneId, taskId)
               onCancel={() => {
                 setIsCreatingTodo(false);
                 setSelectedTask(null);
@@ -537,8 +527,10 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-semibold mb-4">Create New Subtask</h3>
             <SubtaskForm
+              goalId={goalId}
+              milestoneId={milestone.id}
               taskId={selectedTask.id}
-              onSuccess={handleCreateSubtask}
+              onSuccess={handleCreateSubtask} // This now expects (subtask, goalId, milestoneId, taskId)
               onCancel={() => {
                 setIsCreatingSubtask(false);
                 setSelectedTask(null);

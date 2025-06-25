@@ -69,6 +69,10 @@ const Home = () => {
     addGoal,
     updateGoal,
     deleteGoal: deleteGoalFromStore,
+    // Add new store actions for optimistic updates
+    addTaskToMilestoneInGoal,
+    addTodoToTaskInMilestoneInGoal,
+    addSubtaskToTaskInMilestoneInGoal,
   } = useStore();
 
   useEffect(() => {
@@ -135,90 +139,58 @@ const Home = () => {
     }
   };
 
-  const handleCreateTask = async (taskData: Partial<Task>) => {
-    if (!selectedMilestoneId) return;
+  // Updated to use optimistic store action
+  const handleCreateTask = (newTask: Task, goalId: string, milestoneId: string) => {
+    if (!milestoneId || !goalId) {
+      console.error("Milestone ID or Goal ID is missing for task creation through QuickActions.");
+      return;
+    }
     try {
-      const taskToCreate: Omit<Task, 'id'> = {
-        title: taskData.title!,
-        description: taskData.description!,
-        status: taskData.status || StatusType.OUTSTANDING,
-        priority: taskData.priority || PriorityType.MEDIUM,
-        due_date: taskData.due_date,
-        start_datetime: taskData.start_datetime,
-        end_datetime: taskData.end_datetime,
-        milestone_id: selectedMilestoneId,
-        todos: [],
-        subtasks: []
-      };
-      const createdTask = await tasksApi.create(taskToCreate);
-      
-      // Получаем полные данные о goal с включенными milestones, tasks, subtasks и todos
-      const updatedGoal = await goalsApi.getById(selectedGoalId!, {
-        include_milestones: true,
-        include_tasks: true,
-        include_subtasks: true,
-        include_todos: true
-      });
-      
-      // Обновляем goal в store
-      updateGoal(updatedGoal);
-      
-      // Закрываем форму и сбрасываем выбранный milestone
+      addTaskToMilestoneInGoal(newTask, milestoneId, goalId);
       setShowTaskForm(false);
-      setSelectedMilestone(null);
+      setSelectedMilestoneId(null); // Reset selectedMilestoneId
+      setPendingAction(null); // Reset pending action
+      // setSelectedMilestone(null); // This state was also used, ensure consistency if needed
     } catch (error) {
-      console.error('Failed to create task:', error);
+      console.error('Failed to optimistically create task via QuickActions:', error);
+      // Potentially set an error state for UI feedback
     }
   };
 
-  const handleCreateTodo = async (todoData: Partial<Todo>) => {
-    if (!selectedTask) return;
+  // Updated to use optimistic store action
+  const handleCreateTodo = (newTodo: Todo, goalId: string, milestoneId: string, taskId: string) => {
+    if (!taskId || !milestoneId || !goalId) {
+      console.error("Task ID, Milestone ID, or Goal ID is missing for todo creation through QuickActions.");
+      return;
+    }
     try {
-      const todoToCreate: Omit<Todo, 'id'> = {
-        title: todoData.title!,
-        description: todoData.description!,
-        status: todoData.status || StatusType.OUTSTANDING,
-        priority: todoData.priority || PriorityType.MEDIUM,
-        due_date: todoData.due_date,
-        start_datetime: todoData.start_datetime,
-        end_datetime: todoData.end_datetime,
-        repeat_interval: todoData.repeat_interval,
-        next_due_date: todoData.next_due_date,
-        task_id: selectedTask.id
-      };
-      const createdTodo = await todosApi.create(todoToCreate);
-      const updatedGoal = await goalsApi.getById(selectedGoalId!);
-      updateGoal(updatedGoal);
+      addTodoToTaskInMilestoneInGoal(newTodo, taskId, milestoneId, goalId);
       setShowTodoForm(false);
-      setSelectedTask(null);
+      setSelectedTaskId(null); // Reset selectedTaskId
+      setSelectedTask(null); // Reset selectedTask object
+      setPendingAction(null); // Reset pending action
     } catch (error) {
-      console.error('Failed to create todo:', error);
+      console.error('Failed to optimistically create todo via QuickActions:', error);
+      // Potentially set an error state for UI feedback
     }
   };
 
-  const handleCreateSubtask = async (subtaskData: Partial<Task>) => {
-    if (!selectedTask) return;
+  // Updated to use optimistic store action
+  const handleCreateSubtask = (newSubtask: Subtask, goalId: string, milestoneId: string, taskId: string) => {
+    if (!taskId || !milestoneId || !goalId) {
+      console.error("Task ID, Milestone ID, or Goal ID is missing for subtask creation through QuickActions.");
+      return;
+    }
     try {
-      const subtaskToCreate: Omit<Task, 'id'> = {
-        title: subtaskData.title!,
-        description: subtaskData.description!,
-        status: subtaskData.status || StatusType.OUTSTANDING,
-        priority: subtaskData.priority || PriorityType.MEDIUM,
-        due_date: subtaskData.due_date,
-        start_datetime: subtaskData.start_datetime,
-        end_datetime: subtaskData.end_datetime,
-        milestone_id: selectedTask.milestone_id,
-        parent_id: selectedTask.id,
-        todos: [],
-        subtasks: []
-      };
-      const createdSubtask = await tasksApi.create(subtaskToCreate);
-      const updatedGoal = await goalsApi.getById(selectedGoalId!);
-      updateGoal(updatedGoal);
+      // Ensure newSubtask is of the correct type for the store action if SubtaskItem is different from Task
+      addSubtaskToTaskInMilestoneInGoal(newSubtask, taskId, milestoneId, goalId);
       setShowSubtaskForm(false);
-      setSelectedTask(null);
+      setSelectedTaskId(null); // Reset selectedTaskId
+      setSelectedTask(null); // Reset selectedTask object
+      setPendingAction(null); // Reset pending action
     } catch (error) {
-      console.error('Failed to create subtask:', error);
+      console.error('Failed to optimistically create subtask via QuickActions:', error);
+      // Potentially set an error state for UI feedback
     }
   };
 
@@ -531,27 +503,35 @@ const Home = () => {
             <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-semibold mb-4">Create New Todo</h3>
               <TodoForm
+                goalId={selectedGoal!.id} // selectedGoal should be non-null if selectedTask is set
+                milestoneId={selectedTask.milestone_id!} // selectedTask should have milestone_id
                 taskId={selectedTask.id}
                 onSuccess={handleCreateTodo}
                 onCancel={() => {
                   setShowTodoForm(false);
                   setSelectedTask(null);
+                  setSelectedTaskId(null);
+                  setPendingAction(null);
                 }}
               />
             </div>
           </div>
         )}
 
-        {showSubtaskForm && selectedTask && (
+        {showSubtaskForm && selectedTask && selectedGoal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-semibold mb-4">Create New Subtask</h3>
               <SubtaskForm
+                goalId={selectedGoal!.id} // selectedGoal should be non-null
+                milestoneId={selectedTask.milestone_id!} // selectedTask should have milestone_id
                 taskId={selectedTask.id}
                 onSuccess={handleCreateSubtask}
                 onCancel={() => {
                   setShowSubtaskForm(false);
                   setSelectedTask(null);
+                  setSelectedTaskId(null);
+                  setPendingAction(null);
                 }}
               />
             </div>

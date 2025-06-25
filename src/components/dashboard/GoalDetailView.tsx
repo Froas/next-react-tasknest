@@ -11,6 +11,8 @@ import { InlineSelect } from './InlineSelect';
 import { InlineDate } from './InlineDate';
 import { useStore } from '@/store/useStore';
 import { formatDate } from '@/lib/utils';
+// Import the new store action
+// import { addTaskToMilestoneInGoal } from '@/store/useStore'; // Actions are part of useStore hook
 
 interface GoalDetailViewProps {
   goal: Goal;
@@ -46,7 +48,7 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
   const [showDeleteGoalConfirm, setShowDeleteGoalConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const { updateGoal } = useStore();
+  const { updateGoal, addTaskToMilestoneInGoal } = useStore();
 
   useEffect(() => {
     const loadGoalDetails = async () => {
@@ -168,23 +170,31 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
     }
   };
 
-  const handleCreateTask = async (newTask: Task | Todo) => {
-    try {
-      // Refresh the goal data from the server to get the latest state
-      const refreshedGoal = await goalsApi.getById(goal.id, {
-        include_milestones: true,
-        include_tasks: true,
-        include_subtasks: true,
-        include_todos: true
-      });
-      
-      updateGoal(refreshedGoal);
-      setIsCreatingTask(false);
-      setSelectedMilestoneId(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create task');
+  const handleCreateTask = (newTask: Task, goalId: string, milestoneId: string) => {
+    // Type guard to ensure newTask is Task, not Todo, if necessary.
+    // For now, assuming TaskForm only sends Task.
+    if ('milestone_id' in newTask && 'todos' in newTask && 'subtasks' in newTask) {
+      try {
+        addTaskToMilestoneInGoal(newTask, milestoneId, goalId);
+        setIsCreatingTask(false);
+        setSelectedMilestoneId(null);
+        // Optionally, trigger a background refresh if still desired for absolute consistency
+        // For example: goalsApi.getById(goalId, { include_milestones: true, ... }).then(updatedG => updateGoal(updatedG));
+      } catch (err) {
+        // This catch might not be effective if addTaskToMilestoneInGoal is purely synchronous
+        // and doesn't throw. Error handling for store updates might need a different approach
+        // if the update itself could fail in a way that needs user feedback.
+        // For now, assuming store update is robust.
+        console.error('Error optimistically adding task to store:', err);
+        setError(err instanceof Error ? err.message : 'Failed to update task list');
+      }
+    } else {
+      console.warn("handleCreateTask received an item that is not a Task:", newTask);
+      // Fallback or error for unexpected type
+      setError('Received unexpected item type during task creation.');
     }
   };
+
 
   // Calculate progress based on completed milestones
   const totalMilestones = goal.milestones?.length || 0;
