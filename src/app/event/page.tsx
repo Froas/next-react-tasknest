@@ -11,4 +11,4 @@ const Event = () => {
     )
 }
 
-export default withAuth(Event);
+export default Event;

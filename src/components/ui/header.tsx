@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { signOut, useSession } from 'next-auth/react';
+import { signOut } from 'next-auth/react';
+import { useAppSession } from '../../app/clientwrapper';
 import { Button } from './button';
 
 const Header = () => {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const session = useAppSession();
 
   const isActive = (path: string) => pathname === path;
 

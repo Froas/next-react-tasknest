@@ -20,11 +20,15 @@ export const TodoForm: React.FC<TodoFormProps> = ({
     description: initialData?.description || '',
     status: initialData?.status || StatusType.OUTSTANDING,
     priority: initialData?.priority || PriorityType.MEDIUM,
-    due_date: initialData?.due_date ? new Date(initialData.due_date).toISOString().split('T')[0] : '',
-    start_datetime: initialData?.start_datetime ? new Date(initialData.start_datetime).toISOString().split('T')[0] + 'T09:00:00' : '',
-    end_datetime: initialData?.end_datetime ? new Date(initialData.end_datetime).toISOString().split('T')[0] + 'T16:00:00' : '',
+    due_date: initialData?.due_date ? new Date(initialData.due_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+    start_datetime: initialData?.start_datetime ? new Date(initialData.start_datetime).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
+    end_datetime: initialData?.end_datetime ? new Date(initialData.end_datetime).toISOString().slice(0, 16) : (() => {
+      const endDate = new Date();
+      endDate.setHours(endDate.getHours() + 1);
+      return endDate.toISOString().slice(0, 16);
+    })(),
     repeat_interval: initialData?.repeat_interval || '',
-    next_due_date: initialData?.next_due_date ? new Date(initialData.next_due_date).toISOString().split('T')[0] : '',
+    next_due_date: initialData?.next_due_date ? new Date(initialData.next_due_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -199,15 +203,19 @@ export const TodoForm: React.FC<TodoFormProps> = ({
           <label htmlFor="repeat_interval" className="block text-sm font-medium text-gray-700 mb-1">
             Repeat Interval
           </label>
-          <input
-            type="text"
+          <select
             id="repeat_interval"
             name="repeat_interval"
             value={formData.repeat_interval}
             onChange={handleChange}
-            placeholder="e.g., daily, weekly, monthly"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
-          />
+          >
+            <option value="">No repeat</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
         </div>
 
         <div>
@@ -243,4 +251,4 @@ export const TodoForm: React.FC<TodoFormProps> = ({
       </div>
     </form>
   );
-}; 
+};

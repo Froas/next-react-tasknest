@@ -791,4 +791,4 @@ const GoalVisualization = () => {
   );
 };
 
-export default withAuth(GoalVisualization); 
+export default GoalVisualization;

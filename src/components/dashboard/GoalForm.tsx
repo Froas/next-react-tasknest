@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { GoalItem as Goal, StatusType, PriorityType } from '@/lib/types';
 import { goalsApi } from '@/lib/api';
-import { useSession } from 'next-auth/react';
+import { useAppSession } from '../../app/clientwrapper';
 
 interface GoalFormProps {
   goal?: Goal;
@@ -20,7 +20,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
   onSuccess,
   onCancel 
 }) => {
-  const { data: session } = useSession();
+  const session = useAppSession();
   const today = new Date().toISOString().split('T')[0];
   const [formData, setFormData] = useState({
     title: goal?.title || '',

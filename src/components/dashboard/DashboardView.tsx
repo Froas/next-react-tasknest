@@ -4,6 +4,7 @@ import React from 'react';
 import { GoalItem as Goal, StatusType } from '@/lib/types';
 import GoalCard from './GoalCard';
 import { useStore } from '@/store/useStore';
+import { CalendarWidget } from './CalendarWidget';
 
 interface DashboardViewProps {
   onSelectGoal: (goalId: string) => void;
@@ -92,21 +93,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </button>
       </div>
 
-      {/* Overall Progress Card */}
-      <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-        <h3 className="text-lg font-medium mb-3">Overall Goal Progress</h3>
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-gray-700">Total Goals Completed:</span>
-          <span className="font-semibold text-gray-800">
-            {completedGoals} / {totalGoals}
-          </span>
+      <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-6">
+        {/* Overall Progress Card */}
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <h3 className="text-lg font-medium mb-3">Overall Goal Progress</h3>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-gray-700">Total Goals Completed:</span>
+            <span className="font-semibold text-gray-800">
+              {completedGoals} / {totalGoals}
+            </span>
+          </div>
+          <div className="bg-gray-200 rounded-full h-2.5 overflow-hidden">
+            <div
+              className="bg-gray-800 h-full rounded-full transition-all duration-300 ease-in-out"
+              style={{ width: `${overallProgress}%` }}
+            ></div>
+          </div>
         </div>
-        <div className="bg-gray-200 rounded-full h-2.5 overflow-hidden">
-          <div
-            className="bg-gray-800 h-full rounded-full transition-all duration-300 ease-in-out"
-            style={{ width: `${overallProgress}%` }}
-          ></div>
-        </div>
+        
+        {/* Calendar Widget */}
       </div>
 
       {/* Goals List */}
@@ -128,4 +133,4 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
     </div>
   );
-}; 
+};

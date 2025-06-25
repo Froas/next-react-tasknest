@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { GoalItem as Goal, StatusType, PriorityType } from '@/lib/types';
 import { goalsApi } from '@/lib/api';
-import { useSession } from 'next-auth/react';
+import { useAppSession } from '../../app/clientwrapper';
 import { useStore } from '@/store/useStore';
 
 interface QuickGoalFormProps {
@@ -10,7 +10,7 @@ interface QuickGoalFormProps {
 }
 
 export const QuickGoalForm: React.FC<QuickGoalFormProps> = ({ onSuccess, onCancel }) => {
-  const { data: session } = useSession();
+  const session = useAppSession();
   const { addGoal } = useStore();
   const [formData, setFormData] = useState({
     title: '',

@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+import { useAppSession } from "../clientwrapper";
 import { Button } from "@/components/ui/button";
 import { usersApi } from "@/lib/api";
 import { redirect } from "next/dist/server/api-utils";
 
 const ProfilePage = () => {
-  const { data: session } = useSession();
+  const session = useAppSession();
   const [user, setUser] = useState<any>(null);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
