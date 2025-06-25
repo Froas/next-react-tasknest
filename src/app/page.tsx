@@ -3,25 +3,27 @@
 import React, { useState, useEffect } from 'react';
 import { withAuth } from '@/hoc/withAuth';
 import { Header } from '@/components/dashboard/Header';
-import { DashboardView } from '@/components/dashboard/DashboardView';
-import { GoalDetailView } from '@/components/dashboard/GoalDetailView';
-import { CalendarWidget } from '@/components/dashboard/CalendarWidget';
-import { QuickActions } from '@/components/dashboard/QuickActions';
+import dynamic from 'next/dynamic';
 import { GoalItem as Goal, MilestoneItem as Milestone, TaskItem as Task, TodoItem as Todo, SubtaskItem as Subtask } from '@/lib/types';
 import { goalsApi, milestonesApi, tasksApi, todosApi } from '@/lib/api';
-import { GoalForm } from '@/components/dashboard/GoalForm';
-import { MilestoneForm } from '@/components/dashboard/MilestoneForm';
-import { TaskForm } from '@/components/dashboard/TaskForm';
-import { TodoForm } from '@/components/dashboard/TodoForm';
-import { SubtaskForm } from '@/components/dashboard/SubtaskForm';
-import { QuickGoalForm } from '@/components/dashboard/QuickGoalForm';
 import { useStore } from '@/store/useStore';
 import { useRouter } from 'next/navigation';
 import { StatusType, PriorityType } from '@/types';
-import { useSession } from 'next-auth/react';
+import { useAppSession } from './clientwrapper';
+
+const DashboardView = dynamic(() => import('@/components/dashboard/DashboardView').then(m => m.DashboardView));
+const GoalDetailView = dynamic(() => import('@/components/dashboard/GoalDetailView').then(m => m.GoalDetailView));
+const CalendarWidget = dynamic(() => import('@/components/dashboard/CalendarWidget').then(m => m.CalendarWidget));
+const QuickActions = dynamic(() => import('@/components/dashboard/QuickActions').then(m => m.QuickActions));
+const GoalForm = dynamic(() => import('@/components/dashboard/GoalForm').then(m => m.GoalForm));
+const MilestoneForm = dynamic(() => import('@/components/dashboard/MilestoneForm').then(m => m.MilestoneForm));
+const TaskForm = dynamic(() => import('@/components/dashboard/TaskForm').then(m => m.TaskForm));
+const TodoForm = dynamic(() => import('@/components/dashboard/TodoForm').then(m => m.TodoForm));
+const SubtaskForm = dynamic(() => import('@/components/dashboard/SubtaskForm').then(m => m.SubtaskForm));
+const QuickGoalForm = dynamic(() => import('@/components/dashboard/QuickGoalForm').then(m => m.QuickGoalForm));
 
 const Home = () => {
-  const { data: session } = useSession();
+  const session = useAppSession();
   const router = useRouter();
   
   // View States
@@ -149,8 +151,19 @@ const Home = () => {
         subtasks: []
       };
       const createdTask = await tasksApi.create(taskToCreate);
-      const updatedGoal = await goalsApi.getById(selectedGoalId!);
+      
+      // Получаем полные данные о goal с включенными milestones, tasks, subtasks и todos
+      const updatedGoal = await goalsApi.getById(selectedGoalId!, {
+        include_milestones: true,
+        include_tasks: true,
+        include_subtasks: true,
+        include_todos: true
+      });
+      
+      // Обновляем goal в store
       updateGoal(updatedGoal);
+      
+      // Закрываем форму и сбрасываем выбранный milestone
       setShowTaskForm(false);
       setSelectedMilestone(null);
     } catch (error) {
@@ -209,17 +222,14 @@ const Home = () => {
     }
   };
 
-  const handleGoalDelete = async (goalId: string) => {
+  const handleGoalDelete = async () => {
+    if (!selectedGoal) return;
     try {
-      setIsDeleting(true);
-      await goalsApi.delete(goalId);
-      deleteGoalFromStore(goalId);
-      setIsDeleteDialogOpen(false);
-      setCurrentView('dashboard');
+      await goalsApi.delete(selectedGoal.id);
+      deleteGoalFromStore(selectedGoal.id);
     } catch (error) {
       console.error('Error deleting goal:', error);
-    } finally {
-      setIsDeleting(false);
+      throw error; // Re-throw to let the caller handle it
     }
   };
 
@@ -341,7 +351,10 @@ const Home = () => {
                   handleGoalClick(goal);
                 }
               }}
-              onGoalUpdate={updateGoal}
+              onGoalUpdate={(updatedGoals: Goal[]) => {
+                // This callback is not used in the current implementation
+                // but we need to match the interface
+              }}
               onCreateGoal={handleAddGoal}
             />
           ) : currentView === 'goal-detail' && selectedGoal ? (
@@ -349,13 +362,13 @@ const Home = () => {
               goal={selectedGoal}
               onBack={() => handleViewChange('dashboard')}
               onEdit={handleEditGoal}
-              onDelete={() => setIsDeleteDialogOpen(true)}
+              onDelete={handleGoalDelete}
               onViewChange={handleViewChange}
             />
           ) : (
             currentView === 'form' && (
               <GoalForm
-                goal={selectedGoal}
+                goal={selectedGoal || undefined}
                 isEditMode={isEditMode}
                 onClose={handleFormClose}
                 onSubmit={handleGoalSubmit}
@@ -562,7 +575,7 @@ const Home = () => {
                   Cancel
                 </button>
                 <button
-                  onClick={() => handleGoalDelete(selectedGoal.id)}
+                  onClick={() => handleGoalDelete()}
                   className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
                   disabled={isDeleting}
                 >
@@ -577,4 +590,4 @@ const Home = () => {
   );
 };
 
-export default withAuth(Home);
+export default Home;

@@ -11,4 +11,4 @@ const Todo = () => {
     )
 }
 
-export default withAuth(Todo);
+export default Todo;

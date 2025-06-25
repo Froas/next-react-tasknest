@@ -11,4 +11,4 @@ const Milestone = () => {
     )
 }
 
-export default withAuth(Milestone);
+export default Milestone;

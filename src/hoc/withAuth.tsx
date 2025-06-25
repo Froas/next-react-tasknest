@@ -1,32 +1,30 @@
 "use client";
 
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { ComponentType, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton"
+import { useAppSession } from "../app/clientwrapper";
 
 
 export function  withAuth<T extends JSX.IntrinsicAttributes>(WrappedComponent: ComponentType<T>) {
     return function  AuthComponent(props: T) {
-        const { data: session, status } = useSession();
+        const session = useAppSession();
         const router = useRouter();
 
         useEffect(() => {
-            if (status === 'unauthenticated') {
+            if (!session) {
                 router.push('/login')
             }
-        } ,[status])
+        }, [session]);
 
-        if (status === 'loading') {
+        if (session === undefined) {
             return <Skeleton className="h-4 w-[250px]" />
         }
 
-       
         if (!session) {
             return <p>Redirect to login...</p>;
         }
 
-     
         return <WrappedComponent {...props} />;
     }
 }

@@ -20,9 +20,13 @@ export const SubtaskForm: React.FC<SubtaskFormProps> = ({
     description: initialData?.description || '',
     status: initialData?.status || StatusType.OUTSTANDING,
     priority: initialData?.priority || PriorityType.MEDIUM,
-    due_date: initialData?.due_date ? new Date(initialData.due_date).toISOString().split('T')[0] : '',
-    start_datetime: initialData?.start_datetime ? new Date(initialData.start_datetime).toISOString().split('T')[0] + 'T09:00:00' : '',
-    end_datetime: initialData?.end_datetime ? new Date(initialData.end_datetime).toISOString().split('T')[0] + 'T16:00:00' : '',
+    due_date: initialData?.due_date ? new Date(initialData.due_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+    start_datetime: initialData?.start_datetime ? new Date(initialData.start_datetime).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
+    end_datetime: initialData?.end_datetime ? new Date(initialData.end_datetime).toISOString().slice(0, 16) : (() => {
+      const endDate = new Date();
+      endDate.setHours(endDate.getHours() + 1);
+      return endDate.toISOString().slice(0, 16);
+    })(),
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -208,4 +212,4 @@ export const SubtaskForm: React.FC<SubtaskFormProps> = ({
       </div>
     </form>
   );
-}; 
+};

@@ -170,22 +170,15 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
 
   const handleCreateTask = async (newTask: Task | Todo) => {
     try {
-      const milestoneIndex = goal.milestones.findIndex(m => m.id === selectedMilestoneId);
-      if (milestoneIndex === -1) return;
-
-      const updatedMilestone = {
-        ...goal.milestones[milestoneIndex],
-        tasks: [...(goal.milestones[milestoneIndex].tasks || []), newTask as Task]
-      };
-
-      const updatedGoal = {
-        ...goal,
-        milestones: goal.milestones.map((m, index) => 
-          index === milestoneIndex ? updatedMilestone : m
-        )
-      };
+      // Refresh the goal data from the server to get the latest state
+      const refreshedGoal = await goalsApi.getById(goal.id, {
+        include_milestones: true,
+        include_tasks: true,
+        include_subtasks: true,
+        include_todos: true
+      });
       
-      updateGoal(updatedGoal);
+      updateGoal(refreshedGoal);
       setIsCreatingTask(false);
       setSelectedMilestoneId(null);
     } catch (err) {
@@ -501,11 +494,17 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
                 Cancel
               </button>
               <button
-                onClick={() => {
+                onClick={async () => {
                   setIsDeleting(true);
-                  onDelete();
-                  onBack();
-                  setShowDeleteGoalConfirm(false);
+                  try {
+                    await onDelete();
+                    setShowDeleteGoalConfirm(false);
+                    onBack();
+                  } catch (error) {
+                    console.error('Failed to delete goal:', error);
+                  } finally {
+                    setIsDeleting(false);
+                  }
                 }}
                 className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
                 disabled={isDeleting}
@@ -518,4 +517,4 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
       )}
     </div>
   );
-}; 
+};

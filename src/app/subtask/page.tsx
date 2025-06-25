@@ -11,4 +11,4 @@ const Subtask = () => {
     )
 }
 
-export default withAuth(Subtask);
+export default Subtask;

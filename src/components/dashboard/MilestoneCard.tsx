@@ -58,21 +58,29 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
 
   const handleCreateTask = async (taskData: Partial<Task>) => {
     try {
-      const { title, description, status, priority, due_date } = taskData;
-      if (!title || !description || !status || !priority) {
+      const { title, description, status, priority, due_date, start_datetime, end_datetime } = taskData;
+      if (!title || !description) {
         throw new Error('Missing required fields');
       }
       const newTask = await tasksApi.create({
         title,
         description,
-        status,
-        priority,
+        status: status || StatusType.OUTSTANDING,
+        priority: priority || PriorityType.MEDIUM,
         due_date,
+        start_datetime,
+        end_datetime,
         milestone_id: milestone.id,
         todos: [],
         subtasks: []
       });
-      addTask(newTask);
+      
+      // Refresh milestone data to get updated tasks
+      const updatedMilestone = await milestonesApi.getById(milestone.id, true, true, true);
+      setCurrentMilestone(updatedMilestone);
+      onUpdate(updatedMilestone);
+      
+      // Обязательно закрываем форму после успешного создания
       setIsCreatingTask(false);
     } catch (error) {
       console.error('Error creating task:', error);
@@ -226,6 +234,25 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
       // Update the task in the store
       const updatedTask = await tasksApi.get(itemId, true, true);
       updateTask(updatedTask);
+      
+      // Обновляем локальное состояние milestone для немедленного отображения изменений
+      setCurrentMilestone(prevMilestone => {
+        const updatedTasks = prevMilestone.tasks.map(task => {
+          if (task.id === itemId) {
+            return { ...task, status: newStatus };
+          }
+          return {
+            ...task,
+            subtasks: task.subtasks.map(subtask => 
+              subtask.id === itemId ? { ...subtask, status: newStatus } : subtask
+            ),
+            todos: task.todos.map(todo => 
+              todo.id === itemId ? { ...todo, status: newStatus } : todo
+            )
+          };
+        });
+        return { ...prevMilestone, tasks: updatedTasks };
+      });
     } catch (error) {
       console.error('Failed to update task status:', error);
     } finally {

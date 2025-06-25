@@ -11,4 +11,4 @@ const Goal = () => {
     )
 }
 
-export default withAuth(Goal);
+export default Goal;

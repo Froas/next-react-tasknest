@@ -1,27 +1,28 @@
+'use client';
+
 import React, { useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { TaskItem as Task, TodoItem as Todo, Event, StatusType } from '@/lib/types';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 
-interface CalendarWidgetProps {
-  tasks?: Task[];
-  todos?: Todo[];
-}
-
-export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ tasks = [], todos = [] }) => {
-  const { todos: storeTodos, tasks: storeTasks, events: storeEvents, isLoadingTodos, isLoadingTasks, isLoadingEvents } = useStore();
+const CalendarPage = () => {
+  const { todos, tasks, events, isLoadingTodos, isLoadingTasks, isLoadingEvents } = useStore();
   const [date, setDate] = useState(new Date());
 
-  // Use store data if available, otherwise use props
-  const allTasks = storeTasks.length > 0 ? storeTasks : tasks;
-  const allTodos = storeTodos.length > 0 ? storeTodos : todos;
+  if (isLoadingTodos || isLoadingTasks || isLoadingEvents) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800"></div>
+      </div>
+    );
+  }
 
   // Get all items (tasks, todos, and events) with due dates
   const items = [
-    ...allTasks.filter(task => task.due_date).map(task => ({ ...task, itemType: 'Task' as const })),
-    ...allTodos.filter(todo => todo.due_date).map(todo => ({ ...todo, itemType: 'Todo' as const })),
-    ...storeEvents.filter(event => event.start_datetime).map(event => ({ ...event, itemType: 'Event' as const, due_date: event.start_datetime }))
+    ...tasks.filter(task => task.due_date).map(task => ({ ...task, itemType: 'Task' as const })),
+    ...todos.filter(todo => todo.due_date).map(todo => ({ ...todo, itemType: 'Todo' as const })),
+    ...events.filter(event => event.start_datetime).map(event => ({ ...event, itemType: 'Event' as const, due_date: event.start_datetime }))
   ];
 
   // Function to get items for a specific date
@@ -56,21 +57,17 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ tasks = [], todo
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold">Calendar</h3>
-      </div>
-
+      <h2 className="text-2xl font-bold mb-6">Calendar</h2>
       <Calendar
         onChange={onDateChange}
         value={date}
         tileContent={tileContent}
         className="mb-6"
       />
-
       <div>
-        <h4 className="text-sm font-medium text-gray-600 mb-3">Items for {date.toLocaleDateString()}</h4>
+        <h4 className="text-lg font-medium text-gray-600 mb-4">Items for {date.toLocaleDateString()}</h4>
         {selectedItems.length > 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {selectedItems.map((item, index) => {
               const dueDate = new Date(item.due_date!);
               const today = new Date();
@@ -80,13 +77,13 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ tasks = [], todo
               return (
                 <div
                   key={`${item.id}-${index}`}
-                  className={`p-3 rounded-lg border ${
+                  className={`p-4 rounded-lg border ${
                     isOverdue ? 'border-red-200 bg-red-50' :
                     isToday ? 'border-blue-200 bg-blue-50' :
                     'border-gray-200 bg-gray-50'
                   }`}
                 >
-                  <div className="flex justify-between items-start mb-1">
+                  <div className="flex justify-between items-start mb-2">
                     <span className="font-medium">{item.title}</span>
                     <span className={`text-xs px-2 py-1 rounded-full ${
                       item.status === StatusType.FINISHED ? 'bg-green-100 text-green-800' :
@@ -114,9 +111,11 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ tasks = [], todo
             })}
           </div>
         ) : (
-          <p className="text-gray-500 text-sm">No items for this date.</p>
+          <p className="text-gray-500">No items for this date.</p>
         )}
       </div>
     </div>
   );
 };
+
+export default CalendarPage;

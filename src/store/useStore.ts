@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { GoalItem as Goal, MilestoneItem as Milestone, TaskItem as Task, TodoItem as Todo } from '@/lib/types';
-import { goalsApi, milestonesApi, tasksApi, todosApi } from '@/lib/api';
+import { GoalItem as Goal, MilestoneItem as Milestone, TaskItem as Task, TodoItem as Todo, Event } from '@/lib/types';
+import { goalsApi, milestonesApi, tasksApi, todosApi, eventsApi } from '@/lib/api';
 
 interface AppStore {
   // Goals
@@ -22,6 +22,11 @@ interface AppStore {
   todos: Todo[];
   isLoadingTodos: boolean;
   todosError: string | null;
+  
+  // Events
+  events: Event[];
+  isLoadingEvents: boolean;
+  eventsError: string | null;
 
   // Actions
   // Goals
@@ -36,21 +41,21 @@ interface AppStore {
   addMilestone: (milestone: Milestone) => void;
   updateMilestone: (milestone: Milestone) => void;
   deleteMilestone: (milestoneId: string) => void;
-  fetchMilestones: (goalId: string) => Promise<void>;
+  fetchMilestones: () => Promise<void>;
 
   // Tasks
   setTasks: (tasks: Task[]) => void;
   addTask: (task: Task) => void;
   updateTask: (task: Task) => void;
   deleteTask: (taskId: string) => void;
-  fetchTasks: (milestoneId: string) => Promise<void>;
+  fetchTasks: () => Promise<void>;
 
   // Todos
   setTodos: (todos: Todo[]) => void;
   addTodo: (todo: Todo) => void;
   updateTodo: (todo: Todo) => void;
   deleteTodo: (todoId: string) => void;
-  fetchTodos: (taskId: string) => Promise<void>;
+  fetchTodos: () => Promise<void>;
 }
 
 export const useStore = create<AppStore>((set, get) => ({
@@ -70,21 +75,68 @@ export const useStore = create<AppStore>((set, get) => ({
   todos: [],
   isLoadingTodos: false,
   todosError: null,
+  
+  events: [],
+  isLoadingEvents: false,
+  eventsError: null,
 
   // Goals actions
   setGoals: (goals) => set({ goals }),
   addGoal: (goal) => set((state) => ({ goals: [...state.goals, goal] })),
   updateGoal: (goal) => set((state) => ({
-    goals: state.goals.map((g) => (g.id === goal.id ? goal : g))
+    goals: state.goals.map((g) => (g.id === goal.id ? { ...g, ...goal } : g))
   })),
   deleteGoal: (goalId) => set((state) => ({
     goals: state.goals.filter((g) => g.id !== goalId)
   })),
+  // Helper method to update milestone within a goal
+  updateMilestoneInGoal: (goalId: string, milestone: Milestone) => set((state) => ({
+    goals: state.goals.map((g) => 
+      g.id === goalId 
+        ? {
+            ...g,
+            milestones: g.milestones?.map((m) => 
+              m.id === milestone.id ? { ...m, ...milestone } : m
+            ) || []
+          }
+        : g
+    )
+  })),
+  // Helper method to update task within a milestone
+  updateTaskInMilestone: (goalId: string, milestoneId: string, task: Task) => set((state) => ({
+    goals: state.goals.map((g) => 
+      g.id === goalId 
+        ? {
+            ...g,
+            milestones: g.milestones?.map((m) => 
+              m.id === milestoneId
+                ? {
+                    ...m,
+                    tasks: m.tasks?.map((t) => 
+                      t.id === task.id ? { ...t, ...task } : t
+                    ) || []
+                  }
+                : m
+            ) || []
+          }
+        : g
+    )
+  })),
   fetchGoals: async () => {
     set({ isLoadingGoals: true, goalsError: null });
     try {
-      const data = await goalsApi.getAll();
-      set({ goals: data, isLoadingGoals: false });
+      // Fetch goals with milestones included to show correct milestone count
+      const goals = await Promise.all(
+        (await goalsApi.getAll()).map(async (goal) => {
+          try {
+            return await goalsApi.getById(goal.id, { include_milestones: true });
+          } catch (error) {
+            console.error(`Failed to fetch milestones for goal ${goal.id}:`, error);
+            return goal; // Return goal without milestones if fetch fails
+          }
+        })
+      );
+      set({ goals, isLoadingGoals: false });
     } catch (error) {
       set({ goalsError: 'Failed to fetch goals', isLoadingGoals: false });
     }
@@ -99,10 +151,10 @@ export const useStore = create<AppStore>((set, get) => ({
   deleteMilestone: (milestoneId) => set((state) => ({
     milestones: state.milestones.filter((m) => m.id !== milestoneId)
   })),
-  fetchMilestones: async (goalId) => {
+  fetchMilestones: async () => {
     set({ isLoadingMilestones: true, milestonesError: null });
     try {
-      const data = await milestonesApi.getAll(goalId);
+      const data = await milestonesApi.getAll();
       set({ milestones: data, isLoadingMilestones: false });
     } catch (error) {
       set({ milestonesError: 'Failed to fetch milestones', isLoadingMilestones: false });
@@ -118,10 +170,10 @@ export const useStore = create<AppStore>((set, get) => ({
   deleteTask: (taskId) => set((state) => ({
     tasks: state.tasks.filter((t) => t.id !== taskId)
   })),
-  fetchTasks: async (milestoneId) => {
+  fetchTasks: async () => {
     set({ isLoadingTasks: true, tasksError: null });
     try {
-      const data = await tasksApi.getAll(milestoneId);
+      const data = await tasksApi.getAll();
       set({ tasks: data, isLoadingTasks: false });
     } catch (error) {
       set({ tasksError: 'Failed to fetch tasks', isLoadingTasks: false });
@@ -137,13 +189,32 @@ export const useStore = create<AppStore>((set, get) => ({
   deleteTodo: (todoId) => set((state) => ({
     todos: state.todos.filter((t) => t.id !== todoId)
   })),
-  fetchTodos: async (taskId) => {
+  fetchTodos: async () => {
     set({ isLoadingTodos: true, todosError: null });
     try {
-      const data = await todosApi.getAll(taskId);
+      const data = await todosApi.getAll();
       set({ todos: data, isLoadingTodos: false });
     } catch (error) {
       set({ todosError: 'Failed to fetch todos', isLoadingTodos: false });
     }
   },
-})); 
+  
+  // Events actions
+  setEvents: (events: Event[]) => set({ events }),
+  addEvent: (event: Event) => set((state) => ({ events: [...state.events, event] })),
+  updateEvent: (event: Event) => set((state) => ({
+    events: state.events.map((e) => (e.id === event.id ? event : e))
+  })),
+  deleteEvent: (eventId: string) => set((state) => ({
+    events: state.events.filter((e) => e.id !== eventId)
+  })),
+  fetchEvents: async () => {
+    set({ isLoadingEvents: true, eventsError: null });
+    try {
+      const data = await eventsApi.getAll();
+      set({ events: data, isLoadingEvents: false });
+    } catch (error) {
+      set({ eventsError: 'Failed to fetch events', isLoadingEvents: false });
+    }
+  },
+}));
