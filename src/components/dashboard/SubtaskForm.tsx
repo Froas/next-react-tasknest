@@ -3,13 +3,17 @@ import { SubtaskItem as Subtask, StatusType, PriorityType } from '@/lib/types';
 import { subtasksApi } from '@/lib/api';
 
 interface SubtaskFormProps {
+  goalId: string; // Added for optimistic update context
+  milestoneId: string; // Added for optimistic update context
   taskId: string;
-  onSuccess: (subtask: Subtask) => void;
+  onSuccess: (subtask: Subtask, goalId: string, milestoneId: string, taskId: string) => void;
   onCancel: () => void;
   initialData?: Partial<Subtask>;
 }
 
 export const SubtaskForm: React.FC<SubtaskFormProps> = ({
+  goalId,
+  milestoneId,
   taskId,
   onSuccess,
   onCancel,
@@ -52,10 +56,12 @@ export const SubtaskForm: React.FC<SubtaskFormProps> = ({
       let subtask: Subtask;
       if (initialData?.id) {
         subtask = await subtasksApi.update({ ...subtaskData, id: initialData.id } as Partial<Subtask> & { id: string });
+        // Assuming updates are handled similarly or via full refresh by the caller for now
+        onSuccess(subtask, goalId, milestoneId, taskId);
       } else {
         subtask = await subtasksApi.create(subtaskData);
+        onSuccess(subtask, goalId, milestoneId, taskId); // Pass IDs for optimistic update
       }
-      onSuccess(subtask);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save subtask');
     } finally {

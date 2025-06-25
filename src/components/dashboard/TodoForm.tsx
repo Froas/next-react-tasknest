@@ -3,13 +3,17 @@ import { TodoItem as Todo, StatusType, PriorityType } from '@/lib/types';
 import { todosApi } from '@/lib/api';
 
 interface TodoFormProps {
+  goalId: string; // Added for optimistic update context
+  milestoneId: string; // Added for optimistic update context
   taskId: string;
-  onSuccess: (todo: Todo) => void;
+  onSuccess: (todo: Todo, goalId: string, milestoneId: string, taskId: string) => void;
   onCancel: () => void;
   initialData?: Partial<Todo>;
 }
 
 export const TodoForm: React.FC<TodoFormProps> = ({
+  goalId,
+  milestoneId,
   taskId,
   onSuccess,
   onCancel,
@@ -56,10 +60,12 @@ export const TodoForm: React.FC<TodoFormProps> = ({
       let todo: Todo;
       if (initialData?.id) {
         todo = await todosApi.update({ ...todoData, id: initialData.id } as Partial<Todo> & { id: string });
+        // Assuming updates are handled similarly or via full refresh by the caller for now
+        onSuccess(todo, goalId, milestoneId, taskId);
       } else {
         todo = await todosApi.create(todoData);
+        onSuccess(todo, goalId, milestoneId, taskId); // Pass IDs for optimistic update
       }
-      onSuccess(todo);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save todo');
     } finally {

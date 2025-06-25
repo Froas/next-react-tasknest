@@ -56,6 +56,12 @@ interface AppStore {
   updateTodo: (todo: Todo) => void;
   deleteTodo: (todoId: string) => void;
   fetchTodos: () => Promise<void>;
+
+  // More specific adders for optimistic updates
+  addTaskToMilestoneInGoal: (task: Task, milestoneId: string, goalId: string) => void;
+  addTodoToTaskInMilestoneInGoal: (todo: Todo, taskId: string, milestoneId: string, goalId: string) => void;
+  addSubtaskToTaskInMilestoneInGoal: (subtask: Subtask, taskId: string, milestoneId: string, goalId: string) => void;
+
 }
 
 export const useStore = create<AppStore>((set, get) => ({
@@ -198,6 +204,75 @@ export const useStore = create<AppStore>((set, get) => ({
       set({ todosError: 'Failed to fetch todos', isLoadingTodos: false });
     }
   },
+
+  // Specific adders implementations
+  addTaskToMilestoneInGoal: (task, milestoneId, goalId) => set((state) => ({
+    goals: state.goals.map((g) =>
+      g.id === goalId
+        ? {
+            ...g,
+            milestones: g.milestones?.map((m) =>
+              m.id === milestoneId
+                ? {
+                    ...m,
+                    tasks: [...(m.tasks || []), task],
+                  }
+                : m
+            ) || [],
+          }
+        : g
+    ),
+  })),
+
+  addTodoToTaskInMilestoneInGoal: (todo, taskId, milestoneId, goalId) => set((state) => ({
+    goals: state.goals.map((g) =>
+      g.id === goalId
+        ? {
+            ...g,
+            milestones: g.milestones?.map((m) =>
+              m.id === milestoneId
+                ? {
+                    ...m,
+                    tasks: m.tasks?.map((t) =>
+                      t.id === taskId
+                        ? {
+                            ...t,
+                            todos: [...(t.todos || []), todo],
+                          }
+                        : t
+                    ) || [],
+                  }
+                : m
+            ) || [],
+          }
+        : g
+    ),
+  })),
+
+  addSubtaskToTaskInMilestoneInGoal: (subtask, taskId, milestoneId, goalId) => set((state) => ({
+    goals: state.goals.map((g) =>
+      g.id === goalId
+        ? {
+            ...g,
+            milestones: g.milestones?.map((m) =>
+              m.id === milestoneId
+                ? {
+                    ...m,
+                    tasks: m.tasks?.map((t) =>
+                      t.id === taskId
+                        ? {
+                            ...t,
+                            subtasks: [...(t.subtasks || []), subtask],
+                          }
+                        : t
+                    ) || [],
+                  }
+                : m
+            ) || [],
+          }
+        : g
+    ),
+  })),
   
   // Events actions
   setEvents: (events: Event[]) => set({ events }),
