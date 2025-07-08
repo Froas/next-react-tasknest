@@ -58,10 +58,9 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
   // Milestone State
   const [currentMilestone, setCurrentMilestone] = useState<Milestone>(milestone);
 
-  // Initialize tasks and todos with empty arrays if undefined
-  // These will now primarily be driven by the store-updated milestone prop for consistency
-  // const tasks = currentMilestone.tasks || [];
-  // const todos = currentMilestone.todos || [];
+  // Ensure tasks and todos are always defined arrays
+  const tasks: Task[] = currentMilestone.tasks || [];
+  const todos: Todo[] = currentMilestone.todos || [];
 
   useEffect(() => {
     setCurrentMilestone(milestone);
@@ -101,27 +100,19 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
     }
   };
 
-  const handleCreateSubtask = (newSubtask: Task, newSubtaskGoalId: string, newSubtaskMilestoneId: string, newSubtaskParentTaskId: string) => {
+  const handleCreateSubtask = (newSubtask: import('@/lib/types').SubtaskItem, newSubtaskGoalId: string, newSubtaskMilestoneId: string, newSubtaskParentTaskId: string) => {
     // Note: The Subtask type might be different from Task (e.g. SubtaskItem)
     // Assuming SubtaskForm sends a Subtask-like object that fits what addSubtaskToTaskInMilestoneInGoal expects.
-    // The Subtask type in types.ts is SubtaskItem which is based on TaskBase.
-    // tasksApi.create was used for subtasks before, implying they are structurally similar to tasks.
     if (!selectedTask || selectedTask.id !== newSubtaskParentTaskId) {
       console.error("Selected task mismatch or not found for creating subtask");
       return;
     }
     try {
-      // We need to ensure `newSubtask` is compatible with the `Subtask` type expected by the store.
-      // If SubtaskForm provides a `Task` object, we might need to adapt it or ensure the store action handles it.
-      // For now, assuming the structure is compatible enough.
-      addSubtaskToTaskInMilestoneInGoal(newSubtask as any, newSubtaskParentTaskId, newSubtaskMilestoneId, newSubtaskGoalId);
+      addSubtaskToTaskInMilestoneInGoal(newSubtask, newSubtaskParentTaskId, newSubtaskMilestoneId, newSubtaskGoalId);
       setIsCreatingSubtask(false);
       setSelectedTask(null);
-      // Optimistic update handles UI. Background refresh if needed:
-      // e.g., tasksApi.get(newSubtaskParentTaskId, true, true).then(updatedT => updateTask(updatedT));
     } catch (error) {
       console.error('Error optimistically adding subtask:', error);
-      // Potentially set an error state
     }
   };
 
@@ -280,8 +271,8 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
     const totalItems = tasks.length + todos.length;
     if (totalItems === 0) return 0;
     
-    const completedTasks = tasks.filter(t => t.status === StatusType.FINISHED).length;
-    const completedTodos = todos.filter(t => t.status === StatusType.FINISHED).length;
+    const completedTasks = tasks.filter((t: Task) => t.status === StatusType.FINISHED).length;
+    const completedTodos = todos.filter((t: Todo) => t.status === StatusType.FINISHED).length;
     return ((completedTasks + completedTodos) / totalItems) * 100;
   };
 
@@ -354,7 +345,7 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
             </div>
           ) : (
             <>
-              {tasks.map((task) => (
+              {tasks.map((task: Task) => (
                 <div key={task.id} className="bg-gray-50 rounded-lg p-3">
                   <div className="flex items-center space-x-3 mb-2">
                     <input
@@ -391,7 +382,7 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
 
                   {task.subtasks && task.subtasks.length > 0 && (
                     <div className="ml-6 mb-2 space-y-1 border-l-2 border-gray-200 pl-3">
-                      {task.subtasks.map((subtask) => (
+                      {task.subtasks.map((subtask: Task) => (
                         <div key={subtask.id} className="flex items-center space-x-2">
                           <input
                             type="checkbox"
@@ -410,7 +401,7 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
 
                   {task.todos && task.todos.length > 0 && (
                     <div className="ml-6 space-y-1 border-l-2 border-gray-200 pl-3">
-                      {task.todos.map((todo) => (
+                      {task.todos.map((todo: Todo) => (
                         <div key={todo.id} className="flex items-center space-x-2">
                           <input
                             type="checkbox"
