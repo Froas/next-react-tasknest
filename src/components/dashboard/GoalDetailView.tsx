@@ -13,6 +13,8 @@ import { useStore } from '@/store/useStore';
 import { formatDate } from '@/lib/utils';
 // Import the new store action
 // import { addTaskToMilestoneInGoal } from '@/store/useStore'; // Actions are part of useStore hook
+import GoalHeaderCard from './GoalHeaderCard';
+import MilestonesTimeline from './MilestonesTimeline';
 
 interface GoalDetailViewProps {
   goal: Goal;
@@ -327,165 +329,20 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex-grow">
-            {editingField === 'title' ? (
-              <InlineEdit
-                value={goal.title}
-                onSave={(value) => handleGoalUpdate('title', value)}
-                onCancel={() => setEditingField(null)}
-                className="text-2xl font-bold"
-              />
-            ) : (
-              <h2 
-                className="text-2xl font-bold mb-2 cursor-pointer hover:bg-gray-50 rounded px-2 py-1"
-                onClick={() => setEditingField('title')}
-              >
-                {goal.title}
-              </h2>
-            )}
-            {editingField === 'description' ? (
-              <InlineEdit
-                value={goal.description}
-                onSave={(value) => handleGoalUpdate('description', value)}
-                onCancel={() => setEditingField(null)}
-                type="textarea"
-                className="text-gray-600"
-              />
-            ) : (
-              <p 
-                className="text-gray-600 cursor-pointer hover:bg-gray-50 rounded px-2 py-1"
-                onClick={() => setEditingField('description')}
-              >
-                {goal.description}
-              </p>
-            )}
-          </div>
-          <div className="flex gap-2">
-            {editingField === 'status' ? (
-              <InlineSelect
-                value={goal.status}
-                options={Object.values(StatusType).map(status => ({
-                  value: status,
-                  label: status.replace('_', ' '),
-                }))}
-                onSave={(value) => handleGoalUpdate('status', value)}
-                onCancel={() => setEditingField(null)}
-                className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800"
-              />
-            ) : (
-              <span 
-                className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 cursor-pointer hover:bg-gray-200"
-                onClick={() => setEditingField('status')}
-              >
-                {goal.status}
-              </span>
-            )}
-            {editingField === 'priority' ? (
-              <InlineSelect
-                value={goal.priority}
-                options={Object.values(PriorityType).map(priority => ({
-                  value: priority,
-                  label: priority,
-                }))}
-                onSave={(value) => handleGoalUpdate('priority', value)}
-                onCancel={() => setEditingField(null)}
-                className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800"
-              />
-            ) : (
-              <span 
-                className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 cursor-pointer hover:bg-gray-200"
-                onClick={() => setEditingField('priority')}
-              >
-                {goal.priority}
-              </span>
-            )}
-          </div>
-        </div>
+      {/* Goal header */}
+      <GoalHeaderCard goal={goal} progress={progress} />
 
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-gray-700">Overall Progress:</span>
-          <span className="font-semibold text-gray-800">{Math.round(progress)}%</span>
-        </div>
-        <div className="bg-gray-200 rounded-full h-2.5 overflow-hidden mb-6">
-          <div
-            className="bg-gray-800 h-full rounded-full transition-all duration-300 ease-in-out"
-            style={{ width: `${progress}%` }}
-          ></div>
-        </div>
-
-        <div className="flex justify-between text-sm text-gray-500 mb-8">
-          {editingField === 'start_datetime' ? (
-            <InlineDate
-              value={goal.start_datetime ? new Date(goal.start_datetime).toISOString().split('T')[0] : ''}
-              onSave={(value) => handleGoalUpdate('start_datetime', value)}
-              onCancel={() => setEditingField(null)}
-              className="text-gray-500"
-            />
-          ) : (
-            <span 
-              className="cursor-pointer hover:bg-gray-50 rounded px-2 py-1"
-              onClick={() => setEditingField('start_datetime')}
-            >
-              Start: {goal.start_datetime ? new Date(goal.start_datetime).toLocaleDateString() : 'Not set'}
-            </span>
-          )}
-          {editingField === 'end_datetime' ? (
-            <InlineDate
-              value={goal.end_datetime ? new Date(goal.end_datetime).toISOString().split('T')[0] : ''}
-              onSave={(value) => handleGoalUpdate('end_datetime', value)}
-              onCancel={() => setEditingField(null)}
-              className="text-gray-500"
-            />
-          ) : (
-            <span 
-              className="cursor-pointer hover:bg-gray-50 rounded px-2 py-1"
-              onClick={() => setEditingField('end_datetime')}
-            >
-              End: {goal.end_datetime ? new Date(goal.end_datetime).toLocaleDateString() : 'Not set'}
-            </span>
-          )}
-        </div>
-
-        <div className="space-y-6">
-          {Object.entries(groupedMilestones).map(([status, milestones]) => (
-            <div key={status}>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold capitalize">{status.toLowerCase()} Milestones</h3>
-                {milestones.length > 0 && (
-                  <button
-                    data-testid="add-task-button"
-                    onClick={() => {
-                      setSelectedMilestoneId(milestones[0].id);
-                      setIsCreatingTask(true);
-                    }}
-                    className="text-sm text-gray-600 hover:text-gray-800"
-                  >
-                    + Add Task
-                  </button>
-                )}
-              </div>
-              {milestones.map((milestone) => (
-                <MilestoneCard
-                  key={milestone.id}
-                  goalId={goal.id}
-                  milestone={milestone}
-                  onUpdate={(data) => handleMilestoneUpdate(milestone.id, data)}
-                  onDelete={() => handleMilestoneDelete(milestone.id)}
-                  onSelectMilestone={onSelectMilestone}
-                  onAddTask={() => {
-                    setSelectedMilestoneId(milestone.id);
-                    setIsCreatingTask(true);
-                  }}
-                  onMilestoneUpdate={(data) => handleMilestoneUpdate(milestone.id, data)}
-                  onMilestoneDelete={() => handleMilestoneDelete(milestone.id)}
-                />
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Milestones timeline */}
+      <MilestonesTimeline
+        milestones={goal.milestones || []}
+        goalId={goal.id}
+        onUpdate={handleMilestoneUpdate}
+        onDelete={handleMilestoneDelete}
+        onAddTask={(milestoneId) => {
+          setSelectedMilestoneId(milestoneId);
+          setIsCreatingTask(true);
+        }}
+      />
 
       {/* Delete Goal Confirmation Dialog */}
       {showDeleteGoalConfirm && (

@@ -10,12 +10,16 @@ interface DashboardViewProps {
   onSelectGoal: (goalId: string) => void;
   onGoalUpdate: (updatedGoals: Goal[]) => void;
   onCreateGoal: () => void;
+  orderBy: 'title' | 'start_desc' | 'start_asc' | 'priority_desc' | 'priority_asc';
+  setOrderBy: React.Dispatch<React.SetStateAction<'title' | 'start_desc' | 'start_asc' | 'priority_desc' | 'priority_asc'>>;
 }
 
-export const DashboardView: React.FC<DashboardViewProps> = ({ 
-  onSelectGoal, 
+export const DashboardView: React.FC<DashboardViewProps> = ({
+  onSelectGoal,
   onGoalUpdate,
   onCreateGoal,
+  orderBy,
+  setOrderBy,
 }) => {
   // Берём данные из Zustand
   const { goals, isLoadingGoals, goalsError, fetchGoals } = useStore();
@@ -25,9 +29,30 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const overallProgress = totalGoals > 0 ? (completedGoals / totalGoals) * 100 : 0;
 
   // Get active goals (not completed or cancelled)
+
   const activeGoals = goals.filter(
     (goal: Goal) => goal.status !== StatusType.FINISHED && goal.status !== StatusType.CANCELLED
   );
+
+  // Sort active goals based on orderBy
+  const sortedActiveGoals = [...activeGoals].sort((a, b) => {
+    if (orderBy === 'title') {
+      return (a.title || '').localeCompare(b.title || '');
+    }
+    if (orderBy === 'start_desc') {
+      return new Date(b.start_datetime || 0).getTime() - new Date(a.start_datetime || 0).getTime();
+    }
+    if (orderBy === 'start_asc') {
+      return new Date(a.start_datetime || 0).getTime() - new Date(b.start_datetime || 0).getTime();
+    }
+    if (orderBy === 'priority_desc') {
+      return (b.priority || '').localeCompare(a.priority || '');
+    }
+    if (orderBy === 'priority_asc') {
+      return (a.priority || '').localeCompare(b.priority || '');
+    }
+    return 0;
+  });
 
   if (isLoadingGoals) {
     return (
@@ -116,9 +141,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
       {/* Goals List */}
       <div className="space-y-6">
-        <h3 className="text-xl font-semibold mb-4">Active Goals</h3>
-        {activeGoals.length > 0 ? (
-          activeGoals.map((goal: Goal) => (
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-xl font-semibold">Active Goals</h3>
+          <div>
+            <label htmlFor="order-goals" className="mr-2 text-sm text-gray-700">Order by:</label>
+            <select
+              id="order-goals"
+              value={orderBy}
+              onChange={e => setOrderBy(e.target.value as any)}
+              className="px-2 py-1 rounded border border-gray-300 text-sm"
+            >
+              <option value="title">Title (A-Z)</option>
+              <option value="start_desc">Start Date (Newest)</option>
+              <option value="start_asc">Start Date (Oldest)</option>
+              <option value="priority_desc">Priority (High-Low)</option>
+              <option value="priority_asc">Priority (Low-High)</option>
+            </select>
+          </div>
+        </div>
+        {sortedActiveGoals.length > 0 ? (
+          sortedActiveGoals.map((goal: Goal) => (
             <GoalCard
               key={goal.id}
               goal={goal}

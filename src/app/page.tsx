@@ -55,7 +55,7 @@ const Home = () => {
   // Selected Item States
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null);
-  
+
   // Delete States
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -69,15 +69,38 @@ const Home = () => {
     addGoal,
     updateGoal,
     deleteGoal: deleteGoalFromStore,
+    addMilestone,
     // Add new store actions for optimistic updates
     addTaskToMilestoneInGoal,
     addTodoToTaskInMilestoneInGoal,
     addSubtaskToTaskInMilestoneInGoal,
   } = useStore();
 
+  // Order state for goals (shared with DashboardView and selection modals)
+  const [orderBy, setOrderBy] = useState<'title' | 'start_desc' | 'start_asc' | 'priority_desc' | 'priority_asc'>('title');
+  const selectedGoal = selectedGoalId ? goals.find((goal: Goal) => goal.id === selectedGoalId) : null;
+
   useEffect(() => {
     fetchGoals();
   }, [fetchGoals]);
+
+  // Order state for goals (shared with DashboardView and selection modals)
+
+  if (isLoadingGoals) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (goalsError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-red-500">Error: {goalsError}</div>
+      </div>
+    );
+  }
 
   const handleGoalClick = async (goal: Goal) => {
     try {
@@ -131,9 +154,24 @@ const Home = () => {
     if (!selectedGoalId) return;
     try {
       const createdMilestone = await milestonesApi.create(milestoneData);
-      const updatedGoal = await goalsApi.getById(selectedGoalId);
-      updateGoal(updatedGoal);
+      // Optimistically update the store
+      // 1. Add milestone to milestones array in store
+      if (typeof addMilestone === 'function') {
+        addMilestone(createdMilestone);
+      }
+      // 2. Update the relevant goal's milestones array in the store
+      if (selectedGoal) {
+        updateGoal({
+          ...selectedGoal,
+          milestones: [
+            ...(selectedGoal.milestones || []),
+            createdMilestone
+          ]
+        });
+      }
       setIsCreatingMilestone(false);
+      // Optionally, fetch the updated goal in the background for consistency
+      goalsApi.getById(selectedGoalId, { include_milestones: true }).then(updateGoal).catch(() => {});
     } catch (error) {
       console.error('Failed to create milestone:', error);
     }
@@ -205,14 +243,15 @@ const Home = () => {
     }
   };
 
+  // Improved quick action for 'todo': if only one goal, milestone, and task, open TodoForm directly
   const handleQuickAction = (action: 'milestone' | 'task' | 'todo' | 'subtask') => {
     if (goals.length === 0) {
       alert('Please create a goal first');
       return;
     }
-    
+
     setPendingAction(action);
-    
+
     if (action === 'milestone') {
       if (goals.length === 1) {
         setSelectedGoalId(goals[0].id);
@@ -227,7 +266,33 @@ const Home = () => {
       } else {
         setIsSelectingGoal(true);
       }
-    } else if (action === 'todo' || action === 'subtask') {
+    } else if (action === 'todo') {
+      // Quick add todo: if only one goal, one milestone, one task, open TodoForm directly
+      if (goals.length === 1) {
+        const goal = goals[0];
+        setSelectedGoalId(goal.id);
+        if (goal.milestones && goal.milestones.length === 1) {
+          const milestone = goal.milestones[0];
+          setSelectedMilestoneId(milestone.id);
+          if (milestone.tasks && milestone.tasks.length === 1) {
+            const task = milestone.tasks[0];
+            setSelectedTask(task);
+            setShowTodoForm(true);
+            setPendingAction(null);
+            return;
+          } else {
+            setIsSelectingTask(true);
+            return;
+          }
+        } else {
+          setIsSelectingMilestone(true);
+          return;
+        }
+      } else {
+        setIsSelectingGoal(true);
+        return;
+      }
+    } else if (action === 'subtask') {
       if (goals.length === 1) {
         setSelectedGoalId(goals[0].id);
         setIsSelectingMilestone(true);
@@ -307,8 +372,6 @@ const Home = () => {
     );
   }
 
-  const selectedGoal = selectedGoalId ? goals.find((goal: Goal) => goal.id === selectedGoalId) : null;
-
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 font-sans text-gray-900">
       <Header/>
@@ -328,6 +391,8 @@ const Home = () => {
                 // but we need to match the interface
               }}
               onCreateGoal={handleAddGoal}
+              orderBy={orderBy}
+              setOrderBy={setOrderBy}
             />
           ) : currentView === 'goal-detail' && selectedGoal ? (
             <GoalDetailView
@@ -365,7 +430,14 @@ const Home = () => {
             <div className="bg-white rounded-xl p-6 max-w-md w-full">
               <h3 className="text-lg font-semibold mb-4">Select Goal</h3>
               <div className="space-y-2">
-                {goals.map((g: Goal) => (
+                {[...goals].sort((a, b) => {
+                  if (orderBy === 'title') return (a.title || '').localeCompare(b.title || '');
+                  if (orderBy === 'start_desc') return new Date(b.start_datetime || 0).getTime() - new Date(a.start_datetime || 0).getTime();
+                  if (orderBy === 'start_asc') return new Date(a.start_datetime || 0).getTime() - new Date(b.start_datetime || 0).getTime();
+                  if (orderBy === 'priority_desc') return (b.priority || '').localeCompare(a.priority || '');
+                  if (orderBy === 'priority_asc') return (a.priority || '').localeCompare(b.priority || '');
+                  return 0;
+                }).map((g: Goal) => (
                   <button
                     key={g.id}
                     onClick={() => handleGoalSelect(g.id)}
@@ -463,6 +535,7 @@ const Home = () => {
               <GoalForm
                 onSuccess={handleGoalSubmit}
                 onCancel={() => setIsCreatingGoal(false)}
+                onClose={() => setIsCreatingGoal(false)}
               />
             </div>
           </div>

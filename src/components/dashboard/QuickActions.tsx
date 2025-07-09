@@ -25,7 +25,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
       ),
       onClick: onAddGoal,
     },
-     {
+    {
       title: 'Add Milestone',
       description: 'Create a new milestone for a goal',
       icon: (
@@ -55,7 +55,6 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
       ),
       onClick: onAddTodo,
     },
-   
   ];
 
   return (
