@@ -3,7 +3,6 @@ import vue from '@vitejs/plugin-vue'
 import UnoCSS from 'unocss/vite'
 import { defineConfig } from 'vite'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [vue(), UnoCSS({
     configFile: './uno.config.ts',
@@ -14,7 +13,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: 3030,
     open: true,
   },
 })

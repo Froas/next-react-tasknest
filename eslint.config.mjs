@@ -12,6 +12,7 @@ export default antfu({
 }, {
   rules: {
     'no-console': ['warn', { allow: ['warn', 'error', 'log'] }],
+    'no-unused-vars': 'error',
     'vue/no-mutating-props': 'error',
     'vue/no-reserved-props': 'error',
     'vue/no-duplicate-attributes': 'error',
