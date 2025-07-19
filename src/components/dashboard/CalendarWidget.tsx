@@ -55,9 +55,9 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ tasks = [], todo
   const selectedItems = getItemsForDate(date);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
+    <div className="bg-card rounded-xl shadow-sm p-6">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold">Calendar</h3>
+        <h3 className="text-lg font-semibold text-foreground">Calendar</h3>
       </div>
 
       <Calendar
@@ -68,7 +68,7 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ tasks = [], todo
       />
 
       <div>
-        <h4 className="text-sm font-medium text-gray-600 mb-3">Items for {date.toLocaleDateString()}</h4>
+        <h4 className="text-sm font-medium text-muted-foreground mb-3">Items for {date.toLocaleDateString()}</h4>
         {selectedItems.length > 0 ? (
           <div className="space-y-3">
             {selectedItems.map((item, index) => {
@@ -81,31 +81,31 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ tasks = [], todo
                 <div
                   key={`${item.id}-${index}`}
                   className={`p-3 rounded-lg border ${
-                    isOverdue ? 'border-red-200 bg-red-50' :
-                    isToday ? 'border-blue-200 bg-blue-50' :
-                    'border-gray-200 bg-gray-50'
+                    isOverdue ? 'border-accent bg-accent/10' :
+                    isToday ? 'border-primary bg-primary/10' :
+                    'border-border bg-muted'
                   }`}
                 >
                   <div className="flex justify-between items-start mb-1">
-                    <span className="font-medium">{item.title}</span>
+                    <span className="font-medium text-foreground">{item.title}</span>
                     <span className={`text-xs px-2 py-1 rounded-full ${
-                      item.status === StatusType.FINISHED ? 'bg-green-100 text-green-800' :
-                      item.status === StatusType.IN_PROGRESS ? 'bg-blue-100 text-blue-800' :
-                      item.status === StatusType.CANCELLED ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
+                      item.status === StatusType.FINISHED ? 'bg-primary/20 text-primary' :
+                      item.status === StatusType.IN_PROGRESS ? 'bg-primary/10 text-primary' :
+                      item.status === StatusType.CANCELLED ? 'bg-accent/20 text-accent-foreground' :
+                      'bg-muted text-muted-foreground'
                     }`}>
                       {item.status}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className={`${
-                      isOverdue ? 'text-red-600' :
-                      isToday ? 'text-blue-600' :
-                      'text-gray-600'
+                      isOverdue ? 'text-accent-foreground' :
+                      isToday ? 'text-primary' :
+                      'text-muted-foreground'
                     }`}>
                       Due: {dueDate.toLocaleDateString()}
                     </span>
-                    <span className="text-gray-500">
+                    <span className="text-muted-foreground">
                       {item.itemType}
                     </span>
                   </div>
@@ -114,7 +114,7 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ tasks = [], todo
             })}
           </div>
         ) : (
-          <p className="text-gray-500 text-sm">No items for this date.</p>
+          <p className="text-muted-foreground text-sm">No items for this date.</p>
         )}
       </div>
     </div>

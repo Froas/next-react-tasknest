@@ -23,11 +23,11 @@ const Header = () => {
   ];
 
   return (
-    <header className="bg-white border-b border-gray-200">
+    <header className="bg-background border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <div className="flex-shrink-0 flex items-center">
-            <Link href="/" className="text-xl font-bold text-gray-900">
+            <Link href="/" className="text-xl font-bold text-foreground">
               TaskNest
             </Link>
           </div>
@@ -39,8 +39,8 @@ const Header = () => {
                 href={item.href}
                 className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
                   isActive(item.href)
-                    ? 'bg-gray-100 text-gray-900'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-muted text-foreground'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
               >
                 {item.label}
@@ -51,7 +51,7 @@ const Header = () => {
           <div className="flex items-center space-x-4">
             <Link
               href="/profile"
-              className="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-200"
+              className="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors duration-200"
             >
               Profile
             </Link>
@@ -70,4 +70,3 @@ const Header = () => {
 };
 
 export default Header;
-  

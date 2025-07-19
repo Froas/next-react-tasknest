@@ -88,16 +88,16 @@ const Home = () => {
 
   if (isLoadingGoals) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   if (goalsError) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-red-500">Error: {goalsError}</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-accent-foreground">Error: {goalsError}</div>
       </div>
     );
   }
@@ -373,7 +373,7 @@ const Home = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 font-sans text-gray-900">
+    <div className="min-h-screen flex flex-col bg-background font-sans text-foreground">
       <Header/>
 
       <main className="flex-grow container mx-auto p-6 md:p-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -426,8 +426,8 @@ const Home = () => {
 
         {/* Selection Modals */}
         {isSelectingGoal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl p-6 max-w-md w-full">
+          <div className="fixed inset-0 bg-background/80 flex items-center justify-center p-4 z-50">
+            <div className="bg-card rounded-xl p-6 max-w-md w-full">
               <h3 className="text-lg font-semibold mb-4">Select Goal</h3>
               <div className="space-y-2">
                 {[...goals].sort((a, b) => {
@@ -441,10 +441,10 @@ const Home = () => {
                   <button
                     key={g.id}
                     onClick={() => handleGoalSelect(g.id)}
-                    className="w-full text-left p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors"
                   >
-                    <div className="font-medium text-gray-900">{g.title}</div>
-                    <div className="text-sm text-gray-600">{g.description}</div>
+                    <div className="font-medium text-foreground">{g.title}</div>
+                    <div className="text-sm text-muted-foreground">{g.description}</div>
                   </button>
                 ))}
               </div>
@@ -453,7 +453,7 @@ const Home = () => {
                   setIsSelectingGoal(false);
                   setPendingAction(null);
                 }}
-                className="mt-4 w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                className="mt-4 w-full px-4 py-2 text-sm font-medium text-muted-foreground bg-muted rounded-lg hover:bg-muted/80"
               >
                 Cancel
               </button>
@@ -462,8 +462,8 @@ const Home = () => {
         )}
 
         {isSelectingMilestone && selectedGoal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl p-6 max-w-md w-full">
+          <div className="fixed inset-0 bg-background/80 flex items-center justify-center p-4 z-50">
+            <div className="bg-card rounded-xl p-6 max-w-md w-full">
               <h3 className="text-lg font-semibold mb-4">Select Milestone</h3>
               <div className="space-y-2">
                 {selectedGoal.milestones && selectedGoal.milestones.length > 0 ? (
@@ -471,14 +471,14 @@ const Home = () => {
                     <button
                       key={m.id}
                       onClick={() => handleMilestoneSelect(m.id)}
-                      className="w-full text-left p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                      className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors"
                     >
-                      <div className="font-medium text-gray-900">{m.title}</div>
-                      <div className="text-sm text-gray-600">{m.description}</div>
+                      <div className="font-medium text-foreground">{m.title}</div>
+                      <div className="text-sm text-muted-foreground">{m.description}</div>
                     </button>
                   ))
                 ) : (
-                  <div className="text-center py-4 text-gray-500">
+                  <div className="text-center py-4 text-muted-foreground">
                     No milestones available. Create a milestone first.
                   </div>
                 )}
@@ -488,7 +488,7 @@ const Home = () => {
                   setIsSelectingMilestone(false);
                   setPendingAction(null);
                 }}
-                className="mt-4 w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                className="mt-4 w-full px-4 py-2 text-sm font-medium text-muted-foreground bg-muted rounded-lg hover:bg-muted/80"
               >
                 Cancel
               </button>
@@ -497,8 +497,8 @@ const Home = () => {
         )}
 
         {isSelectingTask && selectedMilestoneId && selectedGoal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl p-6 max-w-md w-full">
+          <div className="fixed inset-0 bg-background/80 flex items-center justify-center p-4 z-50">
+            <div className="bg-card rounded-xl p-6 max-w-md w-full">
               <h3 className="text-lg font-semibold mb-4">Select Task</h3>
               <div className="space-y-2">
                 {selectedGoal.milestones
@@ -507,10 +507,10 @@ const Home = () => {
                     <button
                       key={t.id}
                       onClick={() => handleTaskSelect(t.id)}
-                      className="w-full text-left p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                      className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors"
                     >
-                      <div className="font-medium text-gray-900">{t.title}</div>
-                      <div className="text-sm text-gray-600">{t.description}</div>
+                      <div className="font-medium text-foreground">{t.title}</div>
+                      <div className="text-sm text-muted-foreground">{t.description}</div>
                     </button>
                   ))}
               </div>
@@ -519,7 +519,7 @@ const Home = () => {
                   setIsSelectingTask(false);
                   setPendingAction(null);
                 }}
-                className="mt-4 w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                className="mt-4 w-full px-4 py-2 text-sm font-medium text-muted-foreground bg-muted rounded-lg hover:bg-muted/80"
               >
                 Cancel
               </button>
@@ -529,8 +529,8 @@ const Home = () => {
 
         {/* Creation Modals */}
         {isCreatingGoal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-background/80 flex items-center justify-center p-4 z-50">
+            <div className="bg-card rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-semibold mb-4">Create New Goal</h3>
               <GoalForm
                 onSuccess={handleGoalSubmit}
@@ -542,8 +542,8 @@ const Home = () => {
         )}
 
         {isCreatingMilestone && selectedGoalId && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-background/80 flex items-center justify-center p-4 z-50">
+            <div className="bg-card rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-semibold mb-4">Create New Milestone</h3>
               <MilestoneForm
                 goalId={selectedGoalId}
@@ -555,8 +555,8 @@ const Home = () => {
         )}
 
         {showTaskForm && selectedMilestoneId && selectedGoal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-background/80 flex items-center justify-center p-4 z-50">
+            <div className="bg-card rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-semibold mb-4">Create New Task</h3>
               <TaskForm
                 goalId={selectedGoal.id}
@@ -572,8 +572,8 @@ const Home = () => {
         )}
 
         {showTodoForm && selectedTask && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-background/80 flex items-center justify-center p-4 z-50">
+            <div className="bg-card rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-semibold mb-4">Create New Todo</h3>
               <TodoForm
                 goalId={selectedGoal!.id} // selectedGoal should be non-null if selectedTask is set
@@ -592,8 +592,8 @@ const Home = () => {
         )}
 
         {showSubtaskForm && selectedTask && selectedGoal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-background/80 flex items-center justify-center p-4 z-50">
+            <div className="bg-card rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-semibold mb-4">Create New Subtask</h3>
               <SubtaskForm
                 goalId={selectedGoal!.id} // selectedGoal should be non-null
@@ -613,23 +613,23 @@ const Home = () => {
 
         {/* Delete Dialog */}
         {isDeleteDialogOpen && selectedGoal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full">
+          <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50">
+            <div className="bg-card rounded-lg p-6 max-w-md w-full">
               <h3 className="text-lg font-semibold mb-4">Delete Goal</h3>
-              <p className="text-gray-600 mb-6">
+              <p className="text-muted-foreground mb-6">
                 Are you sure you want to delete "{selectedGoal.title}"? This action cannot be undone.
               </p>
               <div className="flex justify-end space-x-4">
                 <button
                   onClick={() => setIsDeleteDialogOpen(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                  className="px-4 py-2 text-muted-foreground hover:text-foreground"
                   disabled={isDeleting}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => handleGoalDelete()}
-                  className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
+                  className="px-4 py-2 bg-accent text-accent-foreground rounded hover:bg-accent/80 disabled:opacity-50"
                   disabled={isDeleting}
                 >
                   {isDeleting ? 'Deleting...' : 'Delete'}

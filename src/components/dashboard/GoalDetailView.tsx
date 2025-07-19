@@ -99,23 +99,15 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
     }
   };
 
-  const handleMilestoneUpdate = async (milestoneId: string, data: Partial<Milestone>) => {
-    try {
-      const updatedMilestone = await milestonesApi.update({
-        id: milestoneId,
-        ...data
-      });
-      
-      const updatedGoal = {
-        ...goal,
-        milestones: goal.milestones.map(m => 
-          m.id === milestoneId ? { ...m, ...updatedMilestone } : m
-        )
-      };
-      updateGoal(updatedGoal);
-    } catch (error) {
-      console.error('Error updating milestone:', error);
-    }
+  const handleMilestoneUpdate = (milestoneId: string, data: Partial<Milestone>) => {
+    // Update milestone in goal state for real-time progress update
+    const updatedGoal = {
+      ...goal,
+      milestones: goal.milestones.map(m =>
+        m.id === milestoneId ? { ...m, ...data } : m
+      )
+    };
+    updateGoal(updatedGoal);
   };
 
   const handleMilestoneDelete = async (milestoneId: string) => {
@@ -198,10 +190,28 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
   };
 
 
-  // Calculate progress based on completed milestones
-  const totalMilestones = goal.milestones?.length || 0;
-  const completedMilestones = goal.milestones?.filter(m => m.status === StatusType.FINISHED).length || 0;
-  const progress = totalMilestones > 0 ? (completedMilestones / totalMilestones) * 100 : 0;
+  // Calculate progress based on all tasks, subtasks, and todos in all milestones
+  const calculateOverallProgress = () => {
+    let totalItems = 0;
+    let completedItems = 0;
+    (goal.milestones || []).forEach(milestone => {
+      const tasks = milestone.tasks || [];
+      tasks.forEach(task => {
+        totalItems += 1;
+        if (task.status === StatusType.FINISHED) completedItems += 1;
+        if (task.subtasks) {
+          totalItems += task.subtasks.length;
+          completedItems += task.subtasks.filter(s => s.status === StatusType.FINISHED).length;
+        }
+        if (task.todos) {
+          totalItems += task.todos.length;
+          completedItems += task.todos.filter(t => t.status === StatusType.FINISHED).length;
+        }
+      });
+    });
+    return totalItems === 0 ? 0 : (completedItems / totalItems) * 100;
+  };
+  const progress = calculateOverallProgress();
 
   // Group milestones by status
   const groupedMilestones = (goal.milestones || []).reduce((acc, milestone) => {
@@ -220,14 +230,14 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 text-red-800 p-4 rounded-lg">
+      <div className="bg-accent text-accent-foreground p-4 rounded-lg">
         <p className="font-medium">Error loading goal details</p>
         <p className="text-sm mt-1">{error}</p>
         <button
@@ -250,7 +260,7 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
             };
             loadGoalDetails();
           }}
-          className="mt-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+          className="mt-2 px-4 py-2 text-sm font-medium text-accent-foreground bg-accent rounded-lg hover:bg-accent/80"
         >
           Try Again
         </button>
@@ -262,7 +272,7 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
     <div data-testid="goal-detail-view">
       <div className="flex justify-between items-center mb-6">
         <button
-          className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-gray-200 text-gray-800 hover:bg-gray-300 flex items-center"
+          className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-muted text-foreground hover:bg-muted/80 flex items-center"
           onClick={onBack}
         >
           <svg
@@ -280,19 +290,19 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
           <button
             onClick={handleSyncCalendar}
             disabled={isSyncingCalendar}
-            className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-gray-200 text-gray-800 hover:bg-gray-300 disabled:opacity-50"
+            className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-muted text-foreground hover:bg-muted/80 disabled:opacity-50"
           >
             {isSyncingCalendar ? 'Syncing...' : 'Sync with Calendar'}
           </button>
           <button
             onClick={handleAddMilestone}
-            className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-gray-800 text-white hover:bg-gray-900"
+            className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-primary text-primary-foreground hover:bg-primary/80"
           >
             Add Milestone
           </button>
           <button
             onClick={() => setShowDeleteGoalConfirm(true)}
-            className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-red-600 text-white hover:bg-red-700"
+            className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-accent text-accent-foreground hover:bg-accent/80"
           >
             Delete Goal
           </button>
@@ -300,8 +310,8 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
       </div>
 
       {isCreatingMilestone && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-background/80 flex items-center justify-center p-4 z-50">
+          <div className="bg-card rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4">Create New Milestone</h3>
             <MilestoneForm
               goalId={goal.id}
@@ -313,8 +323,8 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
       )}
 
       {isCreatingTask && selectedMilestoneId && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-background/80 flex items-center justify-center p-4 z-50">
+          <div className="bg-card rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4">Add Task</h3>
             <TaskForm
               goalId={goal.id}
@@ -346,16 +356,16 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
 
       {/* Delete Goal Confirmation Dialog */}
       {showDeleteGoalConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50">
+          <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold mb-4">Delete Goal</h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-muted-foreground mb-6">
               Are you sure you want to delete this goal? This action cannot be undone.
             </p>
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setShowDeleteGoalConfirm(false)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                className="px-4 py-2 text-muted-foreground hover:text-foreground"
                 disabled={isDeleting}
               >
                 Cancel
@@ -373,7 +383,7 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
                     setIsDeleting(false);
                   }
                 }}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+                className="px-4 py-2 bg-accent text-accent-foreground rounded hover:bg-accent/80 disabled:opacity-50"
                 disabled={isDeleting}
               >
                 {isDeleting ? 'Deleting...' : 'Delete'}

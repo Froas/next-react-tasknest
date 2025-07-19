@@ -30,20 +30,20 @@ const GoalHeaderCard: React.FC<GoalHeaderCardProps> = ({ goal, progress }) => (
   <div className="relative overflow-hidden">
     {/* Background gradient */}
     {/* <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"></div> */}
-        <div className="absolute inset-0 bg-white"></div>
+    <div className="absolute inset-0 bg-card"></div>
     
     {/* Decorative elements */}
-    <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-white/5 to-transparent rounded-full -translate-y-32 translate-x-32"></div>
-    <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-white/5 to-transparent rounded-full translate-y-24 -translate-x-24"></div>
+    <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-muted to-transparent rounded-full -translate-y-32 translate-x-32"></div>
+    <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-muted to-transparent rounded-full translate-y-24 -translate-x-24"></div>
     
-    <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-8 mb-8 border border-white/10">
+    <div className="relative bg-card/80 backdrop-blur-sm rounded-2xl p-8 mb-8 border border-border">
       {/* Header section */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-black mb-3 leading-tight">
+        <h1 className="text-3xl font-bold text-foreground mb-3 leading-tight">
           {goal.title}
         </h1>
         {goal.description && (
-          <p className="text-gray-600 text-lg leading-relaxed max-w-4xl">
+          <p className="text-muted-foreground text-lg leading-relaxed max-w-4xl">
             {goal.description}
           </p>
         )}
@@ -52,13 +52,13 @@ const GoalHeaderCard: React.FC<GoalHeaderCardProps> = ({ goal, progress }) => (
       {/* Progress section */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-gray-700 font-medium">Overall Progress</span>
-          <span className="text-2xl font-bold text-white">{Math.round(progress)}%</span>
+          <span className="text-muted-foreground font-medium">Overall Progress</span>
+          <span className="text-2xl font-bold text-foreground">{Math.round(progress)}%</span>
         </div>
         
         {/* Progress bar */}
         <div className="relative">
-          <div className="bg-gray-800/50 rounded-full h-3 overflow-hidden backdrop-blur-sm">
+          <div className="bg-muted rounded-full h-3 overflow-hidden backdrop-blur-sm">
             <div
               className={`bg-gradient-to-r ${getProgressColor(progress)} h-full rounded-full transition-all duration-700 ease-out relative`}
               style={{ width: `${progress}%` }}
@@ -69,7 +69,7 @@ const GoalHeaderCard: React.FC<GoalHeaderCardProps> = ({ goal, progress }) => (
           </div>
           
           {/* Progress milestones */}
-          <div className="flex justify-between mt-2 text-xs text-gray-900">
+          <div className="flex justify-between mt-2 text-xs text-foreground">
             <span>0%</span>
             <span>25%</span>
             <span>50%</span>
@@ -87,7 +87,7 @@ const GoalHeaderCard: React.FC<GoalHeaderCardProps> = ({ goal, progress }) => (
             // Use a runtime check to ensure the status is valid, fallback to default if not
             statusStyles.hasOwnProperty(goal.status)
               ? statusStyles[goal.status as keyof typeof statusStyles]
-              : 'bg-gray-100 text-gray-800 border-gray-200'
+              : 'bg-muted text-foreground border-border'
           }`}
         >
           <div className="flex items-center space-x-2">
@@ -97,7 +97,7 @@ const GoalHeaderCard: React.FC<GoalHeaderCardProps> = ({ goal, progress }) => (
         </div>
 
         {/* Priority badge */}
-        <div className={`px-4 py-2 rounded-full text-sm font-medium border ${priorityStyles[goal.priority as PriorityType] || 'bg-gray-100 text-gray-800 border-gray-200'}`}>
+        <div className={`px-4 py-2 rounded-full text-sm font-medium border ${priorityStyles[goal.priority as PriorityType] || 'bg-muted text-foreground border-border'}`}>
           <div className="flex items-center space-x-2">
             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -108,7 +108,7 @@ const GoalHeaderCard: React.FC<GoalHeaderCardProps> = ({ goal, progress }) => (
 
         {/* Date badges */}
         {goal.start_datetime && (
-          <div className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full text-sm text-white border border-white/20">
+          <div className="bg-muted backdrop-blur-sm px-4 py-2 rounded-full text-sm text-foreground border border-border">
             <div className="flex items-center space-x-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -119,7 +119,7 @@ const GoalHeaderCard: React.FC<GoalHeaderCardProps> = ({ goal, progress }) => (
         )}
 
         {goal.end_datetime && (
-          <div className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full text-sm text-white border border-white/20">
+          <div className="bg-muted backdrop-blur-sm px-4 py-2 rounded-full text-sm text-foreground border border-border">
             <div className="flex items-center space-x-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -131,31 +131,31 @@ const GoalHeaderCard: React.FC<GoalHeaderCardProps> = ({ goal, progress }) => (
       </div>
 
       {/* Statistics row */}
-      <div className="mt-6 pt-6 border-t border-white/10">
+      <div className="mt-6 pt-6 border-t border-border">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center">
-            <div className="text-2xl font-bold text-black mb-1">
+            <div className="text-2xl font-bold text-foreground mb-1">
               {goal.milestones?.length || 0}
             </div>
-            <div className="text-sm text-slate-400">Total Milestones</div>
+            <div className="text-sm text-muted-foreground">Total Milestones</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-emerald-400 mb-1">
+            <div className="text-2xl font-bold text-primary mb-1">
               {goal.milestones?.filter(m => m.status === StatusType.FINISHED).length || 0}
             </div>
-            <div className="text-sm text-slate-400">Completed</div>
+            <div className="text-sm text-muted-foreground">Completed</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-400 mb-1">
+            <div className="text-2xl font-bold text-primary mb-1">
               {goal.milestones?.filter(m => m.status === StatusType.IN_PROGRESS).length || 0}
             </div>
-            <div className="text-sm text-slate-400">In Progress</div>
+            <div className="text-sm text-muted-foreground">In Progress</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-amber-400 mb-1">
+            <div className="text-2xl font-bold text-accent mb-1">
               {goal.milestones?.filter(m => m.status === StatusType.OUTSTANDING).length || 0}
             </div>
-            <div className="text-sm text-slate-400">Pending</div>
+            <div className="text-sm text-muted-foreground">Pending</div>
           </div>
         </div>
       </div>

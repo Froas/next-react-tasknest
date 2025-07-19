@@ -57,19 +57,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   if (isLoadingGoals) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   if (goalsError) {
     return (
-      <div className="bg-red-50 text-red-800 p-4 rounded-lg">
+      <div className="bg-accent text-accent-foreground p-4 rounded-lg">
         <p className="font-medium">Error loading goals</p>
         <p className="text-sm mt-1">{goalsError}</p>
         <button
           onClick={fetchGoals}
-          className="mt-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+          className="mt-2 px-4 py-2 text-sm font-medium text-accent-foreground bg-accent rounded-lg hover:bg-accent/80"
         >
           Try Again
         </button>
@@ -80,21 +80,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">Dashboard Overview</h2>
+        <h2 className="text-xl font-semibold text-foreground">Dashboard Overview</h2>
         <button
           onClick={onCreateGoal}
-          className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-gray-800 text-white hover:bg-gray-900"
+          className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-primary text-primary-foreground hover:bg-primary/80"
         >
           Create New Goal
         </button>
       </div>
 
       {/* Daily Check-in Card */}
-      <div className="bg-white rounded-xl shadow-sm p-6 mb-6 flex flex-col sm:flex-row items-center justify-between">
+      <div className="bg-card border border-border rounded-xl shadow-sm p-6 mb-6 flex flex-col sm:flex-row items-center justify-between">
         <div className="flex items-center space-x-4 mb-4 sm:mb-0">
-          <div className="bg-gray-100 p-3 rounded-full">
+          <div className="bg-muted p-3 rounded-full">
             <svg
-              className="w-6 h-6 text-gray-800"
+              className="w-6 h-6 text-foreground"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -109,28 +109,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </svg>
           </div>
           <div>
-            <h3 className="text-lg font-medium">Daily Check-in</h3>
-            <p className="text-gray-600 text-sm">Start your day right!</p>
+            <h3 className="text-lg font-medium text-foreground">Daily Check-in</h3>
+            <p className="text-muted-foreground text-sm">Start your day right!</p>
           </div>
         </div>
-        <button className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-gray-800 text-white hover:bg-gray-900">
+        <button className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-primary text-primary-foreground hover:bg-primary/80">
           Complete Today's Tasks
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-6">
         {/* Overall Progress Card */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h3 className="text-lg font-medium mb-3">Overall Goal Progress</h3>
+        <div className="bg-card border border-border rounded-xl shadow-sm p-6">
+          <h3 className="text-lg font-medium mb-3 text-foreground">Overall Goal Progress</h3>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-gray-700">Total Goals Completed:</span>
-            <span className="font-semibold text-gray-800">
+            <span className="text-muted-foreground">Total Goals Completed:</span>
+            <span className="font-semibold text-foreground">
               {completedGoals} / {totalGoals}
             </span>
           </div>
-          <div className="bg-gray-200 rounded-full h-2.5 overflow-hidden">
+          <div className="bg-muted rounded-full h-2.5 overflow-hidden">
             <div
-              className="bg-gray-800 h-full rounded-full transition-all duration-300 ease-in-out"
+              className="bg-primary h-full rounded-full transition-all duration-300 ease-in-out"
               style={{ width: `${overallProgress}%` }}
             ></div>
           </div>
@@ -144,12 +144,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-xl font-semibold">Active Goals</h3>
           <div>
-            <label htmlFor="order-goals" className="mr-2 text-sm text-gray-700">Order by:</label>
+            <label htmlFor="order-goals" className="mr-2 text-sm text-muted-foreground">Order by:</label>
             <select
               id="order-goals"
               value={orderBy}
               onChange={e => setOrderBy(e.target.value as any)}
-              className="px-2 py-1 rounded border border-gray-300 text-sm"
+              className="px-2 py-1 rounded border border-border text-sm bg-background text-foreground"
             >
               <option value="title">Title (A-Z)</option>
               <option value="start_desc">Start Date (Newest)</option>
@@ -160,16 +160,40 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
         {sortedActiveGoals.length > 0 ? (
-          sortedActiveGoals.map((goal: Goal) => (
-            <GoalCard
-              key={goal.id}
-              goal={goal}
-              onClick={() => onSelectGoal(goal.id)}
-            />
-          ))
+          sortedActiveGoals.map((goal: Goal) => {
+            // Calculate progress as in GoalDetailView
+            const calculateGoalProgress = (goal: Goal) => {
+              let totalItems = 0;
+              let completedItems = 0;
+              (goal.milestones || []).forEach(milestone => {
+                const tasks = milestone.tasks || [];
+                tasks.forEach(task => {
+                  totalItems += 1;
+                  if (task.status === StatusType.FINISHED) completedItems += 1;
+                  if (task.subtasks) {
+                    totalItems += task.subtasks.length;
+                    completedItems += task.subtasks.filter(s => s.status === StatusType.FINISHED).length;
+                  }
+                  if (task.todos) {
+                    totalItems += task.todos.length;
+                    completedItems += task.todos.filter(t => t.status === StatusType.FINISHED).length;
+                  }
+                });
+              });
+              return totalItems === 0 ? 0 : (completedItems / totalItems) * 100;
+            };
+            return (
+              <GoalCard
+                key={goal.id}
+                goal={goal}
+                onClick={() => onSelectGoal(goal.id)}
+                progress={calculateGoalProgress(goal)}
+              />
+            );
+          })
         ) : (
-          <div className="text-center py-8 bg-white rounded-xl shadow-sm">
-            <p className="text-gray-500">No active goals. Create a new goal to get started!</p>
+          <div className="text-center py-8 bg-card border border-border rounded-xl shadow-sm">
+            <p className="text-muted-foreground">No active goals. Create a new goal to get started!</p>
           </div>
         )}
       </div>

@@ -58,8 +58,8 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
   ];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <h3 className="text-lg font-semibold mb-4 text-gray-900">Quick Actions</h3>
+    <div className="bg-card rounded-xl shadow-sm p-6">
+      <h3 className="text-lg font-semibold mb-4 text-foreground">Quick Actions</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {actions.map((action, index) => (
           <button
@@ -67,11 +67,11 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
             onClick={action.onClick}
             className={`
               p-4 rounded-lg 
-              border border-gray-200 
-              bg-white
-              hover:bg-gray-50 
-              hover:border-gray-300 
-              active:bg-gray-100
+              border border-border 
+              bg-card
+              hover:bg-muted 
+              hover:border-border 
+              active:bg-muted
               transition-all duration-200 
               flex items-start space-x-3
               group
@@ -79,16 +79,16 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
             `}
             disabled={!action.onClick}
           >
-            <div className="p-2 rounded-lg bg-gray-100 group-hover:bg-gray-200 transition-colors duration-200">
-              <div className="text-gray-900">
+            <div className="p-2 rounded-lg bg-muted group-hover:bg-muted transition-colors duration-200">
+              <div className="text-foreground">
                 {action.icon}
               </div>
             </div>
             <div className="text-left">
-              <h4 className="font-medium text-gray-900 group-hover:text-gray-800 transition-colors duration-200">
+              <h4 className="font-medium text-foreground group-hover:text-foreground transition-colors duration-200">
                 {action.title}
               </h4>
-              <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors duration-200">
+              <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors duration-200">
                 {action.description}
               </p>
             </div>
@@ -97,4 +97,4 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
       </div>
     </div>
   );
-}; 
+};
