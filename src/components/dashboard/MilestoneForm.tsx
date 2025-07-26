@@ -3,7 +3,7 @@ import { MilestoneItem as Milestone, StatusType, PriorityType } from '@/lib/type
 import { milestonesApi } from '@/lib/api';
 
 interface MilestoneFormProps {
-  goalId: string;
+  goalId?: string;
   onSuccess: (milestone: Omit<Milestone, 'id' | 'tasks' | 'todos'>) => void;
   onCancel: () => void;
   initialData?: Partial<Milestone>;

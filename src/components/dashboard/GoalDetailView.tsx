@@ -50,7 +50,7 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
   const [showDeleteGoalConfirm, setShowDeleteGoalConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const { updateGoal, addTaskToMilestoneInGoal } = useStore();
+  const { updateGoal, addTaskToMilestoneInGoal, addMilestoneToGoal, addEvent } = useStore();
 
   useEffect(() => {
     const loadGoalDetails = async () => {
@@ -87,15 +87,24 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
         position: goal.milestones?.length || 0
       });
       
-      const updatedGoal = {
-        ...goal,
-        milestones: [...(goal.milestones || []), newMilestone]
-      };
-      updateGoal(updatedGoal);
+      // Use optimistic update from store
+      addMilestoneToGoal(newMilestone, goal.id);
       setIsCreatingMilestone(false);
     } catch (error) {
       console.error('Error creating milestone:', error);
       setError('Failed to create milestone');
+      // Revert optimistic update on error by refetching
+      try {
+        const fullGoal = await goalsApi.getById(goal.id, {
+          include_milestones: true,
+          include_tasks: true,
+          include_subtasks: true,
+          include_todos: true
+        });
+        updateGoal(fullGoal);
+      } catch (fetchError) {
+        console.error('Failed to revert milestone creation:', fetchError);
+      }
     }
   };
 
@@ -106,15 +115,17 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
         ...data
       });
       
+      // Update milestone in the goal using store helper method
       const updatedGoal = {
         ...goal,
-        milestones: goal.milestones.map(m => 
+        milestones: goal.milestones?.map(m => 
           m.id === milestoneId ? { ...m, ...updatedMilestone } : m
-        )
+        ) || []
       };
       updateGoal(updatedGoal);
     } catch (error) {
       console.error('Error updating milestone:', error);
+      setError('Failed to update milestone');
     }
   };
 
@@ -123,11 +134,12 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
       await milestonesApi.delete(milestoneId);
       const updatedGoal = {
         ...goal,
-        milestones: goal.milestones.filter(m => m.id !== milestoneId)
+        milestones: goal.milestones?.filter(m => m.id !== milestoneId) || []
       };
       updateGoal(updatedGoal);
     } catch (error) {
       console.error('Error deleting milestone:', error);
+      setError('Failed to delete milestone');
     }
   };
 
@@ -135,23 +147,78 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
     setIsSyncingCalendar(true);
     setError(null);
     try {
-      // Create events for milestones
-      const events = await Promise.all(
-        goal.milestones.map(milestone =>
-          eventsApi.create({
-            title: milestone.title,
-            description: milestone.description,
-            start_datetime: milestone.due_date || new Date().toISOString(),
-            end_datetime: milestone.due_date || new Date().toISOString(),
+      const eventsToCreate = [];
+      
+      // Create event for the goal itself
+      eventsToCreate.push({
+        title: `Goal: ${goal.title}`,
+        description: `Goal deadline: ${goal.description || 'No description'}`,
+        start_datetime: goal.end_datetime || new Date().toISOString(),
+        end_datetime: goal.end_datetime || new Date().toISOString(),
+        status: goal.status,
+        goal_id: goal.id,
+        location: 'Goal Planning',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+
+      // Create events for each milestone
+      if (goal.milestones && goal.milestones.length > 0) {
+        goal.milestones.forEach(milestone => {
+          eventsToCreate.push({
+            title: `Milestone: ${milestone.title}`,
+            description: `${milestone.description || 'No description'}\nGoal: ${goal.title}`,
+            start_datetime: milestone.due_date || milestone.end_datetime || new Date().toISOString(),
+            end_datetime: milestone.due_date || milestone.end_datetime || new Date().toISOString(),
             status: milestone.status,
             goal_id: goal.id,
-            milestone_id: milestone.id,
+            location: 'Milestone Review',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-          })
-        )
+          });
+
+          // Create events for important tasks with due dates
+          if (milestone.tasks && milestone.tasks.length > 0) {
+            milestone.tasks
+              .filter(task => task.due_date && task.priority === 'high')
+              .forEach(task => {
+                eventsToCreate.push({
+                  title: `Task: ${task.title}`,
+                  description: `${task.description || 'No description'}\nMilestone: ${milestone.title}\nGoal: ${goal.title}`,
+                  start_datetime: task.due_date!,
+                  end_datetime: task.due_date!,
+                  status: task.status,
+                  goal_id: goal.id,
+                  location: 'Task Work',
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                });
+              });
+          }
+        });
+      }
+
+      // Create all events
+      const createdEvents = await Promise.all(
+        eventsToCreate.map(eventData => eventsApi.create(eventData))
       );
-      console.log('Created events:', events);
+
+      // Update the events store with new events
+      createdEvents.forEach(event => addEvent(event));
+
+      // Show success message
+      setError(null);
+      const goalEvents = 1;
+      const milestoneEvents = goal.milestones?.length || 0;
+      const taskEvents = createdEvents.length - goalEvents - milestoneEvents;
+      
+      alert(`Successfully synced ${createdEvents.length} items to calendar:\n` +
+            `• ${goalEvents} Goal event\n` +
+            `• ${milestoneEvents} Milestone events\n` +
+            `• ${taskEvents} High-priority task events\n\n` +
+            `Check the calendar widget to see your scheduled items!`);
+      
+      console.log('Created calendar events:', createdEvents);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to sync with calendar');
     } finally {
@@ -260,13 +327,28 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
 
   return (
     <div data-testid="goal-detail-view">
+      {/* Error notification */}
+      {error && (
+        <div className="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-center justify-between">
+          <span>{error}</span>
+          <button
+            onClick={() => setError(null)}
+            className="text-red-600 hover:text-red-800 ml-4"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       <div className="flex justify-between items-center mb-6">
         <button
-          className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-gray-200 text-gray-800 hover:bg-gray-300 flex items-center"
+          className="px-2 py-1.5 text-sm rounded-md font-medium cursor-pointer transition-colors duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200 flex items-center"
           onClick={onBack}
         >
           <svg
-            className="w-6 h-6 mr-2"
+            className="w-4 h-4 mr-1.5"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -274,27 +356,31 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
           </svg>
-          Back to Dashboard
+          Back
         </button>
-        <div className="flex space-x-3">
+        <div className="flex space-x-2">
           <button
             onClick={handleSyncCalendar}
             disabled={isSyncingCalendar}
-            className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-gray-200 text-gray-800 hover:bg-gray-300 disabled:opacity-50"
+            className="px-3 py-1.5 text-sm rounded-md font-medium cursor-pointer transition-colors duration-200 bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 flex items-center space-x-1"
+            title="Sync goal, milestones, and high-priority tasks to calendar"
           >
-            {isSyncingCalendar ? 'Syncing...' : 'Sync with Calendar'}
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span>{isSyncingCalendar ? 'Syncing...' : 'Sync Calendar'}</span>
           </button>
           <button
             onClick={handleAddMilestone}
-            className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-gray-800 text-white hover:bg-gray-900"
+            className="px-2 py-1.5 text-sm rounded-md font-medium cursor-pointer transition-colors duration-200 bg-blue-600 text-white hover:bg-blue-700"
           >
-            Add Milestone
+            + Milestone
           </button>
           <button
             onClick={() => setShowDeleteGoalConfirm(true)}
-            className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-red-600 text-white hover:bg-red-700"
+            className="px-2 py-1.5 text-sm rounded-md font-medium cursor-pointer transition-colors duration-200 bg-red-500 text-white hover:bg-red-600"
           >
-            Delete Goal
+            Delete
           </button>
         </div>
       </div>

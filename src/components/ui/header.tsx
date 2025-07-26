@@ -14,10 +14,11 @@ const Header = () => {
 
   const navItems = [
     { href: '/', label: 'Dashboard' },
-    { href: '/goals', label: 'Goals' },
-    { href: '/milestones', label: 'Milestones' },
-    { href: '/tasks', label: 'Tasks' },
-    { href: '/todos', label: 'Todos' },
+    { href: '/goal', label: 'Goals' },
+    { href: '/milestone', label: 'Milestones' },
+    { href: '/task', label: 'Tasks' },
+    { href: '/todo', label: 'Todos' },
+    { href: '/event', label: 'Events' },
     { href: '/calendar', label: 'Calendar' },
     { href: '/visualization', label: 'Visualization' },
   ];
@@ -70,4 +71,3 @@ const Header = () => {
 };
 
 export default Header;
-  

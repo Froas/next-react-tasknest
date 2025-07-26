@@ -1,11 +1,12 @@
-"use client"; 
+"use client";
 
 import { SessionProvider, useSession } from 'next-auth/react';
+import { Session } from 'next-auth';
 import Header from '../components/ui/header';
 import { usePathname } from 'next/navigation';
 import React, { createContext, useContext } from 'react';
 
-const SessionContext = createContext(null);
+const SessionContext = createContext<Session | null>(null);
 
 function SessionPasser({ children }: { children: React.ReactNode }) {
     const { data: session } = useSession();

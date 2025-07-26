@@ -10,6 +10,7 @@ import { TaskForm } from '@/components/dashboard/TaskForm';
 import { TodoForm } from '@/components/dashboard/TodoForm';
 import { SubtaskForm } from '@/components/dashboard/SubtaskForm';
 import { ChevronDown, ChevronRight, Plus, Calendar, Target, CheckCircle2, Circle, Clock, AlertCircle, Trash2, MoreHorizontal } from 'lucide-react';
+import TaskKanbanView from './TaskKanbanView';
 
 interface GeneratedTasks {
   dailyTasks: string[];
@@ -197,9 +198,7 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
           break;
       }
 
-      // Update the task in the store
-      const updatedTask = await tasksApi.get(itemId, true, true);
-      updateTask(updatedTask);
+      // Update the milestone state locally to reflect changes immediately
 
       setCurrentMilestone(prevMilestone => {
         const updatedTasks = prevMilestone.tasks.map(task => {
@@ -286,7 +285,8 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
       }
     });
 
-    return totalItems === 0 ? 0 : (completedItems / totalItems) * 100;
+    // If no tasks exist, milestone should be 100% complete
+    return totalItems === 0 ? 100 : (completedItems / totalItems) * 100;
   };
 
   return (
@@ -373,42 +373,29 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
 
       {/* Tasks Section */}
       {isExpanded && (
-        <div className="p-6 bg-gray-50">
+        <div className="p-6">
           {isLoading ? (
             <div className="text-center py-8 text-gray-500">
               <div className="animate-spin w-6 h-6 border-2 border-gray-300 border-t-blue-600 rounded-full mx-auto mb-2"></div>
               Loading tasks...
             </div>
-          ) : tasks.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Target className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <p className="text-sm font-medium">No tasks yet</p>
-              <p className="text-xs mt-1">Add your first task to get started</p>
-            </div>
           ) : (
-            <div className="space-y-3">
-              {tasks.map((task: Task) => (
-                <TaskItem
-                  key={task.id}
-                  task={task}
-                  isExpanded={expandedTasks.has(task.id)}
-                  onToggle={() => toggleTaskExpansion(task.id)}
-                  onStatusChange={(status) => handleTaskToggle(task.id, 'task', status)}
-                  onAddTodo={() => {
-                    setSelectedTask(task);
-                    setIsCreatingTodo(true);
-                  }}
-                  onAddSubtask={() => {
-                    setSelectedTask(task);
-                    setIsCreatingSubtask(true);
-                  }}
-                  // Pass parentTaskId for subtask/todo toggling
-                  onSubtaskToggle={(subtaskId, status) => handleTaskToggle(subtaskId, 'subtask', status, task.id)}
-                  onTodoToggle={(todoId, status) => handleTaskToggle(todoId, 'todo', status, task.id)}
-                  isUpdating={isUpdating}
-                />
-              ))}
-            </div>
+            <TaskKanbanView
+              tasks={tasks}
+              onTaskToggle={(taskId, status) => handleTaskToggle(taskId, 'task', status)}
+              onSubtaskToggle={(subtaskId, status, parentTaskId) => parentTaskId && handleTaskToggle(subtaskId, 'subtask', status, parentTaskId)}
+              onTodoToggle={(todoId, status, parentTaskId) => parentTaskId && handleTaskToggle(todoId, 'todo', status, parentTaskId)}
+              onAddTask={() => setIsCreatingTask(true)}
+              onAddTodo={(task) => {
+                setSelectedTask(task);
+                setIsCreatingTodo(true);
+              }}
+              onAddSubtask={(task) => {
+                setSelectedTask(task);
+                setIsCreatingSubtask(true);
+              }}
+              isUpdating={isUpdating}
+            />
           )}
         </div>
       )}
@@ -467,157 +454,6 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
   );
 }
 
-// Task Item Component
-interface TaskItemProps {
-  task: Task;
-  isExpanded: boolean;
-  onToggle: () => void;
-  onStatusChange: (status: StatusType) => void;
-  onAddTodo: () => void;
-  onAddSubtask: () => void;
-  onSubtaskToggle: (subtaskId: string, status: StatusType) => void;
-  onTodoToggle: (todoId: string, status: StatusType) => void;
-  isUpdating: boolean;
-}
-
-function TaskItem({ 
-  task, 
-  isExpanded, 
-  onToggle, 
-  onStatusChange, 
-  onAddTodo, 
-  onAddSubtask, 
-  onSubtaskToggle, 
-  onTodoToggle, 
-  isUpdating 
-}: TaskItemProps) {
-  const isCompleted = task.status === StatusType.FINISHED;
-  const hasSubItems = (task.subtasks?.length || 0) + (task.todos?.length || 0) > 0;
-
-  return (
-    <div className="bg-white border border-gray-200 rounded-lg">
-      {/* Task Header */}
-      <div className="p-4">
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={() => onStatusChange(task.status)}
-            disabled={isUpdating}
-            className="flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-          >
-            {isCompleted ? (
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-            ) : (
-              <Circle className="w-5 h-5 text-gray-400 hover:text-gray-600" />
-            )}
-          </button>
-          
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center space-x-2">
-              <span className={`text-sm font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-                {task.title}
-              </span>
-              {task.priority && (
-                <span className={`px-1.5 py-0.5 text-xs font-medium rounded border ${getPriorityColor(task.priority)}`}>
-                  {task.priority}
-                </span>
-              )}
-            </div>
-            {task.description && (
-              <p className={`text-xs mt-1 ${isCompleted ? 'text-gray-400' : 'text-gray-600'}`}>
-                {task.description}
-              </p>
-            )}
-          </div>
-
-          <div className="flex items-center space-x-2">
-            {hasSubItems && (
-              <button
-                onClick={onToggle}
-                className="p-1 text-gray-400 hover:text-gray-600 rounded"
-              >
-                {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-              </button>
-            )}
-            
-            <div className="flex items-center space-x-1">
-              <button
-                onClick={onAddSubtask}
-                className="px-2 py-1 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
-              >
-                + Subtask
-              </button>
-              <button
-                onClick={onAddTodo}
-                className="px-2 py-1 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
-              >
-                + Todo
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Sub-items */}
-      {isExpanded && hasSubItems && (
-        <div className="border-t border-gray-100 bg-gray-50 p-4">
-          <div className="space-y-2">
-            {/* Subtasks */}
-            {task.subtasks?.map((subtask) => (
-              <div key={subtask.id} className="flex items-center space-x-3 py-1">
-                <div className="w-5 flex justify-center">
-                  <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                </div>
-                <button
-                  onClick={() => onSubtaskToggle(subtask.id, subtask.status)}
-                  disabled={isUpdating}
-                  className="flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-                >
-                  {subtask.status === StatusType.FINISHED ? (
-                    <CheckCircle2 className="w-4 h-4 text-green-500" />
-                  ) : (
-                    <Circle className="w-4 h-4 text-gray-400 hover:text-gray-600" />
-                  )}
-                </button>
-                <span className={`text-sm flex-1 ${subtask.status === StatusType.FINISHED ? 'line-through text-gray-500' : 'text-gray-700'}`}>
-                  {subtask.title}
-                </span>
-                <span className="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded">
-                  Subtask
-                </span>
-              </div>
-            ))}
-
-            {/* Todos */}
-            {task.todos?.map((todo) => (
-              <div key={todo.id} className="flex items-center space-x-3 py-1">
-                <div className="w-5 flex justify-center">
-                  <div className="w-2 h-2 bg-blue-300 rounded-full"></div>
-                </div>
-                <button
-                  onClick={() => onTodoToggle(todo.id, todo.status)}
-                  disabled={isUpdating}
-                  className="flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-                >
-                  {todo.status === StatusType.FINISHED ? (
-                    <CheckCircle2 className="w-4 h-4 text-green-500" />
-                  ) : (
-                    <Circle className="w-4 h-4 text-gray-400 hover:text-gray-600" />
-                  )}
-                </button>
-                <span className={`text-sm flex-1 ${todo.status === StatusType.FINISHED ? 'line-through text-gray-500' : 'text-gray-700'}`}>
-                  {todo.title}
-                </span>
-                <span className="text-xs text-gray-500 bg-blue-100 px-2 py-0.5 rounded">
-                  Todo
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 function getPriorityColor(priority: PriorityType) {
   switch (priority) {

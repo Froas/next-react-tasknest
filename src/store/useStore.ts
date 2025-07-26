@@ -240,27 +240,6 @@ export const useStore = create<AppStore>((set, get) => ({
         : g
     )
   })),
-  
-  // Helper method to update task within a milestone
-  updateTaskInMilestone: (goalId: string, milestoneId: string, task: Task) => set((state) => ({
-    goals: state.goals.map((g) => 
-      g.id === goalId 
-        ? {
-            ...g,
-            milestones: g.milestones?.map((m) => 
-              m.id === milestoneId
-                ? {
-                    ...m,
-                    tasks: m.tasks?.map((t) => 
-                      t.id === task.id ? { ...t, ...task } : t
-                    ) || []
-                  }
-                : m
-            ) || []
-          }
-        : g
-    )
-  })),
 
   // Specific adders implementations
   addMilestoneToGoal: (milestone, goalId) => set((state) => ({
@@ -330,7 +309,7 @@ export const useStore = create<AppStore>((set, get) => ({
                       t.id === taskId
                         ? {
                             ...t,
-                            subtasks: [...(t.subtasks || []), subtask],
+                            subtasks: [...(t.subtasks || []), subtask as any],
                           }
                         : t
                     ) || [],
