@@ -1,10 +1,10 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, Suspense } from "react";
 import { usersApi } from "@/lib/api"; 
 
-const GoogleCalendarCallback = () => {
+const GoogleCalendarCallbackContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isProcessingRef = useRef(false);
@@ -31,6 +31,14 @@ const GoogleCalendarCallback = () => {
   }, [searchParams, router]);
 
   return <div>Integration with Google Calendar</div>;
+};
+
+const GoogleCalendarCallback = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <GoogleCalendarCallbackContent />
+    </Suspense>
+  );
 };
 
 export default GoogleCalendarCallback;

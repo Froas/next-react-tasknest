@@ -66,6 +66,7 @@ const Home = () => {
     isLoadingGoals, 
     goalsError,
     fetchGoals,
+    fetchEvents,
     addGoal,
     updateGoal,
     deleteGoal: deleteGoalFromStore,
@@ -83,7 +84,8 @@ const Home = () => {
 
   useEffect(() => {
     fetchGoals();
-  }, [fetchGoals]);
+    fetchEvents();
+  }, [fetchGoals, fetchEvents]);
 
   // Order state for goals (shared with DashboardView and selection modals)
 
