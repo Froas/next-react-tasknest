@@ -241,7 +241,7 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
                   include_todos: true
                 });
                 
-                // Обновляем goal в store с полными данными
+
                 updateGoal(fullGoal);
               } catch (error) {
                 console.error('Error loading goal details:', error);

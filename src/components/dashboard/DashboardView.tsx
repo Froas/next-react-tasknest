@@ -21,7 +21,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   orderBy,
   setOrderBy,
 }) => {
-  // Берём данные из Zustand
+ 
   const { goals, isLoadingGoals, goalsError, fetchGoals } = useStore();
 
   const totalGoals = goals.length;

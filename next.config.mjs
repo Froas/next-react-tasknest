@@ -7,7 +7,7 @@ const withBundleAnalyzer = createBundleAnalyzer({
 });
 
 const nextConfig = {
-  // твои остальные настройки, например:
+  
   reactStrictMode: true,
   // etc.
 };

@@ -71,6 +71,7 @@ const Home = () => {
     deleteGoal: deleteGoalFromStore,
     addMilestone,
     // Add new store actions for optimistic updates
+    addMilestoneToGoal,
     addTaskToMilestoneInGoal,
     addTodoToTaskInMilestoneInGoal,
     addSubtaskToTaskInMilestoneInGoal,
@@ -169,11 +170,24 @@ const Home = () => {
           ]
         });
       }
+      // Optimistically add the milestone to the goal in the store
+      addMilestoneToGoal(createdMilestone, selectedGoalId);
       setIsCreatingMilestone(false);
       // Optionally, fetch the updated goal in the background for consistency
       goalsApi.getById(selectedGoalId, { include_milestones: true }).then(updateGoal).catch(() => {});
     } catch (error) {
       console.error('Failed to create milestone:', error);
+      // On error, we could revert the optimistic update by refetching the goal
+      try {
+        const updatedGoal = await goalsApi.getById(selectedGoalId, {
+          include_milestones: true,
+          include_tasks: true,
+          include_todos: true
+        });
+        updateGoal(updatedGoal);
+      } catch (fetchError) {
+        console.error('Failed to revert milestone creation:', fetchError);
+      }
     }
   };
 

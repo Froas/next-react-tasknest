@@ -197,6 +197,10 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
           break;
       }
 
+      // Update the task in the store
+      const updatedTask = await tasksApi.get(itemId, true, true);
+      updateTask(updatedTask);
+
       setCurrentMilestone(prevMilestone => {
         const updatedTasks = prevMilestone.tasks.map(task => {
           if (task.id === itemId) {
