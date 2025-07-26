@@ -2,28 +2,28 @@
 
 import React, { useState, useEffect } from 'react';
 import { withAuth } from '@/hoc/withAuth';
-import { Header } from '@/components/dashboard/Header';
 import dynamic from 'next/dynamic';
 import { GoalItem as Goal, MilestoneItem as Milestone, TaskItem as Task, TodoItem as Todo, SubtaskItem as Subtask } from '@/lib/types';
 import { goalsApi, milestonesApi, tasksApi, todosApi } from '@/lib/api';
 import { useStore } from '@/store/useStore';
 import { useRouter } from 'next/navigation';
 import { StatusType, PriorityType } from '@/types';
-import { useAppSession } from './clientwrapper';
+import { useSession } from 'next-auth/react';
 
 const DashboardView = dynamic(() => import('@/components/dashboard/DashboardView').then(m => m.DashboardView));
 const GoalDetailView = dynamic(() => import('@/components/dashboard/GoalDetailView').then(m => m.GoalDetailView));
 const CalendarWidget = dynamic(() => import('@/components/dashboard/CalendarWidget').then(m => m.CalendarWidget));
 const QuickActions = dynamic(() => import('@/components/dashboard/QuickActions').then(m => m.QuickActions));
-const GoalForm = dynamic(() => import('@/components/dashboard/GoalForm').then(m => m.GoalForm));
+const GoalForm = dynamic(() => import('@/components/dashboard/GoalForm').then(m => m.GoalForm), { ssr: false });
 const MilestoneForm = dynamic(() => import('@/components/dashboard/MilestoneForm').then(m => m.MilestoneForm));
 const TaskForm = dynamic(() => import('@/components/dashboard/TaskForm').then(m => m.TaskForm));
 const TodoForm = dynamic(() => import('@/components/dashboard/TodoForm').then(m => m.TodoForm));
 const SubtaskForm = dynamic(() => import('@/components/dashboard/SubtaskForm').then(m => m.SubtaskForm));
-const QuickGoalForm = dynamic(() => import('@/components/dashboard/QuickGoalForm').then(m => m.QuickGoalForm));
+const QuickGoalForm = dynamic(() => import('@/components/dashboard/QuickGoalForm').then(m => m.QuickGoalForm), { ssr: false });
+const EventForm = dynamic(() => import('@/components/dashboard/EventForm').then(m => m.EventForm), { ssr: false });
 
 const Home = () => {
-  const session = useAppSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   
   // View States
@@ -82,15 +82,25 @@ const Home = () => {
   const selectedGoal = selectedGoalId ? goals.find((goal: Goal) => goal.id === selectedGoalId) : null;
 
   useEffect(() => {
-    fetchGoals();
-  }, [fetchGoals]);
+    if (status === 'authenticated') {
+      fetchGoals();
+    }
+  }, [status, fetchGoals]);
 
   // Order state for goals (shared with DashboardView and selection modals)
 
-  if (isLoadingGoals) {
+  if (status === 'loading' || isLoadingGoals) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (status === 'unauthenticated') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500">You are not authenticated.</div>
       </div>
     );
   }
@@ -388,8 +398,6 @@ const Home = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 font-sans text-gray-900">
-      <Header/>
-
       <main className="flex-grow container mx-auto p-6 md:p-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <section className="lg:col-span-2">
           {currentView === 'dashboard' ? (

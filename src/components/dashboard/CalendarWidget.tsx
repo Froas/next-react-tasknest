@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
 import { TaskItem as Task, TodoItem as Todo, Event, StatusType } from '@/lib/types';
 import Calendar from 'react-calendar';
@@ -10,15 +10,55 @@ interface CalendarWidgetProps {
 }
 
 export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ tasks = [], todos = [] }) => {
-  const { todos: storeTodos, tasks: storeTasks, events: storeEvents, isLoadingTodos, isLoadingTasks, isLoadingEvents } = useStore();
+  const { goals, events: storeEvents, isLoadingGoals, isLoadingEvents, fetchGoals, fetchEvents } = useStore();
   const [date, setDate] = useState(new Date());
 
-  // Use store data if available, otherwise use props
-  const allTasks = storeTasks.length > 0 ? storeTasks : tasks;
-  const allTodos = storeTodos.length > 0 ? storeTodos : todos;
+  useEffect(() => {
+    fetchGoals();
+    fetchEvents();
+  }, [fetchGoals, fetchEvents]);
 
-  // Get all items (tasks, todos, and events) with due dates
+  // Extract all items from goals structure
+  const allTasks: (Task & { goalTitle?: string; milestoneTitle?: string })[] = [];
+  const allTodos: (Todo & { taskTitle?: string; goalTitle?: string })[] = [];
+  const allMilestones: any[] = [];
+  const allGoals: any[] = [];
+  
+  goals.forEach(goal => {
+    // Add goal if it has an end date
+    if (goal.end_datetime) {
+      allGoals.push({
+        ...goal,
+        due_date: goal.end_datetime,
+        itemType: 'Goal'
+      });
+    }
+
+    goal.milestones?.forEach(milestone => {
+      // Add milestone if it has a due date
+      if (milestone.due_date || milestone.end_datetime) {
+        allMilestones.push({
+          ...milestone,
+          due_date: milestone.due_date || milestone.end_datetime,
+          itemType: 'Milestone'
+        });
+      }
+
+      if (milestone.tasks) {
+        milestone.tasks.forEach(task => {
+          allTasks.push({...task, goalTitle: goal.title, milestoneTitle: milestone.title});
+          if (task.todos) {
+            task.todos.forEach(todo => allTodos.push({...todo, taskTitle: task.title, goalTitle: goal.title}));
+          }
+        });
+      }
+    });
+  });
+
+  // Get all items (goals, milestones, tasks, todos, and events) with due dates
   const items = [
+    ...allGoals,
+    ...allMilestones,
     ...allTasks.filter(task => task.due_date).map(task => ({ ...task, itemType: 'Task' as const })),
     ...allTodos.filter(todo => todo.due_date).map(todo => ({ ...todo, itemType: 'Todo' as const })),
     ...storeEvents.filter(event => event.start_datetime).map(event => ({ ...event, itemType: 'Event' as const, due_date: event.start_datetime }))
@@ -87,15 +127,35 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ tasks = [], todo
                   }`}
                 >
                   <div className="flex justify-between items-start mb-1">
-                    <span className="font-medium">{item.title}</span>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      item.status === StatusType.FINISHED ? 'bg-green-100 text-green-800' :
-                      item.status === StatusType.IN_PROGRESS ? 'bg-blue-100 text-blue-800' :
-                      item.status === StatusType.CANCELLED ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {item.status}
-                    </span>
+                    <div className="flex-1">
+                      <span className="font-medium">{item.title}</span>
+                      {(item as any).goalTitle && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {item.itemType === 'Todo' && (item as any).taskTitle && `${(item as any).taskTitle} • `}
+                          {item.itemType === 'Task' && (item as any).milestoneTitle && `${(item as any).milestoneTitle} • `}
+                          {(item as any).goalTitle}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end space-y-1">
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        item.status === StatusType.FINISHED ? 'bg-green-100 text-green-800' :
+                        item.status === StatusType.IN_PROGRESS ? 'bg-blue-100 text-blue-800' :
+                        item.status === StatusType.CANCELLED ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {item.status}
+                      </span>
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        item.itemType === 'Goal' ? 'bg-purple-100 text-purple-800' :
+                        item.itemType === 'Milestone' ? 'bg-blue-100 text-blue-800' :
+                        item.itemType === 'Task' ? 'bg-green-100 text-green-800' :
+                        item.itemType === 'Todo' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {item.itemType}
+                      </span>
+                    </div>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className={`${
@@ -104,9 +164,6 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ tasks = [], todo
                       'text-gray-600'
                     }`}>
                       Due: {dueDate.toLocaleDateString()}
-                    </span>
-                    <span className="text-gray-500">
-                      {item.itemType}
                     </span>
                   </div>
                 </div>

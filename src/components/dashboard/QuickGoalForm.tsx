@@ -1,3 +1,4 @@
+"use client";
 import React, { useState } from 'react';
 import { GoalItem as Goal, StatusType, PriorityType } from '@/lib/types';
 import { goalsApi } from '@/lib/api';
@@ -123,4 +124,4 @@ export const QuickGoalForm: React.FC<QuickGoalFormProps> = ({ onSuccess, onCance
       </div>
     </form>
   );
-}; 
+};

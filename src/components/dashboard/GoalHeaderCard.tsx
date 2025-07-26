@@ -53,12 +53,12 @@ const GoalHeaderCard: React.FC<GoalHeaderCardProps> = ({ goal, progress }) => (
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <span className="text-gray-700 font-medium">Overall Progress</span>
-          <span className="text-2xl font-bold text-white">{Math.round(progress)}%</span>
+          <span className="text-2xl font-bold text-gray-900">{Math.round(progress)}%</span>
         </div>
         
         {/* Progress bar */}
         <div className="relative">
-          <div className="bg-gray-800/50 rounded-full h-3 overflow-hidden backdrop-blur-sm">
+          <div className="bg-gray-200 rounded-full h-3 overflow-hidden">
             <div
               className={`bg-gradient-to-r ${getProgressColor(progress)} h-full rounded-full transition-all duration-700 ease-out relative`}
               style={{ width: `${progress}%` }}
@@ -108,7 +108,7 @@ const GoalHeaderCard: React.FC<GoalHeaderCardProps> = ({ goal, progress }) => (
 
         {/* Date badges */}
         {goal.start_datetime && (
-          <div className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full text-sm text-white border border-white/20">
+          <div className="bg-blue-50 px-4 py-2 rounded-full text-sm text-blue-800 border border-blue-200">
             <div className="flex items-center space-x-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -119,7 +119,7 @@ const GoalHeaderCard: React.FC<GoalHeaderCardProps> = ({ goal, progress }) => (
         )}
 
         {goal.end_datetime && (
-          <div className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full text-sm text-white border border-white/20">
+          <div className="bg-purple-50 px-4 py-2 rounded-full text-sm text-purple-800 border border-purple-200">
             <div className="flex items-center space-x-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -131,31 +131,31 @@ const GoalHeaderCard: React.FC<GoalHeaderCardProps> = ({ goal, progress }) => (
       </div>
 
       {/* Statistics row */}
-      <div className="mt-6 pt-6 border-t border-white/10">
+      <div className="mt-6 pt-6 border-t border-gray-200">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center">
-            <div className="text-2xl font-bold text-black mb-1">
+            <div className="text-2xl font-bold text-gray-900 mb-1">
               {goal.milestones?.length || 0}
             </div>
-            <div className="text-sm text-slate-400">Total Milestones</div>
+            <div className="text-sm text-gray-600">Total Milestones</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-emerald-400 mb-1">
+            <div className="text-2xl font-bold text-emerald-600 mb-1">
               {goal.milestones?.filter(m => m.status === StatusType.FINISHED).length || 0}
             </div>
-            <div className="text-sm text-slate-400">Completed</div>
+            <div className="text-sm text-gray-600">Completed</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-400 mb-1">
+            <div className="text-2xl font-bold text-blue-600 mb-1">
               {goal.milestones?.filter(m => m.status === StatusType.IN_PROGRESS).length || 0}
             </div>
-            <div className="text-sm text-slate-400">In Progress</div>
+            <div className="text-sm text-gray-600">In Progress</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-amber-400 mb-1">
+            <div className="text-2xl font-bold text-amber-600 mb-1">
               {goal.milestones?.filter(m => m.status === StatusType.OUTSTANDING).length || 0}
             </div>
-            <div className="text-sm text-slate-400">Pending</div>
+            <div className="text-sm text-gray-600">Pending</div>
           </div>
         </div>
       </div>

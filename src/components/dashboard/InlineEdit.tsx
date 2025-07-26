@@ -16,13 +16,15 @@ export const InlineEdit: React.FC<InlineEditProps> = ({
   className = '',
 }) => {
   const [editValue, setEditValue] = useState(value);
-  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.focus();
+    const element = type === 'textarea' ? textareaRef.current : inputRef.current;
+    if (element) {
+      element.focus();
     }
-  }, []);
+  }, [type]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -37,18 +39,27 @@ export const InlineEdit: React.FC<InlineEditProps> = ({
     onSave(editValue);
   };
 
-  const commonProps = {
-    ref: inputRef,
-    value: editValue,
-    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setEditValue(e.target.value),
-    onKeyDown: handleKeyDown,
-    onBlur: handleBlur,
-    className: `w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-gray-400 ${className}`,
-  };
+  const commonStyles = `w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-gray-400 ${className}`;
 
   return type === 'textarea' ? (
-    <textarea {...commonProps} rows={3} />
+    <textarea
+      ref={textareaRef}
+      value={editValue}
+      onChange={(e) => setEditValue(e.target.value)}
+      onKeyDown={handleKeyDown}
+      onBlur={handleBlur}
+      className={commonStyles}
+      rows={3}
+    />
   ) : (
-    <input type="text" {...commonProps} />
+    <input
+      type="text"
+      ref={inputRef}
+      value={editValue}
+      onChange={(e) => setEditValue(e.target.value)}
+      onKeyDown={handleKeyDown}
+      onBlur={handleBlur}
+      className={commonStyles}
+    />
   );
 }; 
