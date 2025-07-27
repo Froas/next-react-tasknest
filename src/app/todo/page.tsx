@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { withAuth } from '@/hoc/withAuth';
 import { TodoItem, TaskItem, SubtaskItem, StatusType, PriorityType } from '@/lib/types';
 import { useStore } from '@/store/useStore';
+import { goalsApi } from '@/lib/api';
 import { CheckSquare, List, Target, Plus, Check, Calendar } from 'lucide-react';
 
 type ItemType = 'task' | 'todo' | 'subtask';
@@ -34,14 +35,47 @@ const TodosPage: React.FC = () => {
     isLoadingTodos,
     fetchGoals,
     fetchTasks,
-    fetchTodos
+    fetchTodos,
+    setGoals
   } = useStore();
 
   useEffect(() => {
-    fetchGoals();
-    fetchTasks();
-    fetchTodos();
-  }, [fetchGoals, fetchTasks, fetchTodos]);
+    const loadFullData = async () => {
+      try {
+        // Load goals with full nested data (like in GoalDetailView)
+        const goalsWithFullData = await Promise.all(
+          (await goalsApi.getAll()).map(async (goal) => {
+            try {
+              return await goalsApi.getById(goal.id, {
+                include_milestones: true,
+                include_tasks: true,
+                include_subtasks: true,
+                include_todos: true
+              });
+            } catch (error) {
+              console.error(`Failed to fetch full data for goal ${goal.id}:`, error);
+              return goal;
+            }
+          })
+        );
+        
+        // Update the goals in the store with full data
+        setGoals(goalsWithFullData);
+        
+        // Also fetch standalone tasks and todos
+        fetchTasks();
+        fetchTodos();
+      } catch (error) {
+        console.error('Failed to load full goal data:', error);
+        // Fallback to regular fetch methods
+        fetchGoals();
+        fetchTasks();
+        fetchTodos();
+      }
+    };
+
+    loadFullData();
+  }, [fetchGoals, fetchTasks, fetchTodos, setGoals]);
 
   // Status columns configuration
   const statusColumns = [
