@@ -1,16 +1,15 @@
-import { getSession } from 'next-auth/react';
 import { GoalItem as Goal, MilestoneItem as Milestone, TaskItem as Task, TodoItem as Todo, StatusType, PriorityType, User, Event, Tag, SubtaskItem as Subtask } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-// Helper function to get auth headers
-const getAuthHeaders = async () => {
-  const session = await getSession();
-  if (!session?.accessToken) {
+// Helper function to get auth headers without session calls
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('access_token');
+  if (!token) {
     throw new Error('No access token found');
   }
   return {
-    'Authorization': `Bearer ${session.accessToken}`,
+    'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json',
   };
 };
@@ -39,7 +38,7 @@ export const authApi = {
   },
 
   getCurrentUser: async (): Promise<User> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/users/me`, { headers });
     if (!response.ok) {
       const error = await response.json().catch(() => ({ detail: 'Failed to get current user' }));
@@ -56,14 +55,14 @@ export const authApi = {
 // Users API
 export const usersApi = {
   getAll: async (): Promise<User[]> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/users/`, { headers });
     if (!response.ok) throw new Error('Failed to fetch users');
     return response.json();
   },
 
   create: async (userData: Omit<User, 'id'>): Promise<User> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/users/`, {
       method: 'POST',
       headers,
@@ -74,7 +73,7 @@ export const usersApi = {
   },
 
   update: async (userData: Partial<User>): Promise<User> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/users/update`, {
       method: 'PATCH',
       headers,
@@ -85,7 +84,7 @@ export const usersApi = {
   },
 
   delete: async (userId: string): Promise<void> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/users/${userId}/delete`, {
       method: 'DELETE',
       headers,
@@ -94,14 +93,14 @@ export const usersApi = {
   },
 
   me: async (): Promise<User> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/users/me`, { headers });
     if (!response.ok) throw new Error('Failed to fetch current user');
     return response.json();
   },
   
   saveGoogleCalendar: async (googleCalendarData: any): Promise<{ message: string }> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/calendars/google-calendar/token`, {
       method: 'POST',
       headers,
@@ -116,7 +115,7 @@ export const usersApi = {
 export const goalsApi = {
   getAll: async (): Promise<Goal[]> => {
     try {
-      const headers = await getAuthHeaders();
+      const headers = getAuthHeaders();
       const response = await fetch(`${API_BASE_URL}/user/goals`, { headers });
       if (!response.ok) {
         const error = await response.json().catch(() => ({ detail: 'Failed to fetch goals' }));
@@ -130,7 +129,7 @@ export const goalsApi = {
   },
 
   create: async (goalData: Omit<Goal, 'id' | 'milestones'>): Promise<Goal> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/goals`, {
       method: 'POST',
       headers,
@@ -141,7 +140,7 @@ export const goalsApi = {
   },
 
   update: async (goalData: Partial<Goal>): Promise<Goal> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/goals/update`, {
       method: 'PATCH',
       headers,
@@ -157,7 +156,7 @@ export const goalsApi = {
     include_subtasks?: boolean;
     include_todos?: boolean;
   }): Promise<Goal> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const params = new URLSearchParams();
     if (options?.include_milestones) params.append('include_milestones', 'true');
     if (options?.include_tasks) params.append('include_tasks', 'true');
@@ -171,7 +170,7 @@ export const goalsApi = {
   },
 
   delete: async (goalId: string): Promise<void> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/goals/${goalId}/delete`, {
       method: 'DELETE',
       headers,
@@ -183,14 +182,14 @@ export const goalsApi = {
 // Milestones API
 export const milestonesApi = {
   getAll: async (): Promise<Milestone[]> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/milestones`, { headers });
     if (!response.ok) throw new Error('Failed to fetch milestones');
     return response.json();
   },
 
   create: async (milestoneData: Omit<Milestone, 'id' | 'tasks' | 'todos'>): Promise<Milestone> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     console.log(milestoneData);
     const response = await fetch(`${API_BASE_URL}/user/milestones`, {
       method: 'POST',
@@ -202,7 +201,7 @@ export const milestonesApi = {
   },
 
   update: async (milestoneData: Partial<Milestone>): Promise<Milestone> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/milestones/update`, {
       method: 'PATCH',
       headers,
@@ -213,7 +212,7 @@ export const milestonesApi = {
   },
 
   reorder: async (milestoneIds: string[]): Promise<void> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/milestones/reorder`, {
       method: 'PUT',
       headers,
@@ -228,7 +227,7 @@ export const milestonesApi = {
     include_subtasks: boolean = false,
     include_todos: boolean = false
   ): Promise<Milestone> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const queryParams = new URLSearchParams({
       include_tasks: include_tasks.toString(),
       include_subtasks: include_subtasks.toString(),
@@ -243,7 +242,7 @@ export const milestonesApi = {
   },
 
   delete: async (milestoneId: string): Promise<void> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/milestones/${milestoneId}/delete`, {
       method: 'DELETE',
       headers,
@@ -255,7 +254,7 @@ export const milestonesApi = {
 // Tasks API
 export const tasksApi = {
   getAll: async (include_subtasks: boolean = true, include_todos: boolean = true): Promise<Task[]> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(
       `${API_BASE_URL}/user/tasks?include_subtasks=${include_subtasks}&include_todos=${include_todos}`,
       { headers }
@@ -265,7 +264,7 @@ export const tasksApi = {
   },
 
   get: async (taskId: string, include_subtasks: boolean = true, include_todos: boolean = true): Promise<Task> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(
       `${API_BASE_URL}/user/tasks/${taskId}?include_subtasks=${include_subtasks}&include_todos=${include_todos}`,
       { headers }
@@ -275,7 +274,7 @@ export const tasksApi = {
   },
 
   create: async (taskData: Omit<Task, 'id'>): Promise<Task> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/tasks`, {
       method: 'POST',
       headers,
@@ -286,7 +285,7 @@ export const tasksApi = {
   },
 
   update: async (taskData: Partial<Task> & { id: string }): Promise<Task> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/tasks/update`, {
       method: 'PATCH',
       headers,
@@ -297,7 +296,7 @@ export const tasksApi = {
   },
 
   delete: async (taskId: string): Promise<void> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/tasks/${taskId}/delete`, {
       method: 'DELETE',
       headers,
@@ -309,14 +308,14 @@ export const tasksApi = {
 // Todos API
 export const todosApi = {
   getAll: async (): Promise<Todo[]> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/todos`, { headers });
     if (!response.ok) throw new Error('Failed to fetch todos');
     return response.json();
   },
 
   create: async (todoData: Omit<Todo, 'id'>): Promise<Todo> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/todos`, {
       method: 'POST',
       headers,
@@ -327,7 +326,7 @@ export const todosApi = {
   },
 
   update: async (todoData: Partial<Todo> & { id: string }): Promise<Todo> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/todos/update`, {
       method: 'PATCH',
       headers,
@@ -338,14 +337,14 @@ export const todosApi = {
   },
 
   getById: async (todoId: string): Promise<Todo> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/todos/${todoId}`, { headers });
     if (!response.ok) throw new Error('Failed to fetch todo');
     return response.json();
   },
 
   delete: async (todoId: string): Promise<void> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/todos/${todoId}/delete`, {
       method: 'DELETE',
       headers,
@@ -357,14 +356,14 @@ export const todosApi = {
 // Events API
 export const eventsApi = {
   getAll: async (): Promise<Event[]> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/events`, { headers });
     if (!response.ok) throw new Error('Failed to fetch events');
     return response.json();
   },
 
   create: async (eventData: Omit<Event, 'id'>): Promise<Event> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/events`, {
       method: 'POST',
       headers,
@@ -375,7 +374,7 @@ export const eventsApi = {
   },
 
   update: async (eventData: Partial<Event>): Promise<Event> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/events/update`, {
       method: 'PATCH',
       headers,
@@ -386,14 +385,14 @@ export const eventsApi = {
   },
 
   getById: async (eventId: string): Promise<Event> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/events/${eventId}`, { headers });
     if (!response.ok) throw new Error('Failed to fetch event');
     return response.json();
   },
 
   delete: async (eventId: string): Promise<void> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/events/${eventId}/delete`, {
       method: 'DELETE',
       headers,
@@ -405,14 +404,14 @@ export const eventsApi = {
 // Tags API
 export const tagsApi = {
   getAll: async (): Promise<Tag[]> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/tags`, { headers });
     if (!response.ok) throw new Error('Failed to fetch tags');
     return response.json();
   },
 
   create: async (tagData: Omit<Tag, 'id'>): Promise<Tag> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/tags`, {
       method: 'POST',
       headers,
@@ -423,7 +422,7 @@ export const tagsApi = {
   },
 
   update: async (tagData: Partial<Tag>): Promise<Tag> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/tags/update`, {
       method: 'PATCH',
       headers,
@@ -434,14 +433,14 @@ export const tagsApi = {
   },
 
   getById: async (tagId: string): Promise<Tag> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/tags/${tagId}`, { headers });
     if (!response.ok) throw new Error('Failed to fetch tag');
     return response.json();
   },
 
   delete: async (tagId: string): Promise<void> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/tags/delete/${tagId}`, {
       method: 'DELETE',
       headers,
@@ -453,14 +452,14 @@ export const tagsApi = {
 // Subtasks API
 export const subtasksApi = {
   getAll: async (): Promise<Subtask[]> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/task/subtasks`, { headers });
     if (!response.ok) throw new Error('Failed to fetch subtasks');
     return response.json();
   },
 
   create: async (subtaskData: Omit<Subtask, 'id'>): Promise<Subtask> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/task/subtasks`, {
       method: 'POST',
       headers,
@@ -471,7 +470,7 @@ export const subtasksApi = {
   },
 
   update: async (subtaskData: Partial<Subtask>): Promise<Subtask> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/task/subtasks/update`, {
       method: 'PATCH',
       headers,
@@ -482,18 +481,18 @@ export const subtasksApi = {
   },
 
   getById: async (subtaskId: string): Promise<Subtask> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/task/subtasks/${subtaskId}`, { headers });
     if (!response.ok) throw new Error('Failed to fetch subtask');
     return response.json();
   },
 
   delete: async (subtaskId: string): Promise<void> => {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/user/task/subtasks/${subtaskId}/delete`, {
       method: 'DELETE',
       headers,
     });
     if (!response.ok) throw new Error('Failed to delete subtask');
   },
-}; 
+};

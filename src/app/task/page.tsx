@@ -12,13 +12,17 @@ const TasksPage: React.FC = () => {
 
   const { 
     goals,
+    tasks,
     isLoadingGoals,
-    fetchGoals
+    isLoadingTasks,
+    fetchGoals,
+    fetchTasks
   } = useStore();
 
   useEffect(() => {
     fetchGoals();
-  }, [fetchGoals]);
+    fetchTasks();
+  }, [fetchGoals, fetchTasks]);
 
   const getStatusColor = (status: StatusType) => {
     switch (status) {
@@ -46,8 +50,10 @@ const TasksPage: React.FC = () => {
     }
   };
 
-  // Get all tasks from all goals/milestones
+  // Get all tasks from goals/milestones and also from the tasks store
   const allTasks: (Task & { goalTitle?: string; milestoneTitle?: string })[] = [];
+  
+  // Add tasks from goals structure
   goals.forEach(goal => {
     goal.milestones?.forEach(milestone => {
       milestone.tasks?.forEach(task => {
@@ -58,6 +64,14 @@ const TasksPage: React.FC = () => {
         });
       });
     });
+  });
+
+  // Add tasks from direct tasks store (these might not be in goals)
+  tasks.forEach(task => {
+    // Only add if not already in allTasks
+    if (!allTasks.find(t => t.id === task.id)) {
+      allTasks.push(task);
+    }
   });
 
   const filteredTasks = allTasks.filter(task => 
@@ -78,7 +92,7 @@ const TasksPage: React.FC = () => {
     }
   });
 
-  if (isLoadingGoals) {
+  if (isLoadingGoals || isLoadingTasks) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="flex items-center justify-center h-64">

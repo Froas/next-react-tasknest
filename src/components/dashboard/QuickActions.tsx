@@ -84,11 +84,11 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
                 {action.icon}
               </div>
             </div>
-            <div className="text-left">
-              <h4 className="font-medium text-gray-900 group-hover:text-gray-800 transition-colors duration-200">
+            <div className="text-left flex-1 min-w-0">
+              <h4 className="font-medium text-gray-900 group-hover:text-gray-800 transition-colors duration-200 truncate">
                 {action.title}
               </h4>
-              <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors duration-200">
+              <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors duration-200 break-words">
                 {action.description}
               </p>
             </div>
@@ -97,4 +97,4 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
       </div>
     </div>
   );
-}; 
+};

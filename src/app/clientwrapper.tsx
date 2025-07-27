@@ -10,6 +10,16 @@ const SessionContext = createContext<Session | null>(null);
 
 function SessionPasser({ children }: { children: React.ReactNode }) {
     const { data: session } = useSession();
+    
+    // Save access token to localStorage when session is available
+    React.useEffect(() => {
+        if (session?.accessToken) {
+            localStorage.setItem('access_token', session.accessToken);
+        } else {
+            localStorage.removeItem('access_token');
+        }
+    }, [session]);
+    
     return (
         <SessionContext.Provider value={session}>
             {children}
