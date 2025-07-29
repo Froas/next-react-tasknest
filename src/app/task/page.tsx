@@ -94,7 +94,7 @@ const TasksPage: React.FC = () => {
 
   if (isLoadingGoals || isLoadingTasks) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
@@ -103,24 +103,24 @@ const TasksPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <main className="container mx-auto px-6 py-8">
         {/* Page Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Tasks</h1>
-            <p className="text-gray-600">Manage all your tasks across goals and milestones</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Tasks</h1>
+            <p className="text-gray-600 dark:text-gray-400">Manage all your tasks across goals and milestones</p>
           </div>
         </div>
 
         {/* Filters and Sort */}
         <div className="flex items-center space-x-4 mb-6">
           <div className="flex items-center space-x-2">
-            <Filter className="w-4 h-4 text-gray-500" />
+            <Filter className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as StatusType | 'all')}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="all">All Status</option>
               <option value={StatusType.OUTSTANDING}>Outstanding</option>

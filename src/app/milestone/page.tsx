@@ -103,7 +103,7 @@ const MilestonesPage: React.FC = () => {
 
   if (isLoadingMilestones) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
@@ -112,18 +112,18 @@ const MilestonesPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <main className="container mx-auto px-6 py-8">
         {/* Page Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Milestones</h1>
-            <p className="text-gray-600">Track key progress checkpoints across your goals</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Milestones</h1>
+            <p className="text-gray-600 dark:text-gray-400">Track key progress checkpoints across your goals</p>
           </div>
           
           <button
             onClick={() => setIsCreatingMilestone(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
           >
             <Plus className="w-5 h-5" />
             <span>Create Milestone</span>
@@ -133,11 +133,11 @@ const MilestonesPage: React.FC = () => {
         {/* Filters and Sort */}
         <div className="flex items-center space-x-4 mb-6">
           <div className="flex items-center space-x-2">
-            <Filter className="w-4 h-4 text-gray-500" />
+            <Filter className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as StatusType | 'all')}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="all">All Status</option>
               <option value={StatusType.OUTSTANDING}>Outstanding</option>
@@ -149,7 +149,7 @@ const MilestonesPage: React.FC = () => {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="title">Sort by Title</option>
             <option value="priority">Sort by Priority</option>
@@ -160,12 +160,12 @@ const MilestonesPage: React.FC = () => {
         {/* Milestones Grid */}
         {sortedMilestones.length === 0 ? (
           <div className="text-center py-16">
-            <Flag className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-            <h3 className="text-xl font-medium text-gray-900 mb-2">No milestones yet</h3>
-            <p className="text-gray-600 mb-6">Create your first milestone to track progress</p>
+            <Flag className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+            <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">No milestones yet</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">Create your first milestone to track progress</p>
             <button
               onClick={() => setIsCreatingMilestone(true)}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-6 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
             >
               Create Your First Milestone
             </button>
@@ -175,18 +175,18 @@ const MilestonesPage: React.FC = () => {
             {sortedMilestones.map((milestone) => {
               const parentGoal = goals.find(g => g.id === milestone.goal_id);
               return (
-                <div key={milestone.id} className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                <div key={milestone.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">{milestone.title}</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{milestone.title}</h3>
                       {milestone.description && (
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{milestone.description}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">{milestone.description}</p>
                       )}
                     </div>
                   </div>
 
                   {parentGoal && (
-                    <div className="flex items-center text-xs text-blue-600 mb-3">
+                    <div className="flex items-center text-xs text-blue-600 dark:text-blue-400 mb-3">
                       <Target className="w-3 h-3 mr-1" />
                       <span>{parentGoal.title}</span>
                     </div>
@@ -202,17 +202,17 @@ const MilestonesPage: React.FC = () => {
                   </div>
 
                   {milestone.due_date && (
-                    <div className="flex items-center text-xs text-gray-500 mb-4">
+                    <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-4">
                       <Calendar className="w-3 h-3 mr-1" />
                       <span>Due {new Date(milestone.due_date).toLocaleDateString()}</span>
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between text-sm text-gray-500">
+                  <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                     <span>{milestone.tasks?.length || 0} tasks</span>
                     <button
                       onClick={() => handleMilestoneDelete(milestone.id)}
-                      className="text-red-600 hover:text-red-800 text-xs"
+                      className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-xs"
                     >
                       Delete
                     </button>
@@ -226,8 +226,8 @@ const MilestonesPage: React.FC = () => {
         {/* Create Milestone Modal */}
         {isCreatingMilestone && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <h3 className="text-lg font-semibold mb-4">Create New Milestone</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Create New Milestone</h3>
               <MilestoneForm
                 onSuccess={handleMilestoneSubmit}
                 onCancel={() => setIsCreatingMilestone(false)}
