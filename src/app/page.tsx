@@ -91,7 +91,7 @@ const Home = () => {
 
   if (status === 'loading' || isLoadingGoals) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
       </div>
     );
@@ -397,7 +397,7 @@ const Home = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 font-sans text-gray-900">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 font-sans text-gray-900 dark:text-white">
       <main className="flex-grow container mx-auto p-6 md:p-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <section className="lg:col-span-2">
           {currentView === 'dashboard' ? (
@@ -449,8 +449,8 @@ const Home = () => {
         {/* Selection Modals */}
         {isSelectingGoal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl p-6 max-w-md w-full">
-              <h3 className="text-lg font-semibold mb-4">Select Goal</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Select Goal</h3>
               <div className="space-y-2">
                 {[...goals].sort((a, b) => {
                   if (orderBy === 'title') return (a.title || '').localeCompare(b.title || '');
@@ -463,10 +463,10 @@ const Home = () => {
                   <button
                     key={g.id}
                     onClick={() => handleGoalSelect(g.id)}
-                    className="w-full text-left p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="w-full text-left p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   >
-                    <div className="font-medium text-gray-900">{g.title}</div>
-                    <div className="text-sm text-gray-600">{g.description}</div>
+                    <div className="font-medium text-gray-900 dark:text-white">{g.title}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-300">{g.description}</div>
                   </button>
                 ))}
               </div>
@@ -475,7 +475,7 @@ const Home = () => {
                   setIsSelectingGoal(false);
                   setPendingAction(null);
                 }}
-                className="mt-4 w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                className="mt-4 w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
               >
                 Cancel
               </button>

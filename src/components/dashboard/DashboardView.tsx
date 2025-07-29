@@ -80,21 +80,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">Dashboard Overview</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Dashboard Overview</h2>
         <button
           onClick={onCreateGoal}
-          className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-gray-800 text-white hover:bg-gray-900"
+          className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-gray-800 dark:bg-gray-700 text-white hover:bg-gray-900 dark:hover:bg-gray-600"
         >
           Create New Goal
         </button>
       </div>
 
       {/* Daily Check-in Card */}
-      <div className="bg-white rounded-xl shadow-sm p-6 mb-6 flex flex-col sm:flex-row items-center justify-between">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6 flex flex-col sm:flex-row items-center justify-between">
         <div className="flex items-center space-x-4 mb-4 sm:mb-0">
-          <div className="bg-gray-100 p-3 rounded-full">
+          <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-full">
             <svg
-              className="w-6 h-6 text-gray-800"
+              className="w-6 h-6 text-gray-800 dark:text-gray-200"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -109,28 +109,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </svg>
           </div>
           <div>
-            <h3 className="text-lg font-medium">Daily Check-in</h3>
-            <p className="text-gray-600 text-sm">Start your day right!</p>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Daily Check-in</h3>
+            <p className="text-gray-600 dark:text-gray-400 text-sm">Start your day right!</p>
           </div>
         </div>
-        <button className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-gray-800 text-white hover:bg-gray-900">
+        <button className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-gray-800 dark:bg-gray-700 text-white hover:bg-gray-900 dark:hover:bg-gray-600">
           Complete Today's Tasks
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-6">
         {/* Overall Progress Card */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h3 className="text-lg font-medium mb-3">Overall Goal Progress</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Overall Goal Progress</h3>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-gray-700">Total Goals Completed:</span>
-            <span className="font-semibold text-gray-800">
+            <span className="text-gray-700 dark:text-gray-300">Total Goals Completed:</span>
+            <span className="font-semibold text-gray-800 dark:text-white">
               {completedGoals} / {totalGoals}
             </span>
           </div>
-          <div className="bg-gray-200 rounded-full h-2.5 overflow-hidden">
+          <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
             <div
-              className="bg-gray-800 h-full rounded-full transition-all duration-300 ease-in-out"
+              className="bg-gray-800 dark:bg-gray-300 h-full rounded-full transition-all duration-300 ease-in-out"
               style={{ width: `${overallProgress}%` }}
             ></div>
           </div>
@@ -142,14 +142,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* Goals List */}
       <div className="space-y-6">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-xl font-semibold">Active Goals</h3>
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Active Goals</h3>
           <div>
-            <label htmlFor="order-goals" className="mr-2 text-sm text-gray-700">Order by:</label>
+            <label htmlFor="order-goals" className="mr-2 text-sm text-gray-700 dark:text-gray-300">Order by:</label>
             <select
               id="order-goals"
               value={orderBy}
               onChange={e => setOrderBy(e.target.value as any)}
-              className="px-2 py-1 rounded border border-gray-300 text-sm"
+              className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
             >
               <option value="title">Title (A-Z)</option>
               <option value="start_desc">Start Date (Newest)</option>
@@ -168,8 +168,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             />
           ))
         ) : (
-          <div className="text-center py-8 bg-white rounded-xl shadow-sm">
-            <p className="text-gray-500">No active goals. Create a new goal to get started!</p>
+          <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+            <p className="text-gray-500 dark:text-gray-400">No active goals. Create a new goal to get started!</p>
           </div>
         )}
       </div>

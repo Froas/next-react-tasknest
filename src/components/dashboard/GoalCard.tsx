@@ -48,10 +48,10 @@ export default function GoalCard({ goal, onClick }: GoalCardProps) {
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-xl shadow-sm p-6 cursor-pointer hover:shadow-md transition-shadow"
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 cursor-pointer hover:shadow-md transition-shadow"
     >
       <div className="flex justify-between items-start mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">{goal.title}</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{goal.title}</h3>
         <div className="flex space-x-2">
           <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(goal.status)}`}>
             {goal.status}
@@ -63,31 +63,31 @@ export default function GoalCard({ goal, onClick }: GoalCardProps) {
       </div>
 
       {goal.description && (
-        <p className="text-gray-600 text-sm mb-4 line-clamp-2">{goal.description}</p>
+        <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">{goal.description}</p>
       )}
 
       <div className="space-y-3">
-        <div className="flex justify-between text-sm text-gray-500">
+        <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
           <span>Progress</span>
           <span>{Math.round(calculateProgress())}%</span>
         </div>
-        <div className="bg-gray-200 rounded-full h-2">
+        <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
           <div
-            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+            className="bg-blue-500 dark:bg-blue-400 h-2 rounded-full transition-all duration-300"
             style={{ width: `${calculateProgress()}%` }}
           />
         </div>
       </div>
 
       {goal.end_datetime && (
-        <div className="mt-4 text-sm text-gray-500">
+        <div className="mt-4 text-sm text-gray-500 dark:text-gray-400">
           Due: {formatDate(goal.end_datetime)}
         </div>
       )}
 
-      <div className="mt-4 flex justify-between items-center text-sm text-gray-500">
+      <div className="mt-4 flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
         <span>{goal.milestones?.length || 0} Milestones</span>
       </div>
     </div>
   );
-} 
+}

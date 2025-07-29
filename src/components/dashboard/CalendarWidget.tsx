@@ -92,9 +92,9 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ tasks = [], todo
   const selectedItems = getItemsForDate(date);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold">Calendar</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Calendar</h3>
       </div>
 
       <Calendar
@@ -105,7 +105,7 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ tasks = [], todo
       />
 
       <div>
-        <h4 className="text-sm font-medium text-gray-600 mb-3">Items for {date.toLocaleDateString()}</h4>
+        <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">Items for {date.toLocaleDateString()}</h4>
         {selectedItems.length > 0 ? (
           <div className="space-y-3">
             {selectedItems.map((item, index) => {
@@ -168,7 +168,7 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ tasks = [], todo
             })}
           </div>
         ) : (
-          <p className="text-gray-500 text-sm">No items for this date.</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">No items for this date.</p>
         )}
       </div>
     </div>

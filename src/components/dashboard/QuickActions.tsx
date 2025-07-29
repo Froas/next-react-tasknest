@@ -58,8 +58,8 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
   ];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <h3 className="text-lg font-semibold mb-4 text-gray-900">Quick Actions</h3>
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+      <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Quick Actions</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {actions.map((action, index) => (
           <button
@@ -67,11 +67,11 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
             onClick={action.onClick}
             className={`
               p-4 rounded-lg 
-              border border-gray-200 
-              bg-white
-              hover:bg-gray-50 
-              hover:border-gray-300 
-              active:bg-gray-100
+              border border-gray-200 dark:border-gray-600
+              bg-white dark:bg-gray-700
+              hover:bg-gray-50 dark:hover:bg-gray-600
+              hover:border-gray-300 dark:hover:border-gray-500
+              active:bg-gray-100 dark:active:bg-gray-500
               transition-all duration-200 
               flex items-start space-x-3
               group
@@ -79,16 +79,16 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
             `}
             disabled={!action.onClick}
           >
-            <div className="p-2 rounded-lg bg-gray-100 group-hover:bg-gray-200 transition-colors duration-200">
-              <div className="text-gray-900">
+            <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-600 group-hover:bg-gray-200 dark:group-hover:bg-gray-500 transition-colors duration-200">
+              <div className="text-gray-900 dark:text-white">
                 {action.icon}
               </div>
             </div>
             <div className="text-left flex-1 min-w-0">
-              <h4 className="font-medium text-gray-900 group-hover:text-gray-800 transition-colors duration-200 truncate">
+              <h4 className="font-medium text-gray-900 dark:text-white group-hover:text-gray-800 dark:group-hover:text-gray-200 transition-colors duration-200 truncate">
                 {action.title}
               </h4>
-              <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors duration-200 break-words">
+              <p className="text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors duration-200 break-words">
                 {action.description}
               </p>
             </div>
