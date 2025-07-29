@@ -132,7 +132,7 @@ const TasksPage: React.FC = () => {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="title">Sort by Title</option>
             <option value="priority">Sort by Priority</option>
@@ -143,19 +143,19 @@ const TasksPage: React.FC = () => {
         {/* Tasks Grid */}
         {sortedTasks.length === 0 ? (
           <div className="text-center py-16">
-            <CheckSquare className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-            <h3 className="text-xl font-medium text-gray-900 mb-2">No tasks yet</h3>
-            <p className="text-gray-600 mb-6">Create goals and milestones to start adding tasks</p>
+            <CheckSquare className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+            <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">No tasks yet</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">Create goals and milestones to start adding tasks</p>
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {sortedTasks.map((task) => (
-              <div key={task.id} className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
+              <div key={task.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{task.title}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{task.title}</h3>
                     {task.description && (
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{task.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">{task.description}</p>
                     )}
                   </div>
                 </div>
@@ -163,13 +163,13 @@ const TasksPage: React.FC = () => {
                 {/* Parent Goal and Milestone */}
                 <div className="space-y-1 mb-3">
                   {task.goalTitle && (
-                    <div className="flex items-center text-xs text-blue-600">
+                    <div className="flex items-center text-xs text-blue-600 dark:text-blue-400">
                       <Target className="w-3 h-3 mr-1" />
                       <span>{task.goalTitle}</span>
                     </div>
                   )}
                   {task.milestoneTitle && (
-                    <div className="flex items-center text-xs text-purple-600">
+                    <div className="flex items-center text-xs text-purple-600 dark:text-purple-400">
                       <Flag className="w-3 h-3 mr-1" />
                       <span>{task.milestoneTitle}</span>
                     </div>
@@ -186,13 +186,13 @@ const TasksPage: React.FC = () => {
                 </div>
 
                 {task.due_date && (
-                  <div className="flex items-center text-xs text-gray-500 mb-4">
+                  <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-4">
                     <Calendar className="w-3 h-3 mr-1" />
                     <span>Due {new Date(task.due_date).toLocaleDateString()}</span>
                   </div>
                 )}
 
-                <div className="flex items-center justify-between text-sm text-gray-500">
+                <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                   <div className="space-x-3">
                     <span>{task.subtasks?.length || 0} subtasks</span>
                     <span>{task.todos?.length || 0} todos</span>
