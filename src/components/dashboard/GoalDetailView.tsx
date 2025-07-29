@@ -344,7 +344,7 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
 
       <div className="flex justify-between items-center mb-6">
         <button
-          className="px-2 py-1.5 text-sm rounded-md font-medium cursor-pointer transition-colors duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200 flex items-center"
+          className="px-2 py-1.5 text-sm rounded-md font-medium cursor-pointer transition-colors duration-200 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center"
           onClick={onBack}
         >
           <svg
@@ -362,7 +362,7 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
           <button
             onClick={handleSyncCalendar}
             disabled={isSyncingCalendar}
-            className="px-3 py-1.5 text-sm rounded-md font-medium cursor-pointer transition-colors duration-200 bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 flex items-center space-x-1"
+            className="px-3 py-1.5 text-sm rounded-md font-medium cursor-pointer transition-colors duration-200 bg-green-600 dark:bg-green-500 text-white hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 flex items-center space-x-1"
             title="Sync goal, milestones, and high-priority tasks to calendar"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -387,8 +387,8 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
 
       {isCreatingMilestone && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">Create New Milestone</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Create New Milestone</h3>
             <MilestoneForm
               goalId={goal.id}
               onSuccess={handleCreateMilestone}
