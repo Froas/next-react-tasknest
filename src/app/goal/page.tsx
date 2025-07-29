@@ -99,7 +99,7 @@ const GoalsPage: React.FC = () => {
 
   if (isLoadingGoals) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
@@ -108,19 +108,19 @@ const GoalsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       
       <main className="container mx-auto px-6 py-8">
         {/* Page Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Goals</h1>
-            <p className="text-gray-600">Manage and track your long-term objectives</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Goals</h1>
+            <p className="text-gray-600 dark:text-gray-400">Manage and track your long-term objectives</p>
           </div>
           
           <button
             onClick={() => setIsCreatingGoal(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
           >
             <Plus className="w-5 h-5" />
             <span>Create Goal</span>

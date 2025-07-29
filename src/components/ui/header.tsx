@@ -26,6 +26,9 @@ const Header = () => {
     { href: '/visualization', label: 'Visualization' },
   ];
 
+  // Hide sign out button if not authenticated or on login page
+  const shouldShowSignOut = session && pathname !== '/login';
+
   return (
     <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -72,13 +75,15 @@ const Header = () => {
             >
               Profile
             </Link>
-            <Button
-              variant="outline"
-              onClick={() => signOut({ callbackUrl: '/login' })}
-              className="text-sm"
-            >
-              Sign out
-            </Button>
+            {shouldShowSignOut && (
+              <Button
+                variant="outline"
+                onClick={() => signOut({ callbackUrl: '/login' })}
+                className="text-sm"
+              >
+                Sign out
+              </Button>
+            )}
           </div>
         </div>
       </div>
