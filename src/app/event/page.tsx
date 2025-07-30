@@ -8,11 +8,15 @@ import dynamic from 'next/dynamic';
 const EventForm = dynamic(() => import('@/components/dashboard/EventForm').then(m => m.EventForm), { ssr: false });
 import { eventsApi } from '@/lib/api';
 import { Plus, Calendar, Filter, MapPin, Clock } from 'lucide-react';
+import { useTheme } from '@/context/ThemeContext';
 
 const EventsPage: React.FC = () => {
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
   const [filterStatus, setFilterStatus] = useState<StatusType | 'all'>('all');
   const [sortBy, setSortBy] = useState<'title' | 'start' | 'end'>('start');
+  
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   const { 
     events, 
@@ -89,7 +93,7 @@ const EventsPage: React.FC = () => {
 
   if (isLoadingEvents) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
@@ -98,18 +102,18 @@ const EventsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <main className="container mx-auto px-6 py-8">
         {/* Page Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Events</h1>
-            <p className="text-gray-600">Schedule and manage your important events</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Events</h1>
+            <p className="text-gray-600 dark:text-gray-400">Schedule and manage your important events</p>
           </div>
           
           <button
             onClick={() => setIsCreatingEvent(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
           >
             <Plus className="w-5 h-5" />
             <span>Create Event</span>
@@ -119,11 +123,11 @@ const EventsPage: React.FC = () => {
         {/* Filters and Sort */}
         <div className="flex items-center space-x-4 mb-6">
           <div className="flex items-center space-x-2">
-            <Filter className="w-4 h-4 text-gray-500" />
+            <Filter className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as StatusType | 'all')}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="all">All Status</option>
               <option value={StatusType.OUTSTANDING}>Outstanding</option>
@@ -135,7 +139,7 @@ const EventsPage: React.FC = () => {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="title">Sort by Title</option>
             <option value="start">Sort by Start Date</option>
@@ -146,12 +150,12 @@ const EventsPage: React.FC = () => {
         {/* Events Grid */}
         {sortedEvents.length === 0 ? (
           <div className="text-center py-16">
-            <Calendar className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-            <h3 className="text-xl font-medium text-gray-900 mb-2">No events yet</h3>
-            <p className="text-gray-600 mb-6">Create your first event to start scheduling</p>
+            <Calendar className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+            <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">No events yet</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">Create your first event to start scheduling</p>
             <button
               onClick={() => setIsCreatingEvent(true)}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-6 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
             >
               Create Your First Event
             </button>
@@ -159,12 +163,12 @@ const EventsPage: React.FC = () => {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {sortedEvents.map((event) => (
-              <div key={event.id} className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
+              <div key={event.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{event.title}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{event.title}</h3>
                     {event.description && (
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{event.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">{event.description}</p>
                     )}
                   </div>
                 </div>
@@ -176,7 +180,7 @@ const EventsPage: React.FC = () => {
                 </div>
 
                 {event.location && (
-                  <div className="flex items-center text-xs text-gray-500 mb-3">
+                  <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-3">
                     <MapPin className="w-3 h-3 mr-1" />
                     <span>{event.location}</span>
                   </div>
@@ -184,20 +188,20 @@ const EventsPage: React.FC = () => {
 
                 <div className="space-y-2 mb-4">
                   {event.start_datetime && (
-                    <div className="flex items-center text-xs text-gray-500">
+                    <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
                       <Clock className="w-3 h-3 mr-1" />
                       <span>Starts {new Date(event.start_datetime).toLocaleString()}</span>
                     </div>
                   )}
                   {event.end_datetime && (
-                    <div className="flex items-center text-xs text-gray-500">
+                    <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
                       <Clock className="w-3 h-3 mr-1" />
                       <span>Ends {new Date(event.end_datetime).toLocaleString()}</span>
                     </div>
                   )}
                 </div>
 
-                <div className="flex items-center justify-between text-sm text-gray-500">
+                <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                   <span>
                     {event.start_datetime && event.end_datetime ? 
                       `${Math.ceil((new Date(event.end_datetime).getTime() - new Date(event.start_datetime).getTime()) / (1000 * 60 * 60))}h duration` :
@@ -206,7 +210,7 @@ const EventsPage: React.FC = () => {
                   </span>
                   <button
                     onClick={() => handleEventDelete(event.id)}
-                    className="text-red-600 hover:text-red-800 text-xs"
+                    className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-xs"
                   >
                     Delete
                   </button>
@@ -219,8 +223,8 @@ const EventsPage: React.FC = () => {
         {/* Create Event Modal */}
         {isCreatingEvent && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <h3 className="text-lg font-semibold mb-4">Create New Event</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Create New Event</h3>
               <EventForm
                 onSuccess={handleEventSubmit}
                 onCancel={() => setIsCreatingEvent(false)}

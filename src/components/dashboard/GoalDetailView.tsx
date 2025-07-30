@@ -15,6 +15,7 @@ import { formatDate } from '@/lib/utils';
 // import { addTaskToMilestoneInGoal } from '@/store/useStore'; // Actions are part of useStore hook
 import GoalHeaderCard from './GoalHeaderCard';
 import MilestonesTimeline from './MilestonesTimeline';
+import { useTheme } from '@/context/ThemeContext';
 
 interface GoalDetailViewProps {
   goal: Goal;
@@ -50,6 +51,8 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
   const [showDeleteGoalConfirm, setShowDeleteGoalConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const { updateGoal, addTaskToMilestoneInGoal, addMilestoneToGoal, addEvent } = useStore();
 
   useEffect(() => {
@@ -287,14 +290,14 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 text-red-800 p-4 rounded-lg">
+      <div className="bg-red-50 dark:bg-red-900 text-red-800 dark:text-red-200 p-4 rounded-lg">
         <p className="font-medium">Error loading goal details</p>
         <p className="text-sm mt-1">{error}</p>
         <button
@@ -317,7 +320,7 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
             };
             loadGoalDetails();
           }}
-          className="mt-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+          className="mt-2 px-4 py-2 text-sm font-medium text-white bg-red-600 dark:bg-red-500 rounded-lg hover:bg-red-700 dark:hover:bg-red-600"
         >
           Try Again
         </button>
@@ -326,14 +329,14 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
   }
 
   return (
-    <div data-testid="goal-detail-view">
+    <div data-testid="goal-detail-view" className={`${isDark ? 'bg-gray-900' : 'bg-white'} min-h-screen`}>
       {/* Error notification */}
       {error && (
-        <div className="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-center justify-between">
+        <div className="mb-4 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg flex items-center justify-between">
           <span>{error}</span>
           <button
             onClick={() => setError(null)}
-            className="text-red-600 hover:text-red-800 ml-4"
+            className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 ml-4"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -372,13 +375,13 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
           </button>
           <button
             onClick={handleAddMilestone}
-            className="px-2 py-1.5 text-sm rounded-md font-medium cursor-pointer transition-colors duration-200 bg-blue-600 text-white hover:bg-blue-700"
+            className="px-2 py-1.5 text-sm rounded-md font-medium cursor-pointer transition-colors duration-200 bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600"
           >
             + Milestone
           </button>
           <button
             onClick={() => setShowDeleteGoalConfirm(true)}
-            className="px-2 py-1.5 text-sm rounded-md font-medium cursor-pointer transition-colors duration-200 bg-red-500 text-white hover:bg-red-600"
+            className="px-2 py-1.5 text-sm rounded-md font-medium cursor-pointer transition-colors duration-200 bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700"
           >
             Delete
           </button>
@@ -400,8 +403,8 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
 
       {isCreatingTask && selectedMilestoneId && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">Add Task</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Add Task</h3>
             <TaskForm
               goalId={goal.id}
               milestoneId={selectedMilestoneId}
@@ -433,15 +436,15 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
       {/* Delete Goal Confirmation Dialog */}
       {showDeleteGoalConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Delete Goal</h3>
-            <p className="text-gray-600 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Delete Goal</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
               Are you sure you want to delete this goal? This action cannot be undone.
             </p>
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setShowDeleteGoalConfirm(false)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
                 disabled={isDeleting}
               >
                 Cancel
@@ -459,7 +462,7 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
                     setIsDeleting(false);
                   }
                 }}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+                className="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50"
                 disabled={isDeleting}
               >
                 {isDeleting ? 'Deleting...' : 'Delete'}
