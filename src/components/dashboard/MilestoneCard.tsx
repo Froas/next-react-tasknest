@@ -299,7 +299,7 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
         <div className="flex items-start justify-between">
           <div className="flex items-start space-x-3 flex-1">
             <div className="flex-shrink-0 mt-1">
-              <Target className="w-5 h-5 text-blue-600" />
+              <Target className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{milestone.title}</h3>
