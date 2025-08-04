@@ -75,7 +75,7 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ tasks = [], todo
       if (dayItems.length > 0) {
         return (
           <div className="flex justify-center items-center">
-            <span className="text-xs text-blue-500">{dayItems.length}</span>
+            <span className="text-xs text-blue-500 dark:text-blue-400">{dayItems.length}</span>
           </div>
         );
       }
@@ -118,16 +118,16 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ tasks = [], todo
                 <div
                   key={`${item.id}-${index}`}
                   className={`p-3 rounded-lg border ${
-                    isOverdue ? 'border-red-200 bg-red-50' :
-                    isToday ? 'border-blue-200 bg-blue-50' :
-                    'border-gray-200 bg-gray-50'
+                    isOverdue ? 'border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20' :
+                    isToday ? 'border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20' :
+                    'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700'
                   }`}
                 >
                   <div className="flex justify-between items-start mb-1">
                     <div className="flex-1">
-                      <span className="font-medium">{item.title}</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{item.title}</span>
                       {(item as any).goalTitle && (
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           {item.itemType === 'Todo' && (item as any).taskTitle && `${(item as any).taskTitle} • `}
                           {item.itemType === 'Task' && (item as any).milestoneTitle && `${(item as any).milestoneTitle} • `}
                           {(item as any).goalTitle}
@@ -136,19 +136,19 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ tasks = [], todo
                     </div>
                     <div className="flex flex-col items-end space-y-1">
                       <span className={`text-xs px-2 py-1 rounded-full ${
-                        item.status === StatusType.FINISHED ? 'bg-green-100 text-green-800' :
-                        item.status === StatusType.IN_PROGRESS ? 'bg-blue-100 text-blue-800' :
-                        item.status === StatusType.CANCELLED ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
+                        item.status === StatusType.FINISHED ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200' :
+                        item.status === StatusType.IN_PROGRESS ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200' :
+                        item.status === StatusType.CANCELLED ? 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200' :
+                        'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
                       }`}>
                         {item.status}
                       </span>
                       <span className={`text-xs px-2 py-1 rounded ${
-                        item.itemType === 'Goal' ? 'bg-purple-100 text-purple-800' :
-                        item.itemType === 'Milestone' ? 'bg-blue-100 text-blue-800' :
-                        item.itemType === 'Task' ? 'bg-green-100 text-green-800' :
-                        item.itemType === 'Todo' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
+                        item.itemType === 'Goal' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200' :
+                        item.itemType === 'Milestone' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200' :
+                        item.itemType === 'Task' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200' :
+                        item.itemType === 'Todo' ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200' :
+                        'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
                       }`}>
                         {item.itemType}
                       </span>
@@ -156,9 +156,9 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ tasks = [], todo
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className={`${
-                      isOverdue ? 'text-red-600' :
-                      isToday ? 'text-blue-600' :
-                      'text-gray-600'
+                      isOverdue ? 'text-red-600 dark:text-red-400' :
+                      isToday ? 'text-blue-600 dark:text-blue-400' :
+                      'text-gray-600 dark:text-gray-300'
                     }`}>
                       Due: {dueDate.toLocaleDateString()}
                     </span>

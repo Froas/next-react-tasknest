@@ -76,3 +76,67 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* React Calendar Dark Theme Styles */
+.dark .react-calendar {
+  background: rgb(31 41 55) !important;
+  border: 1px solid rgb(75 85 99) !important;
+  color: rgb(243 244 246) !important;
+}
+
+.dark .react-calendar__navigation button {
+  background: transparent !important;
+  color: rgb(243 244 246) !important;
+}
+
+.dark .react-calendar__navigation button:hover {
+  background: rgb(55 65 81) !important;
+}
+
+.dark .react-calendar__navigation button:disabled {
+  color: rgb(107 114 128) !important;
+}
+
+.dark .react-calendar__month-view__weekdays {
+  color: rgb(156 163 175) !important;
+}
+
+.dark .react-calendar__tile {
+  background: transparent !important;
+  color: rgb(243 244 246) !important;
+  border: none !important;
+}
+
+.dark .react-calendar__tile:enabled:hover {
+  background: rgb(55 65 81) !important;
+}
+
+.dark .react-calendar__tile:enabled:focus {
+  background: rgb(59 130 246) !important;
+}
+
+.dark .react-calendar__tile--active {
+  background: rgb(59 130 246) !important;
+  color: white !important;
+}
+
+.dark .react-calendar__tile--active:enabled:hover {
+  background: rgb(37 99 235) !important;
+}
+
+.dark .react-calendar__tile--now {
+  background: rgb(75 85 99) !important;
+}
+
+.dark .react-calendar__tile--now:enabled:hover {
+  background: rgb(55 65 81) !important;
+}
+
+.dark .react-calendar__tile--hasActive {
+  background: rgb(59 130 246) !important;
+  color: white !important;
+}
+
+.dark .react-calendar__tile--neighbor {
+  color: rgb(107 114 128) !important;
+}
