@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import axios from "axios";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Input } from "@/components/ui/input"; 
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,8 @@ const signInSchema = yup.object().shape({
 const SignIn = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const expired = searchParams?.get('expired');
 
   const {
     register,
@@ -60,6 +62,20 @@ const SignIn = () => {
       <Card className="w-full max-w-md p-4">
         <CardHeader>
           <CardTitle>Log In</CardTitle>
+          {expired && (
+            <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-md p-4">
+              <div className="flex">
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                    Session Expired
+                  </h3>
+                  <p className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
+                    Your session has expired. Please sign in again to continue.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

@@ -2,10 +2,29 @@ import { GoalItem as Goal, MilestoneItem as Milestone, TaskItem as Task, TodoIte
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+// Function to handle session expiration
+const handleSessionExpiration = () => {
+  // Check if we're in the browser environment
+  if (typeof window !== 'undefined') {
+    // Clear localStorage
+    localStorage.removeItem('access_token');
+    
+    // Import signOut dynamically to avoid SSR issues
+    import('next-auth/react').then(({ signOut }) => {
+      signOut({ 
+        callbackUrl: '/login?expired=1',
+        redirect: true 
+      });
+    });
+  }
+};
+
 // Helper function to get auth headers without session calls
 const getAuthHeaders = () => {
   const token = localStorage.getItem('access_token');
   if (!token) {
+    console.warn('No access token found. Redirecting to login...');
+    handleSessionExpiration();
     throw new Error('No access token found');
   }
   return {
@@ -118,6 +137,12 @@ export const goalsApi = {
       const headers = getAuthHeaders();
       const response = await fetch(`${API_BASE_URL}/user/goals`, { headers });
       if (!response.ok) {
+        // Check if it's an authentication error (401 or 403)
+        if (response.status === 401 || response.status === 403) {
+          console.warn('Session expired or unauthorized. Redirecting to login...');
+          handleSessionExpiration();
+          throw new Error('Session expired');
+        }
         const error = await response.json().catch(() => ({ detail: 'Failed to fetch goals' }));
         throw new Error(error.detail || 'Failed to fetch goals');
       }
