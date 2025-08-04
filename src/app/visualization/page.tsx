@@ -4,8 +4,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { GoalItem as Goal, MilestoneItem as Milestone, TaskItem as Task, TodoItem as Todo, StatusType } from '@/lib/types';
 import { goalsApi, milestonesApi } from '@/lib/api';
 import { withAuth } from '@/hoc/withAuth';
+import { useTheme } from '@/context/ThemeContext';
 
 const GoalVisualization = () => {
+  const { theme } = useTheme();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
@@ -339,23 +341,23 @@ const GoalVisualization = () => {
         <path
           d={pathData}
           fill="none"
-          stroke="black"
+          stroke={theme === 'dark' ? 'white' : 'black'}
           strokeWidth="2"
           className="transition-all duration-300"
           style={{
-            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))'
+            filter: theme === 'dark' ? 'drop-shadow(0 1px 2px rgba(255,255,255,0.1))' : 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))'
           }}
         />
         {/* End marker */}
         <g transform={`translate(${points[points.length - 1].x},${points[points.length - 1].y})`}>
           <circle
             r="8"
-            fill="white"
-            stroke="black"
+            fill={theme === 'dark' ? '#1f2937' : 'white'}
+            stroke={theme === 'dark' ? 'white' : 'black'}
             strokeWidth="2"
             className="transition-all duration-300"
             style={{
-              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+              filter: theme === 'dark' ? 'drop-shadow(0 2px 4px rgba(255,255,255,0.1))' : 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
             }}
           />
         </g>
@@ -676,16 +678,16 @@ const GoalVisualization = () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800"></div>
+      <div className="flex justify-center items-center h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800 dark:border-gray-200"></div>
       </div>
     );
   }
 
   if (!selectedGoal) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="text-gray-600">No goals found</div>
+      <div className="flex justify-center items-center h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="text-gray-600 dark:text-gray-300">No goals found</div>
       </div>
     );
   }
@@ -693,10 +695,10 @@ const GoalVisualization = () => {
   const coordinates = calculateCoordinates(selectedGoal);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
       <div className="max-w-[2000px] mx-auto">
         <div className="mb-12 px-4">
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">Visualization</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Visualization</h1>
           
           {/* Goal selection component */}
           <div className="relative mx-8">
@@ -709,11 +711,11 @@ const GoalVisualization = () => {
                     flex-shrink-0 px-6 py-2.5 rounded-full
                     transition-all duration-200
                     ${selectedGoal?.id === goal.id 
-                      ? 'bg-black text-white shadow-sm' 
-                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                      ? 'bg-black dark:bg-white text-white dark:text-black shadow-sm' 
+                      : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                     }
-                    border border-gray-200
-                    focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2
+                    border border-gray-200 dark:border-gray-600
+                    focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white focus:ring-offset-2
                     min-w-[120px] text-center
                   `}
                 >
@@ -726,23 +728,23 @@ const GoalVisualization = () => {
           </div>
 
           {/* Goal information */}
-          <div className="mt-6 flex items-center space-x-8 text-sm text-gray-600 px-8">
+          <div className="mt-6 flex items-center space-x-8 text-sm text-gray-600 dark:text-gray-300 px-8">
             <div className="flex items-center space-x-2.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-black" />
+              <div className="w-2.5 h-2.5 rounded-full bg-black dark:bg-white" />
               <span className="font-medium">Selected: {selectedGoal?.title}</span>
             </div>
             <div className="flex items-center space-x-2.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-gray-400" />
+              <div className="w-2.5 h-2.5 rounded-full bg-gray-400 dark:bg-gray-500" />
               <span>Milestones: {milestones.length}</span>
             </div>
             <div className="flex items-center space-x-2.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-gray-400" />
+              <div className="w-2.5 h-2.5 rounded-full bg-gray-400 dark:bg-gray-500" />
               <span>Tasks: {milestones.reduce((acc, m) => acc + (m.tasks?.length || 0), 0)}</span>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
           <div className="overflow-auto" style={{ maxHeight: '80vh' }}>
             <svg
               ref={svgRef}
