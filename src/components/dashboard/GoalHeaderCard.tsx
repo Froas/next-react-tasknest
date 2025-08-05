@@ -56,7 +56,7 @@ const GoalHeaderCard: React.FC<GoalHeaderCardProps> = ({ goal, progress }) => {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <span className="text-gray-700 dark:text-gray-300 font-medium">Overall Progress</span>
-            <span className="text-2xl font-bold text-gray-900 dark:text-white">{Math.round(progress)}%</span>
+            <span className="text-2xl font-bold text-gray-900 dark:text-white">{Math.max(0, Math.round(progress))}%</span>
           </div>
           
           {/* Progress bar */}

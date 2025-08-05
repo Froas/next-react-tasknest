@@ -53,7 +53,10 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
 
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const { updateGoal, addTaskToMilestoneInGoal, addMilestoneToGoal, addEvent } = useStore();
+  const { goals, updateGoal, addTaskToMilestoneInGoal, addMilestoneToGoal, addEvent } = useStore();
+  
+  // Get the current goal from store to ensure we have the latest data
+  const currentGoal = goals.find(g => g.id === goal.id) || goal;
 
   useEffect(() => {
     const loadGoalDetails = async () => {
@@ -268,10 +271,70 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
   };
 
 
-  // Calculate progress based on completed milestones
-  const totalMilestones = goal.milestones?.length || 0;
-  const completedMilestones = goal.milestones?.filter(m => m.status === StatusType.FINISHED).length || 0;
-  const progress = totalMilestones > 0 ? (completedMilestones / totalMilestones) * 100 : 0;
+  // Calculate progress based on task completion within milestones (similar to milestone progress calculation)
+  const calculateGoalProgress = () => {
+    if (!currentGoal.milestones || currentGoal.milestones.length === 0) return 0;
+    
+    let totalProgress = 0;
+    let totalMilestones = currentGoal.milestones.length;
+    
+    currentGoal.milestones.forEach(milestone => {
+      const tasks = milestone.tasks || [];
+      if (tasks.length === 0) {
+        // If milestone has no tasks, consider it based on status
+        totalProgress += milestone.status === StatusType.FINISHED ? 100 : 0;
+      } else {
+        // Calculate based on task completion (same logic as MilestoneCard)
+        let totalItems = 0;
+        let completedItems = 0;
+
+        tasks.forEach(task => {
+          totalItems += 1;
+          if (task.status === StatusType.FINISHED) completedItems += 1;
+          
+          if (task.subtasks) {
+            totalItems += task.subtasks.length;
+            completedItems += task.subtasks.filter(s => s.status === StatusType.FINISHED).length;
+          }
+          
+          if (task.todos) {
+            totalItems += task.todos.length;
+            completedItems += task.todos.filter(t => t.status === StatusType.FINISHED).length;
+          }
+        });
+
+        const milestoneProgress = totalItems === 0 ? 100 : (completedItems / totalItems) * 100;
+        totalProgress += milestoneProgress;
+      }
+    });
+    
+    return Math.max(0, totalProgress / totalMilestones);
+  };
+
+  const progress = calculateGoalProgress();
+  
+  // Debug logging to understand the data structure
+  console.log('=== GOAL PROGRESS DEBUG ===');
+  console.log('Goal title:', currentGoal.title);
+  console.log('Milestones count:', currentGoal.milestones?.length);
+  console.log('Progress calculated:', progress);
+  console.log('Full currentGoal data:', currentGoal);
+  console.log('Milestones data:', currentGoal.milestones?.map(m => ({
+    id: m.id,
+    title: m.title,
+    status: m.status,
+    tasksCount: m.tasks?.length || 0,
+    tasks: m.tasks?.map(t => ({
+      id: t.id,
+      title: t.title,
+      status: t.status,
+      subtasksCount: t.subtasks?.length || 0,
+      todosCount: t.todos?.length || 0,
+      subtasks: t.subtasks,
+      todos: t.todos
+    }))
+  })));
+  console.log('========================');
 
   // Group milestones by status
   const groupedMilestones = (goal.milestones || []).reduce((acc, milestone) => {
@@ -419,12 +482,12 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
       )}
 
       {/* Goal header */}
-      <GoalHeaderCard goal={goal} progress={progress} />
+      <GoalHeaderCard goal={currentGoal} progress={progress} />
 
       {/* Milestones timeline */}
       <MilestonesTimeline
-        milestones={goal.milestones || []}
-        goalId={goal.id}
+        milestones={currentGoal.milestones || []}
+        goalId={currentGoal.id}
         onUpdate={handleMilestoneUpdate}
         onDelete={handleMilestoneDelete}
         onAddTask={(milestoneId) => {
