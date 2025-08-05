@@ -67,7 +67,7 @@ const GoalHeaderCard: React.FC<GoalHeaderCardProps> = ({ goal, progress }) => {
                 style={{ width: `${progress}%` }}
               >
                 {/* Animated shine effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 dark:via-white/10 to-transparent animate-pulse"></div>
               </div>
             </div>
             

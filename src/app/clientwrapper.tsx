@@ -29,18 +29,25 @@ function SessionPasser({ children }: { children: React.ReactNode }) {
             clearTimeout(timeoutRef.current);
         }
 
+        // Don't do anything while loading
         if (status === 'loading') return;
 
+        // Only redirect to login if we're definitely unauthenticated AND have finished loading
+        // AND we don't have a token in localStorage (to avoid redirect loops during page refresh)
         if (status === 'unauthenticated') {
-            // Only redirect if we're not already on login/signup pages
             const currentPath = window.location.pathname;
-            if (!['/login', '/signup'].includes(currentPath)) {
+            const hasStoredToken = localStorage.getItem('access_token');
+            
+            // Only redirect if we're not on login/signup pages AND we don't have a stored token
+            if (!['/login', '/signup'].includes(currentPath) && !hasStoredToken) {
+                console.log('No session and no stored token, redirecting to login');
                 router.push('/login');
             }
             return;
         }
 
-        if (session?.expires) {
+        // Only set up expiration monitoring if we have an authenticated session
+        if (status === 'authenticated' && session?.expires) {
             const expirationTime = new Date(session.expires).getTime();
             const currentTime = new Date().getTime();
             
@@ -74,16 +81,18 @@ function SessionPasser({ children }: { children: React.ReactNode }) {
         };
     }, [session, status, router]);
 
-    // Set up periodic session check (every 5 minutes)
+    // Set up periodic session check (every 10 minutes, less aggressive)
     useEffect(() => {
         if (status !== 'authenticated') return;
 
         const intervalId = setInterval(() => {
-            if (session?.expires) {
+            // Only check if we have both session and expiration time
+            if (session?.expires && status === 'authenticated') {
                 const expirationTime = new Date(session.expires).getTime();
                 const currentTime = new Date().getTime();
                 
-                if (currentTime >= expirationTime) {
+                // Add a small buffer to avoid false positives
+                if (currentTime >= expirationTime + 60000) { // 1 minute buffer
                     console.warn('Session expired during periodic check. Redirecting to login...');
                     signOut({ 
                         callbackUrl: '/login?expired=1',
@@ -91,7 +100,7 @@ function SessionPasser({ children }: { children: React.ReactNode }) {
                     });
                 }
             }
-        }, 5 * 60 * 1000); // Check every 5 minutes
+        }, 10 * 60 * 1000); // Check every 10 minutes (less frequent)
 
         return () => clearInterval(intervalId);
     }, [session, status]);

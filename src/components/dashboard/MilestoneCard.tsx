@@ -313,11 +313,14 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
                   <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Progress</span>
                   <span className="text-xs text-gray-500 dark:text-gray-400">{Math.round(calculateProgress())}%</span>
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
                   <div
-                    className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full transition-all duration-300"
+                    className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-500 dark:to-blue-400 h-2 rounded-full transition-all duration-300 relative"
                     style={{ width: `${calculateProgress()}%` }}
-                  />
+                  >
+                    {/* Animated shine effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 dark:via-white/10 to-transparent animate-pulse"></div>
+                  </div>
                 </div>
               </div>
 
