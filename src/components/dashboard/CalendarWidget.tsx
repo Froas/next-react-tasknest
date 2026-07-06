@@ -1,176 +1,315 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useStore } from '@/store/useStore';
-import { TaskItem as Task, TodoItem as Todo, Event, StatusType } from '@/lib/types';
-import Calendar from 'react-calendar';
-import 'react-calendar/dist/Calendar.css';
+import { StatusType } from '@/lib/types';
+import {
+ buildCalendarItems,
+ groupItemsByDate,
+ type CalendarItem,
+} from '@/lib/calendarItems';
 
-interface CalendarWidgetProps {
-  tasks?: Task[];
-  todos?: Todo[];
+// Dashboard side widget: themed mini-month + selected-day item list.
+// Replaces react-calendar (whose stylesheet was always dark blue) with a
+// hand-rolled grid that uses --tn-* tokens — so it follows the active
+// theme just like /calendar does.
+
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+function sameDay(a: Date, b: Date) {
+ return (
+ a.getFullYear() === b.getFullYear() &&
+ a.getMonth() === b.getMonth() &&
+ a.getDate() === b.getDate()
+ );
 }
 
-export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ tasks = [], todos = [] }) => {
-  const { goals, events: storeEvents } = useStore();
-  const [date, setDate] = useState(new Date());
+export const CalendarWidget: React.FC = () => {
+ const goals = useStore((s) => s.goals);
+ const storeTasks = useStore((s) => s.tasks);
+ const storeTodos = useStore((s) => s.todos);
+ const storeEvents = useStore((s) => s.events);
 
-  // No useEffect needed - data should be fetched by parent component
+ const [cursor, setCursor] = useState(() => new Date());
+ const [selected, setSelected] = useState(() => new Date());
 
-  // Extract all items from goals structure
-  const allTasks: (Task & { goalTitle?: string; milestoneTitle?: string })[] = [];
-  const allTodos: (Todo & { taskTitle?: string; goalTitle?: string })[] = [];
-  const allMilestones: any[] = [];
-  const allGoals: any[] = [];
-  
-  goals.forEach(goal => {
-    // Add goal if it has an end date
-    if (goal.end_datetime) {
-      allGoals.push({
-        ...goal,
-        due_date: goal.end_datetime,
-        itemType: 'Goal'
-      });
-    }
+ const items = useMemo<CalendarItem[]>(
+ () => buildCalendarItems(goals, storeTasks, storeTodos, storeEvents),
+ [goals, storeTasks, storeTodos, storeEvents],
+ );
+ const itemsByDate = useMemo(() => groupItemsByDate(items), [items]);
 
-    goal.milestones?.forEach(milestone => {
-      // Add milestone if it has a due date
-      if (milestone.due_date || milestone.end_datetime) {
-        allMilestones.push({
-          ...milestone,
-          due_date: milestone.due_date || milestone.end_datetime,
-          itemType: 'Milestone'
-        });
-      }
+ const cells = useMemo(() => {
+ const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+ const startOffset = (first.getDay() + 6) % 7; // Monday-first
+ const daysInMonth = new Date(
+ cursor.getFullYear(),
+ cursor.getMonth() + 1,
+ 0,
+ ).getDate();
+ const out: (Date | null)[] = [];
+ for (let i = 0; i < startOffset; i++) out.push(null);
+ for (let i = 1; i <= daysInMonth; i++)
+ out.push(new Date(cursor.getFullYear(), cursor.getMonth(), i));
+ while (out.length % 7) out.push(null);
+ return out;
+ }, [cursor]);
 
-      if (milestone.tasks) {
-        milestone.tasks.forEach(task => {
-          allTasks.push({...task, goalTitle: goal.title, milestoneTitle: milestone.title});
-          if (task.todos) {
-            task.todos.forEach(todo => allTodos.push({...todo, taskTitle: task.title, goalTitle: goal.title}));
-          }
-        });
-      }
-    });
-  });
+ const today = new Date();
+ const monthLabel = cursor.toLocaleDateString('en-US', {
+ month: 'long',
+ year: 'numeric',
+ });
 
-  // Get all items (goals, milestones, tasks, todos, and events) with due dates
-  const items = [
-    ...allGoals,
-    ...allMilestones,
-    ...allTasks.filter(task => task.due_date).map(task => ({ ...task, itemType: 'Task' as const })),
-    ...allTodos.filter(todo => todo.due_date).map(todo => ({ ...todo, itemType: 'Todo' as const })),
-    ...storeEvents.filter(event => event.start_datetime).map(event => ({ ...event, itemType: 'Event' as const, due_date: event.start_datetime }))
-  ];
+ const selectedItems =
+ itemsByDate.get(selected.toDateString()) ?? [];
 
-  // Function to get items for a specific date
-  const getItemsForDate = (selectedDate: Date) => {
-    return items.filter(item => {
-      const itemDate = new Date(item.due_date!);
-      return itemDate.toDateString() === selectedDate.toDateString();
-    });
-  };
+ return (
+ <div
+ style={{
+ background: 'var(--tn-card)',
+ border: 'var(--tn-card-border, var(--tn-line))',
+ borderRadius: 'var(--tn-r-lg, 12px)',
+ padding: 20,
+ boxShadow: 'var(--tn-shadow)',
+ color: 'var(--tn-fg)',
+ }}
+ >
+ <div
+ style={{
+ display: 'flex',
+ alignItems: 'center',
+ marginBottom: 12,
+ gap: 6,
+ }}
+ >
+ <button
+ onClick={() =>
+ setCursor(
+ new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1),
+ )
+ }
+ aria-label="Previous month"
+ style={navBtn}
+ >
+ ‹
+ </button>
+ <div
+ style={{
+ flex: 1,
+ textAlign: 'center',
+ fontSize: 14,
+ fontWeight: 600,
+ fontFamily: 'var(--tn-font-display, var(--tn-font-sans))',
+ color: 'var(--tn-fg)',
+ }}
+ >
+ {monthLabel}
+ </div>
+ <button
+ onClick={() =>
+ setCursor(
+ new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1),
+ )
+ }
+ aria-label="Next month"
+ style={navBtn}
+ >
+ ›
+ </button>
+ </div>
 
-  const tileContent = ({ date, view }: { date: Date; view: string }) => {
-    if (view === 'month') {
-      const dayItems = getItemsForDate(date);
-      if (dayItems.length > 0) {
-        return (
-          <div className="flex justify-center items-center">
-            <span className="text-xs text-blue-500 dark:text-blue-400">{dayItems.length}</span>
-          </div>
-        );
-      }
-    }
-    return null;
-  };
+ <div
+ style={{
+ display: 'grid',
+ gridTemplateColumns: 'repeat(7, 1fr)',
+ gap: 2,
+ marginBottom: 4,
+ }}
+ >
+ {WEEKDAYS.map((w) => (
+ <div
+ key={w}
+ style={{
+ fontSize: 10,
+ textAlign: 'center',
+ color: 'var(--tn-fg-muted)',
+ letterSpacing: '0.06em',
+ textTransform: 'uppercase',
+ padding: '4px 0',
+ }}
+ >
+ {w[0]}
+ </div>
+ ))}
+ </div>
 
-  const onDateChange = (value: any, event: React.MouseEvent<HTMLButtonElement>) => {
-    if (value instanceof Date) {
-      setDate(value);
-    }
-  };
+ <div
+ style={{
+ display: 'grid',
+ gridTemplateColumns: 'repeat(7, 1fr)',
+ gap: 2,
+ marginBottom: 16,
+ }}
+ >
+ {cells.map((d, i) => {
+ if (!d) return <div key={i} style={{ aspectRatio: '1 / 1' }} />;
+ const isToday = sameDay(d, today);
+ const isSelected = sameDay(d, selected);
+ const dayItems = itemsByDate.get(d.toDateString()) ?? [];
+ return (
+ <button
+ key={i}
+ onClick={() => setSelected(d)}
+ style={{
+ aspectRatio: '1 / 1',
+ borderRadius: 'var(--tn-r-md, 6px)',
+ background: isSelected
+ ? 'var(--tn-accent)'
+ : isToday
+ ? 'var(--tn-hover)'
+ : 'transparent',
+ color: isSelected
+ ? 'var(--tn-on-accent)'
+ : isToday
+ ? 'var(--tn-accent)'
+ : 'var(--tn-fg)',
+ fontWeight: isToday || isSelected ? 600 : 500,
+ fontSize: 12,
+ cursor: 'pointer',
+ border: 'none',
+ display: 'flex',
+ flexDirection: 'column',
+ alignItems: 'center',
+ justifyContent: 'center',
+ position: 'relative',
+ fontVariantNumeric: 'tabular-nums',
+ }}
+ >
+ {d.getDate()}
+ {dayItems.length > 0 && (
+ <span
+ style={{
+ position: 'absolute',
+ bottom: 2,
+ width: 4,
+ height: 4,
+ borderRadius: 999,
+ background: isSelected
+ ? 'var(--tn-on-accent)'
+ : 'var(--tn-accent)',
+ }}
+ />
+ )}
+ </button>
+ );
+ })}
+ </div>
 
-  const selectedItems = getItemsForDate(date);
+ <div>
+ <h4
+ style={{
+ fontSize: 12,
+ fontWeight: 600,
+ color: 'var(--tn-fg-muted)',
+ marginBottom: 8,
+ letterSpacing: '0.04em',
+ textTransform: 'uppercase',
+ }}
+ >
+ Items for{' '}
+ {selected.toLocaleDateString('en-US', {
+ month: 'short',
+ day: 'numeric',
+ })}
+ </h4>
+ {selectedItems.length === 0 ? (
+ <p
+ style={{
+ fontSize: 13,
+ color: 'var(--tn-fg-muted)',
+ }}
+ >
+ No items for this date.
+ </p>
+ ) : (
+ <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+ {selectedItems.slice(0, 6).map((item, index) => {
+ const dueDate = new Date(item.due_date!);
+ const isOverdue = dueDate < today && !sameDay(dueDate, today);
+ return (
+ <div
+ key={`${item.id}-${index}`}
+ style={{
+ padding: '8px 10px',
+ borderRadius: 'var(--tn-r-md, 6px)',
+ border: 'var(--tn-line)',
+ background: isOverdue
+ ? 'var(--tn-pr-high-bg, var(--tn-hover))'
+ : 'var(--tn-hover)',
+ }}
+ >
+ <div
+ style={{
+ fontSize: 13,
+ fontWeight: 500,
+ color: 'var(--tn-fg)',
+ marginBottom: 2,
+ }}
+ >
+ {item.title}
+ </div>
+ <div
+ style={{
+ fontSize: 11,
+ color: 'var(--tn-fg-muted)',
+ display: 'flex',
+ gap: 6,
+ alignItems: 'center',
+ }}
+ >
+ <span>{item.itemType}</span>
+ <span>·</span>
+ <span>{item.status}</span>
+ {(item as any).goalTitle && (
+ <>
+ <span>·</span>
+ <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+ {(item as any).goalTitle}
+ </span>
+ </>
+ )}
+ </div>
+ </div>
+ );
+ })}
+ {selectedItems.length > 6 && (
+ <div
+ style={{
+ fontSize: 11,
+ color: 'var(--tn-fg-muted)',
+ textAlign: 'center',
+ paddingTop: 4,
+ }}
+ >
+ + {selectedItems.length - 6} more
+ </div>
+ )}
+ </div>
+ )}
+ </div>
+ </div>
+ );
+};
 
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Calendar</h3>
-      </div>
-
-      <Calendar
-        onChange={onDateChange}
-        value={date}
-        tileContent={tileContent}
-        className="mb-6"
-      />
-
-      <div>
-        <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">Items for {date.toLocaleDateString()}</h4>
-        {selectedItems.length > 0 ? (
-          <div className="space-y-3">
-            {selectedItems.map((item, index) => {
-              const dueDate = new Date(item.due_date!);
-              const today = new Date();
-              const isOverdue = dueDate < today;
-              const isToday = dueDate.toDateString() === today.toDateString();
-
-              return (
-                <div
-                  key={`${item.id}-${index}`}
-                  className={`p-3 rounded-lg border ${
-                    isOverdue ? 'border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20' :
-                    isToday ? 'border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20' :
-                    'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700'
-                  }`}
-                >
-                  <div className="flex justify-between items-start mb-1">
-                    <div className="flex-1">
-                      <span className="font-medium text-gray-900 dark:text-white">{item.title}</span>
-                      {(item as any).goalTitle && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          {item.itemType === 'Todo' && (item as any).taskTitle && `${(item as any).taskTitle} • `}
-                          {item.itemType === 'Task' && (item as any).milestoneTitle && `${(item as any).milestoneTitle} • `}
-                          {(item as any).goalTitle}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex flex-col items-end space-y-1">
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        item.status === StatusType.FINISHED ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200' :
-                        item.status === StatusType.IN_PROGRESS ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200' :
-                        item.status === StatusType.CANCELLED ? 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200' :
-                        'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-                      }`}>
-                        {item.status}
-                      </span>
-                      <span className={`text-xs px-2 py-1 rounded ${
-                        item.itemType === 'Goal' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200' :
-                        item.itemType === 'Milestone' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200' :
-                        item.itemType === 'Task' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200' :
-                        item.itemType === 'Todo' ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200' :
-                        'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-                      }`}>
-                        {item.itemType}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className={`${
-                      isOverdue ? 'text-red-600 dark:text-red-400' :
-                      isToday ? 'text-blue-600 dark:text-blue-400' :
-                      'text-gray-600 dark:text-gray-300'
-                    }`}>
-                      Due: {dueDate.toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="text-gray-500 dark:text-gray-400 text-sm">No items for this date.</p>
-        )}
-      </div>
-    </div>
-  );
+const navBtn: React.CSSProperties = {
+ width: 24,
+ height: 24,
+ background: 'transparent',
+ border: 'var(--tn-line)',
+ borderRadius: 'var(--tn-r-md, 4px)',
+ color: 'var(--tn-fg)',
+ cursor: 'pointer',
+ fontSize: 14,
+ lineHeight: 1,
+ display: 'grid',
+ placeItems: 'center',
 };

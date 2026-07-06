@@ -1,0 +1,181 @@
+/* TaskNest theme: glass
+ * Auto-scoped to [data-theme="glass"] so all themes can
+ * coexist; ThemeProvider toggles the attribute on <html>.
+ * Source: tasknest-design-system/project/app/themes/glass.css
+ */
+
+
+/* TaskNest theme — Liquid Glass · visionOS-inspired frosted panels */
+
+
+[data-theme="glass"] {
+  --tn-font-sans:    "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  --tn-font-display: "Instrument Serif", Georgia, serif;
+  --tn-font-mono:    ui-monospace, "JetBrains Mono", monospace;
+
+  --tn-bg:         #f6f1ec;
+  --tn-surface:    rgba(255,255,255,.55);
+  --tn-surface-2:  rgba(255,255,255,.35);
+  --tn-card:       rgba(255,255,255,.55);
+  --tn-sidebar-bg: rgba(255,255,255,.45);
+  --tn-hover:      rgba(20,20,26,.05);
+  --tn-active:     rgba(20,20,26,.08);
+  --tn-chip:       rgba(20,20,26,.06);
+  --tn-bar-bg:     rgba(20,20,26,.08);
+  --tn-icon-bg:    rgba(20,20,26,.06);
+
+  --tn-fg:        #14141a;
+  --tn-fg-muted:  rgba(20,20,26,.62);
+  --tn-fg-dim:    rgba(20,20,26,.42);
+
+  --tn-line:        1px solid rgba(20,20,26,.08);
+  --tn-card-border: 0.5px solid rgba(255,255,255,.65);
+  --tn-shadow:      0 1px 0 rgba(255,255,255,.7) inset, 0 14px 40px -18px rgba(20,20,26,.18), 0 2px 6px -2px rgba(20,20,26,.06);
+
+  --tn-accent:    #d8855a;
+  --tn-on-accent: #ffffff;
+  --tn-accent-2:  #c25d63;
+
+  --tn-warm: #d8855a; --tn-moss: #6a8a5a; --tn-slate: #5a6f8c; --tn-plum: #8a6594;
+  --tn-good: #5a8050; --tn-bad: #c25d63;
+
+  --tn-r-sm: 8px; --tn-r-md: 12px; --tn-r-lg: 18px; --tn-r-xl: 24px;
+  --tn-sidebar-w: 240px; --tn-pad-lg: 14px;
+  --tn-h1-size: 44px; --tn-h1-weight: 400;
+
+  --tn-st-prog-bg:  rgba(90,111,140,.14); --tn-st-prog-fg:  #3e5275;
+  --tn-st-start-bg: rgba(216,133,90,.14); --tn-st-start-fg: #93502a;
+  --tn-st-fin-bg:   rgba(106,138,90,.16); --tn-st-fin-fg:   #4d6a3a;
+  --tn-st-out-bg:   rgba(20,20,26,.06); --tn-st-out-fg:   rgba(20,20,26,.55);
+  --tn-pr-high-bg:  rgba(194,93,99,.14); --tn-pr-high-fg:  #8a3a40;
+  --tn-pr-med-bg:   rgba(216,133,90,.14); --tn-pr-med-fg:   #93502a;
+  --tn-pr-low-bg:   rgba(106,138,90,.14); --tn-pr-low-fg:   #4d6a3a;
+  --tn-tag-brand-bg: rgba(216,133,90,.15); --tn-tag-brand-fg: #93502a;
+  --tn-tag-run-bg:   rgba(106,138,90,.18); --tn-tag-run-fg:   #4d6a3a;
+  --tn-tag-read-bg:  rgba(90,111,140,.16); --tn-tag-read-fg:  #3e5275;
+  --tn-tag-life-bg:  rgba(138,101,148,.18); --tn-tag-life-fg:  #6a4a78;
+  --tn-tag-work-bg:  rgba(194,93,99,.14); --tn-tag-work-fg:  #8a3a40;
+}
+
+[data-theme="glass"] body {
+  background:
+    radial-gradient(60% 50% at 12% 8%, #f3d6c8 0%, transparent 60%),
+    radial-gradient(55% 50% at 92% 22%, #e9d4e7 0%, transparent 65%),
+    radial-gradient(70% 60% at 78% 92%, #d3e0e8 0%, transparent 65%),
+    radial-gradient(50% 50% at 30% 80%, #ecdfd0 0%, transparent 60%),
+    linear-gradient(180deg, #f6f1ec 0%, #ecebe7 100%);
+  background-attachment: fixed;
+  color: #14141a;
+  font-feature-settings: "ss01" on, "cv11" on;
+  letter-spacing: -0.005em;
+}
+[data-theme="glass"] body::before {
+  content: ""; position: fixed; inset: 0; pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.14 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  opacity: 0.5; mix-blend-mode: overlay; z-index: 1;
+}
+[data-theme="glass"] .app { position: relative; z-index: 2; }
+
+/* Frosted panels */
+[data-theme="glass"] .sidebar, [data-theme="glass"] .topbar, [data-theme="glass"] .card, [data-theme="glass"] .stat, [data-theme="glass"] .goal-card, [data-theme="glass"] .mobile-tabbar {
+  backdrop-filter: blur(36px) saturate(1.8);
+  -webkit-backdrop-filter: blur(36px) saturate(1.8);
+}
+
+[data-theme="glass"] .sidebar { background: rgba(255,255,255,.45); border-right: 0.5px solid rgba(255,255,255,.65); }
+[data-theme="glass"] .topbar { background: rgba(255,255,255,.4); border-bottom: 0.5px solid rgba(255,255,255,.6); }
+
+/* Type — Instrument Serif on headlines */
+[data-theme="glass"] .page-title { font-family: "Instrument Serif", serif !important; font-weight: 400; letter-spacing: -0.02em; line-height: 1.05; }
+[data-theme="glass"] .page-title em { font-style: italic; color: rgba(20,20,26,.62); }
+[data-theme="glass"] .page-eyebrow { color: rgba(20,20,26,.55); }
+[data-theme="glass"] h2, [data-theme="glass"] h3 { font-weight: 600; letter-spacing: -0.015em; }
+
+/* Sidebar */
+[data-theme="glass"] .sidebar-brand .logo { background: linear-gradient(140deg, #2a2a35, #4a4a5e); color: #fff; box-shadow: 0 0 0 0.5px rgba(20,20,26,.2), 0 1px 0 rgba(255,255,255,.5) inset; }
+[data-theme="glass"] .sidebar a:hover { background: rgba(20,20,26,.05); }
+[data-theme="glass"] .sidebar a.active { background: rgba(216,133,90,.14); color: #93502a; }
+[data-theme="glass"] .sidebar a.active .ico { color: #93502a; }
+
+[data-theme="glass"] .topbar .crumbs { color: rgba(20,20,26,.55); }
+[data-theme="glass"] .topbar .crumbs .current { color: #14141a; }
+[data-theme="glass"] .topbar .btn-icon { border-radius: 10px; }
+[data-theme="glass"] .topbar .btn-icon:hover { background: rgba(20,20,26,.06); }
+
+/* Cards */
+[data-theme="glass"] .card, [data-theme="glass"] .stat, [data-theme="glass"] .goal-card {
+  background: rgba(255,255,255,.55);
+  border: 0.5px solid rgba(255,255,255,.65);
+  border-radius: 18px;
+  box-shadow: 0 1px 0 rgba(255,255,255,.7) inset, 0 14px 40px -18px rgba(20,20,26,.18), 0 2px 6px -2px rgba(20,20,26,.06);
+  position: relative;
+}
+[data-theme="glass"] .card::after, [data-theme="glass"] .stat::after, [data-theme="glass"] .goal-card::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,255,255,.35) 0%, transparent 30%);
+  mix-blend-mode: soft-light;
+}
+
+[data-theme="glass"] .goal-card .gc-ico { border-radius: 12px; box-shadow: 0 0 0 0.5px rgba(20,20,26,.08), 0 1px 0 rgba(255,255,255,.4) inset; }
+[data-theme="glass"] .goal-card .gc-ico.warm { background: linear-gradient(140deg, #f4c0a0, #d8855a); color: #fff; }
+[data-theme="glass"] .goal-card .gc-ico.moss { background: linear-gradient(140deg, #c4d6a8, #6a8a5a); color: #fff; }
+[data-theme="glass"] .goal-card .gc-ico.slate { background: linear-gradient(140deg, #b8cce0, #5a6f8c); color: #fff; }
+[data-theme="glass"] .goal-card .gc-ico.plum { background: linear-gradient(140deg, #d6c0e0, #8a6594); color: #fff; }
+[data-theme="glass"] .goal-card h3 { font-weight: 500; letter-spacing: -0.015em; }
+[data-theme="glass"] .gc-bar { background: rgba(20,20,26,.07); border-radius: 999px; height: 4px; }
+[data-theme="glass"] .gc-bar i { border-radius: 999px; }
+[data-theme="glass"] .gc-bar i.warm { background: linear-gradient(90deg, #d8855a, #c25d63) !important; }
+[data-theme="glass"] .gc-bar i.moss { background: linear-gradient(90deg, #8a9f6a, #6a8a5a) !important; }
+[data-theme="glass"] .gc-bar i.slate { background: linear-gradient(90deg, #7a8da8, #5a6f8c) !important; }
+[data-theme="glass"] .gc-bar i.plum { background: linear-gradient(90deg, #a787b3, #8a6594) !important; }
+
+/* Buttons */
+[data-theme="glass"] .btn { border-radius: 12px; padding: 9px 18px; font-weight: 500; }
+[data-theme="glass"] .btn.btn-primary { background: #14141a; color: #fff; box-shadow: 0 8px 28px -10px rgba(20,20,26,.4), 0 0 0 0.5px rgba(255,255,255,.05) inset; }
+[data-theme="glass"] .btn.btn-primary:hover { transform: translateY(-1px); }
+[data-theme="glass"] .btn.btn-secondary { background: rgba(255,255,255,.6); border: 0.5px solid rgba(255,255,255,.7); backdrop-filter: blur(20px) saturate(1.6); }
+[data-theme="glass"] .btn.btn-secondary:hover { background: rgba(255,255,255,.75); }
+[data-theme="glass"] .btn.btn-ghost:hover { background: rgba(20,20,26,.05); }
+
+/* Pills */
+[data-theme="glass"] .pill { border-radius: 999px; backdrop-filter: blur(8px); }
+
+/* Task row */
+[data-theme="glass"] .task-row { border-bottom: 1px solid rgba(20,20,26,.07) !important; padding: 13px 0; }
+[data-theme="glass"] .task-row .cb { border-color: rgba(20,20,26,.3); }
+[data-theme="glass"] .task-row.done .cb { background: #14141a; border-color: #14141a; }
+
+/* Mobile tabbar */
+[data-theme="glass"] .mobile-tabbar { background: rgba(255,255,255,.6); border-top: 0.5px solid rgba(255,255,255,.65); }
+[data-theme="glass"] .mobile-tabbar a { color: rgba(20,20,26,.55); }
+[data-theme="glass"] .mobile-tabbar a.active { color: #d8855a; background: rgba(216,133,90,.1); }
+
+/* Search */
+[data-theme="glass"] .search-overlay { background: rgba(20,20,26,.25); backdrop-filter: blur(8px); }
+[data-theme="glass"] .search-overlay .panel { background: rgba(255,255,255,.7); backdrop-filter: blur(40px) saturate(1.8); border: 0.5px solid rgba(255,255,255,.7); border-radius: 18px; box-shadow: 0 24px 60px rgba(20,20,26,.2); }
+[data-theme="glass"] .search-overlay .result:hover { background: rgba(20,20,26,.06); }
+[data-theme="glass"] .search-overlay .result .kind { background: rgba(216,133,90,.15); color: #93502a; border-radius: 6px; }
+
+/* === shadcn bridge (auto-generated) === */
+[data-theme="glass"] {
+  --background: 30 35.7% 94.5%; /* from --tn-bg */
+  --foreground: 240 13% 9%; /* from --tn-fg */
+  --card: 30 35.7% 97.5%; /* from --tn-card */
+  --card-foreground: 240 13% 9%; /* from --tn-fg */
+  --popover: 30 35.7% 97.5%; /* from --tn-card */
+  --popover-foreground: 240 13% 9%; /* from --tn-fg */
+  --primary: 20 61.8% 60%; /* from --tn-accent */
+  --primary-foreground: 0 0% 100%; /* from --tn-on-accent */
+  --secondary: 30 35.7% 96.4%; /* from --tn-surface-2 */
+  --secondary-foreground: 240 13% 9%; /* from --tn-fg */
+  --muted: 30 35.7% 96.4%; /* from --tn-surface-2 */
+  --muted-foreground: 303 0.9% 41.1%; /* from --tn-fg-muted */
+  --accent: 356 45.3% 56.3%; /* from --tn-accent-2 */
+  --accent-foreground: 0 0% 100%; /* from --tn-on-accent */
+  --destructive: 356 45.3% 56.3%; /* from --tn-bad */
+  --destructive-foreground: 0 0% 100%; /* from --tn-on-accent */
+  --border: 28 13.9% 87.7%; /* from --tn-line-color */
+  --input: 28 13.9% 87.7%; /* from --tn-line-color */
+  --ring: 20 61.8% 60%; /* from --tn-accent */
+  --radius: 0.75rem; /* from --tn-r-md */
+}

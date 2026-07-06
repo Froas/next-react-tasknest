@@ -1,0 +1,162 @@
+/* TaskNest theme: adventure
+ * Auto-scoped to [data-theme="adventure"] so all themes can
+ * coexist; ThemeProvider toggles the attribute on <html>.
+ * Source: tasknest-design-system/project/app/themes/adventure.css
+ */
+
+
+/* TaskNest theme — Adventure · parchment, gold leaf, vermilion seals */
+
+
+[data-theme="adventure"] {
+  --tn-font-sans:    "Inter", system-ui, sans-serif;
+  --tn-font-display: "Cinzel", serif;
+  --tn-font-mono:    "Inter", monospace;
+
+  --tn-bg:         #f1e3c2;
+  --tn-surface:    #e6d3a3;
+  --tn-surface-2:  #d6bf85;
+  --tn-card:       #e6d3a3;
+  --tn-sidebar-bg: #d6bf85;
+  --tn-hover:      rgba(58,40,20,.06);
+  --tn-active:     rgba(58,40,20,.14);
+  --tn-chip:       rgba(58,40,20,.1);
+  --tn-bar-bg:     #d6bf85;
+  --tn-icon-bg:    #c8932a;
+
+  --tn-fg:       #3a2814;
+  --tn-fg-muted: #5d3f20;
+  --tn-fg-dim:   #8a6a3f;
+
+  --tn-line:        2px solid #3a2814;
+  --tn-card-border: 2px solid #3a2814;
+  --tn-shadow:      0 0 0 3px #f1e3c2, 0 0 0 4px #8a6a3f, 4px 4px 0 rgba(58,40,20,.15);
+
+  --tn-accent:    #c8932a;
+  --tn-on-accent: #3a2814;
+  --tn-accent-2:  #a14424;
+
+  --tn-warm: #a14424; --tn-moss: #4d6b3a; --tn-slate: #2f4858; --tn-plum: #6a4470;
+  --tn-good: #4d6b3a; --tn-bad: #a14424;
+
+  --tn-r-sm: 4px; --tn-r-md: 6px; --tn-r-lg: 8px; --tn-r-xl: 10px;
+  --tn-sidebar-w: 230px; --tn-pad-lg: 16px;
+  --tn-h1-size: 36px; --tn-h1-weight: 700;
+
+  --tn-st-prog-bg:  #c8932a; --tn-st-prog-fg:  #3a2814;
+  --tn-st-start-bg: #d6bf85; --tn-st-start-fg: #3a2814;
+  --tn-st-fin-bg:   #4d6b3a; --tn-st-fin-fg:   #f1e3c2;
+  --tn-st-out-bg:   #f1e3c2; --tn-st-out-fg:   #5d3f20;
+  --tn-pr-high-bg:  #a14424; --tn-pr-high-fg:  #f1e3c2;
+  --tn-pr-med-bg:   #c8932a; --tn-pr-med-fg:   #3a2814;
+  --tn-pr-low-bg:   #d6bf85; --tn-pr-low-fg:   #3a2814;
+  --tn-tag-brand-bg: #2f4858; --tn-tag-brand-fg: #f1e3c2;
+  --tn-tag-run-bg:   #a14424; --tn-tag-run-fg:   #f1e3c2;
+  --tn-tag-read-bg:  #4d6b3a; --tn-tag-read-fg:  #f1e3c2;
+  --tn-tag-life-bg:  #c8932a; --tn-tag-life-fg:  #3a2814;
+  --tn-tag-work-bg:  #6a4470; --tn-tag-work-fg:  #f1e3c2;
+}
+
+[data-theme="adventure"] body {
+  background:
+    radial-gradient(ellipse at 30% 10%, rgba(58,40,20,.06), transparent 60%),
+    radial-gradient(ellipse at 80% 90%, rgba(58,40,20,.08), transparent 60%),
+    repeating-radial-gradient(circle at 20% 30%, rgba(58,40,20,.03) 0 1px, transparent 1px 4px),
+    #f1e3c2;
+  background-attachment: fixed;
+}
+
+/* Type — Cinzel for headings, Inter body */
+[data-theme="adventure"] .page-title { font-family: "Cinzel", serif !important; font-weight: 700; letter-spacing: 0.01em; line-height: 1.15; }
+[data-theme="adventure"] h2, [data-theme="adventure"] h3 { font-family: "Cinzel", serif !important; font-weight: 700; letter-spacing: 0.04em; }
+[data-theme="adventure"] .page-eyebrow { font-family: "Cinzel", serif; letter-spacing: 0.2em; text-transform: uppercase; color: #5d3f20; }
+[data-theme="adventure"] .s-label { font-family: "Cinzel", serif !important; letter-spacing: 0.14em !important; text-transform: uppercase; color: #5d3f20; }
+[data-theme="adventure"] .s-value { font-family: "Cinzel", serif !important; font-weight: 700; }
+
+/* Shell — banner-like */
+[data-theme="adventure"] .sidebar { background: #d6bf85; border-right: 2px solid #3a2814; }
+[data-theme="adventure"] .sidebar-brand .logo { background: #c8932a; color: #3a2814; clip-path: polygon(50% 0, 100% 0, 100% 70%, 50% 100%, 0 70%, 0 0); border-radius: 0; font-family: "Cinzel", serif; font-weight: 700; border: none; box-shadow: none; width: 36px; height: 42px; }
+[data-theme="adventure"] .sidebar-brand b { font-family: "Cinzel", serif; font-weight: 700; letter-spacing: 0.04em; }
+[data-theme="adventure"] .sidebar h4 { font-family: "Cinzel", serif; letter-spacing: 0.18em; color: #5d3f20; font-size: 10px; }
+[data-theme="adventure"] .sidebar a { font-family: "Inter", sans-serif; }
+[data-theme="adventure"] .sidebar a:hover { background: rgba(58,40,20,.08); }
+[data-theme="adventure"] .sidebar a.active { background: #c8932a; color: #3a2814; font-weight: 600; }
+[data-theme="adventure"] .sidebar a.active .ico, [data-theme="adventure"] .sidebar a.active .count { color: #3a2814; }
+[data-theme="adventure"] .sidebar-search { color: #5d3f20; }
+[data-theme="adventure"] .sidebar-search kbd { background: rgba(58,40,20,.15); padding: 2px 6px; }
+[data-theme="adventure"] .sidebar-foot { border-top: 2px solid #3a2814; background: #d6bf85; }
+[data-theme="adventure"] .sidebar-foot .av { background: #a14424; color: #f1e3c2; border: 2px solid #3a2814; }
+
+/* Topbar */
+[data-theme="adventure"] .topbar { background: #e6d3a3; border-bottom: 2px solid #3a2814; }
+[data-theme="adventure"] .topbar .crumbs { font-family: "Cinzel", serif; letter-spacing: 0.08em; text-transform: uppercase; font-size: 11px; }
+[data-theme="adventure"] .topbar .btn-icon { border: 2px solid #3a2814; background: #f1e3c2; box-shadow: 2px 2px 0 #8a6a3f; border-radius: 6px; }
+[data-theme="adventure"] .topbar .btn-icon:hover { background: #c8932a; }
+
+/* Cards — frame + parchment + seal */
+[data-theme="adventure"] .card, [data-theme="adventure"] .stat { background: #e6d3a3; border: 2px solid #3a2814; border-radius: 8px; box-shadow: 0 0 0 3px #f1e3c2, 0 0 0 4px #8a6a3f, 4px 4px 0 rgba(58,40,20,.15); margin: 4px 4px 12px; }
+[data-theme="adventure"] .goal-card { background: #e6d3a3; border: 2px solid #3a2814; border-radius: 8px; box-shadow: 0 0 0 3px #f1e3c2, 0 0 0 4px #8a6a3f, 4px 4px 0 rgba(58,40,20,.15); margin: 4px; }
+[data-theme="adventure"] .goal-card:hover { transform: translate(-2px,-2px); }
+
+[data-theme="adventure"] .goal-card .gc-ico { background: #c8932a !important; color: #3a2814 !important; border: 2px solid #3a2814; border-radius: 50%; width: 44px; height: 44px; font-family: "Cinzel", serif; font-weight: 700; }
+[data-theme="adventure"] .goal-card h3 { font-family: "Cinzel", serif; font-weight: 700; letter-spacing: 0.01em; font-size: 18px; }
+[data-theme="adventure"] .gc-pct { font-family: "Cinzel", serif; font-weight: 700; color: #a14424; }
+[data-theme="adventure"] .gc-bar { border: 1.5px solid #3a2814; border-radius: 4px; height: 8px; background: #f1e3c2; }
+[data-theme="adventure"] .gc-bar i { background: #4d6b3a !important; }
+[data-theme="adventure"] .gc-bar i.warm { background: #a14424 !important; }
+[data-theme="adventure"] .gc-bar i.moss { background: #4d6b3a !important; }
+[data-theme="adventure"] .gc-bar i.slate { background: #2f4858 !important; }
+[data-theme="adventure"] .gc-bar i.plum { background: #6a4470 !important; }
+
+/* Buttons */
+[data-theme="adventure"] .btn { border: 2px solid #3a2814; border-radius: 6px; font-family: "Cinzel", serif; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; font-size: 11px; box-shadow: 2px 2px 0 #8a6a3f; padding: 7px 16px; }
+[data-theme="adventure"] .btn:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 #8a6a3f; }
+[data-theme="adventure"] .btn:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 #8a6a3f; }
+[data-theme="adventure"] .btn.btn-primary { background: #c8932a; color: #3a2814; }
+[data-theme="adventure"] .btn.btn-secondary { background: #f1e3c2; color: #3a2814; }
+[data-theme="adventure"] .btn.btn-ghost { border-color: transparent; box-shadow: none; }
+
+/* Pills */
+[data-theme="adventure"] .pill { border: 1.5px solid #3a2814; border-radius: 0; padding: 1px 8px; font-family: "Cinzel", serif; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.7; font-weight: 600; }
+
+/* Task row */
+[data-theme="adventure"] .task-row { border-bottom: 1px dashed #8a6a3f !important; padding: 12px 0; }
+[data-theme="adventure"] .task-row .cb { border: 2px solid #3a2814; background: #f1e3c2; }
+[data-theme="adventure"] .task-row.done .cb { background: #4d6b3a; }
+[data-theme="adventure"] .task-row .t-title { font-weight: 500; }
+[data-theme="adventure"] .task-row .t-time { font-family: "Cinzel", serif; font-weight: 700; letter-spacing: 0.04em; }
+
+/* Mobile tabbar */
+[data-theme="adventure"] .mobile-tabbar { background: #d6bf85; border-top: 2px solid #3a2814; }
+[data-theme="adventure"] .mobile-tabbar a { font-family: "Cinzel", serif; letter-spacing: 0.06em; font-size: 9px; text-transform: uppercase; }
+[data-theme="adventure"] .mobile-tabbar a.active { color: #f1e3c2; background: #a14424; }
+
+/* Search */
+[data-theme="adventure"] .search-overlay .panel { background: #e6d3a3; border: 2px solid #3a2814; border-radius: 8px; box-shadow: 0 0 0 3px #f1e3c2, 0 0 0 4px #8a6a3f, 6px 6px 0 rgba(58,40,20,.2); }
+[data-theme="adventure"] .search-overlay input { font-family: "Cinzel", serif; letter-spacing: 0.04em; color: #3a2814 !important; background: #e6d3a3 !important; }
+[data-theme="adventure"] .search-overlay .result:hover { background: #c8932a; }
+[data-theme="adventure"] .search-overlay .result .kind { background: #2f4858; color: #f1e3c2; font-family: "Cinzel", serif; letter-spacing: 0.06em; }
+
+/* === shadcn bridge (auto-generated) === */
+[data-theme="adventure"] {
+  --background: 42 62.7% 85.3%; /* from --tn-bg */
+  --foreground: 32 48.7% 15.3%; /* from --tn-fg */
+  --card: 43 57.3% 77.1%; /* from --tn-card */
+  --card-foreground: 32 48.7% 15.3%; /* from --tn-fg */
+  --popover: 43 57.3% 77.1%; /* from --tn-card */
+  --popover-foreground: 32 48.7% 15.3%; /* from --tn-fg */
+  --primary: 40 65.3% 47.5%; /* from --tn-accent */
+  --primary-foreground: 32 48.7% 15.3%; /* from --tn-on-accent */
+  --secondary: 43 49.7% 68%; /* from --tn-surface-2 */
+  --secondary-foreground: 32 48.7% 15.3%; /* from --tn-fg */
+  --muted: 43 49.7% 68%; /* from --tn-surface-2 */
+  --muted-foreground: 30 48.8% 24.5%; /* from --tn-fg-muted */
+  --accent: 15 63.5% 38.6%; /* from --tn-accent-2 */
+  --accent-foreground: 32 48.7% 15.3%; /* from --tn-on-accent */
+  --destructive: 15 63.5% 38.6%; /* from --tn-bad */
+  --destructive-foreground: 32 48.7% 15.3%; /* from --tn-on-accent */
+  --border: 32 48.7% 15.3%; /* from --tn-line-color */
+  --input: 32 48.7% 15.3%; /* from --tn-line-color */
+  --ring: 40 65.3% 47.5%; /* from --tn-accent */
+  --radius: 0.375rem; /* from --tn-r-md */
+}

@@ -3,200 +3,205 @@ import React, { useState } from 'react';
 import { GoalItem as Goal, StatusType, PriorityType } from '@/lib/types';
 import { goalsApi } from '@/lib/api';
 import { useAppSession } from '../../app/clientwrapper';
+import { toDateInput } from '@/lib/utils';
+import { USER_FACING_STATUSES, STATUS_LABELS } from '@/lib/sort';
+import { useFormDraft } from '@/lib/useFormDraft';
+import { MarkdownEditor } from '@/components/ui/MarkdownEditor';
 
 interface GoalFormProps {
-  goal?: Goal;
-  isEditMode?: boolean;
-  onClose?: () => void;
-  onSubmit?: (goalData: Partial<Goal>) => Promise<void>;
-  onSuccess?: (goalData: Partial<Goal>) => Promise<void>;
-  onCancel?: () => void;
+ goal?: Goal;
+ isEditMode?: boolean;
+ onSuccess: (goalData: Partial<Goal>) => Promise<void> | void;
+ onCancel: () => void;
 }
 
-export const GoalForm: React.FC<GoalFormProps> = ({ 
-  goal, 
-  isEditMode, 
-  onClose, 
-  onSubmit,
-  onSuccess,
-  onCancel 
+export const GoalForm: React.FC<GoalFormProps> = ({
+ goal,
+ isEditMode,
+ onSuccess,
+ onCancel,
 }) => {
-  const session = useAppSession();
-  const today = new Date().toISOString().split('T')[0];
-  const [formData, setFormData] = useState({
-    title: goal?.title || '',
-    description: goal?.description || '',
-    status: goal?.status || StatusType.OUTSTANDING,
-    priority: goal?.priority || PriorityType.MEDIUM,
-    start_datetime: goal?.start_datetime
-      ? new Date(goal.start_datetime).toISOString()
-      : today,
+ const session = useAppSession();
+ // Draft scope: editing a known goal vs creating new gets a separate key,
+ // so editing one goal doesn't clobber a half-written new-goal draft.
+ const draftKey = goal?.id ? `goal:edit:${goal.id}` : 'goal:new';
+ const [formData, setFormData, clearDraft] = useFormDraft(draftKey, {
+ title: goal?.title || '',
+ description: goal?.description || '',
+ status: goal?.status || StatusType.OUTSTANDING,
+ priority: goal?.priority || PriorityType.MEDIUM,
+ start_datetime: toDateInput(goal?.start_datetime),
+ end_datetime: toDateInput(goal?.end_datetime),
+ });
 
-    end_datetime: goal?.end_datetime
-      ? new Date(goal.end_datetime).toISOString()
-      : today,
-  });
+ const [isSubmitting, setIsSubmitting] = useState(false);
+ const [error, setError] = useState<string | null>(null);
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+ const validate = (): string | null => {
+ if (!formData.title.trim()) return 'Title is required';
+ if (formData.title.length > 200) return 'Title must be under 200 characters';
+ if (!formData.end_datetime) return 'Due date is required';
+ if (formData.start_datetime && formData.end_datetime) {
+ if (new Date(formData.end_datetime) < new Date(formData.start_datetime)) {
+ return 'Due date cannot be before start date';
+ }
+ }
+ return null;
+ };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
+ const handleSubmit = async (e: React.FormEvent) => {
+ e.preventDefault();
+ const validationError = validate();
+ if (validationError) {
+ setError(validationError);
+ return;
+ }
+ setIsSubmitting(true);
+ setError(null);
 
-    try {
-      const goalData = {
-        ...formData,
-        start_datetime: formData.start_datetime ? new Date(formData.start_datetime).toISOString() : undefined,
-        end_datetime: formData.end_datetime ? new Date(formData.end_datetime).toISOString() : undefined
-      };
-      if (onSubmit) {
-        await onSubmit(goalData);
-      } else if (onSuccess) {
-        await onSuccess(goalData);
-      }
-      
-      if (onClose) {
-        onClose();
-      } else if (onCancel) {
-        onCancel();
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save goal');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+ try {
+ const goalData = {
+ ...formData,
+ start_datetime: formData.start_datetime ? new Date(formData.start_datetime).toISOString() : undefined,
+ end_datetime: formData.end_datetime ? new Date(formData.end_datetime).toISOString() : undefined,
+ };
+ await onSuccess(goalData);
+ clearDraft();
+ onCancel();
+ } catch (err) {
+ setError(err instanceof Error ? err.message : 'Failed to save goal');
+ } finally {
+ setIsSubmitting(false);
+ }
+ };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+ const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+ const { name, value } = e.target;
+ setFormData(prev => ({ ...prev, [name]: value }));
+ };
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <div className="bg-red-50 text-red-800 p-3 rounded-lg text-sm">
-          {error}
-        </div>
-      )}
+ return (
+ <form onSubmit={handleSubmit} className="space-y-4">
+ {error && (
+ <div className="bg-red-50 text-red-800 p-3 rounded-lg text-sm">
+ {error}
+ </div>
+ )}
 
-      <div>
-        <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-          Title
-        </label>
-        <input
-          type="text"
-          id="title"
-          name="title"
-          value={formData.title}
-          onChange={handleChange}
-          required
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
-        />
-      </div>
+ <div>
+ <label htmlFor="title" className="block text-sm font-medium text-foreground mb-1">
+ Title
+ </label>
+ <input
+ type="text"
+ id="title"
+ name="title"
+ value={formData.title}
+ onChange={handleChange}
+ required
+ className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+ />
+ </div>
 
-      <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-          Description
-        </label>
-        <textarea
-          id="description"
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          rows={3}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
-        />
-      </div>
+ <div>
+ <label htmlFor="description" className="block text-sm font-medium text-foreground mb-1">
+ Description
+ </label>
+ <MarkdownEditor
+ id="description"
+ name="description"
+ value={formData.description}
+ onChange={(next) => setFormData((prev) => ({ ...prev, description: next }))}
+ rows={4}
+ />
+ </div>
 
-      <div className="grid grid-cols-2 gap-4">
-         <div>
-          <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
-            Status
-          </label>
-          <select
-            id="status"
-            name="status"
-            value={formData.status}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
-          >
-            {Object.values(StatusType).map(status => (
-              <option key={status} value={status}>
-                {status.replace('_', ' ')}
-              </option>
-            ))}
-          </select>
-        </div>
+ <div className="grid grid-cols-2 gap-4">
+ <div>
+ <label htmlFor="status" className="block text-sm font-medium text-foreground mb-1">
+ Status
+ </label>
+ <select
+ id="status"
+ name="status"
+ value={formData.status}
+ onChange={handleChange}
+ className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+ >
+ {USER_FACING_STATUSES.map((status) => (
+ <option key={status} value={status}>
+ {STATUS_LABELS[status]}
+ </option>
+ ))}
+ </select>
+ </div>
 
-        <div>
-          <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-1">
-            Priority
-          </label>
-          <select
-            id="priority"
-            name="priority"
-            value={formData.priority}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
-          >
-            {Object.values(PriorityType).map(priority => (
-              <option key={priority} value={priority}>
-                {priority}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+ <div>
+ <label htmlFor="priority" className="block text-sm font-medium text-foreground mb-1">
+ Priority
+ </label>
+ <select
+ id="priority"
+ name="priority"
+ value={formData.priority}
+ onChange={handleChange}
+ className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+ >
+ {Object.values(PriorityType).map(priority => (
+ <option key={priority} value={priority}>
+ {priority}
+ </option>
+ ))}
+ </select>
+ </div>
+ </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="start_datetime" className="block text-sm font-medium text-gray-700 mb-1">
-            Start Date
-          </label>
-          <input
-            type="date"
-            id="start_datetime"
-            name="start_datetime"
-            value={formData.start_datetime}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
-          />
-        </div>
+ <div className="grid grid-cols-2 gap-4">
+ <div>
+ <label htmlFor="start_datetime" className="block text-sm font-medium text-foreground mb-1">
+ Start Date
+ </label>
+ <input
+ type="date"
+ id="start_datetime"
+ name="start_datetime"
+ value={formData.start_datetime}
+ onChange={handleChange}
+ className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+ />
+ </div>
 
-        <div>
-          <label htmlFor="end_datetime" className="block text-sm font-medium text-gray-700 mb-1">
-            End Date
-          </label>
-          <input
-            type="date"
-            id="end_datetime"
-            name="end_datetime"
-            value={formData.end_datetime}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
-          />
-        </div>
-      </div>
+ <div>
+ <label htmlFor="end_datetime" className="block text-sm font-medium text-foreground mb-1">
+ End Date
+ </label>
+ <input
+ type="date"
+ id="end_datetime"
+ name="end_datetime"
+ value={formData.end_datetime}
+ onChange={handleChange}
+ className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+ />
+ </div>
+ </div>
 
-      <div className="flex justify-end space-x-3 pt-4">
-        <button
-          type="button"
-          onClick={onClose}
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50"
-        >
-          {isSubmitting ? 'Saving...' : isEditMode ? 'Update Goal' : 'Create Goal'}
-        </button>
-      </div>
-    </form>
-  );
+ <div className="flex justify-end space-x-3 pt-4">
+ <button
+ type="button"
+ onClick={onCancel}
+ className="px-4 py-2 text-sm font-medium text-foreground bg-muted rounded-lg hover:bg-muted focus:outline-none focus:ring-2 focus:ring-gray-400"
+ >
+ Cancel
+ </button>
+ <button
+ type="submit"
+ disabled={isSubmitting}
+ className="px-4 py-2 text-sm font-medium text-white bg-card rounded-lg hover:bg-card focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50"
+ >
+ {isSubmitting ? 'Saving...' : isEditMode ? 'Update Goal' : 'Create Goal'}
+ </button>
+ </div>
+ </form>
+ );
 };

@@ -1,0 +1,68 @@
+/* TaskNest theme — Cottagecore · soft botanical, sage + clay + oat */
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Crimson+Pro:wght@400;500;600&display=swap");
+
+:root {
+  --tn-font-sans:    "DM Sans", system-ui, sans-serif;
+  --tn-font-display: "Crimson Pro", serif;
+  --tn-font-mono:    ui-monospace, monospace;
+
+  --tn-bg:         #f5ecdf;
+  --tn-surface:    #fbf5e8;
+  --tn-surface-2:  #ebe0cf;
+  --tn-card:       #fbf5e8;
+  --tn-sidebar-bg: #ebe0cf;
+  --tn-hover:      rgba(74,59,46,.06);
+  --tn-active:     rgba(122,153,104,.18);
+  --tn-chip:       rgba(74,59,46,.08);
+  --tn-bar-bg:     rgba(74,59,46,.10);
+  --tn-icon-bg:    rgba(122,153,104,.18);
+
+  --tn-fg:       #4a3b2e;
+  --tn-fg-muted: #8a7866;
+  --tn-fg-dim:   #b0a293;
+
+  --tn-line:        1px solid rgba(74,59,46,.15);
+  --tn-card-border: 1px solid rgba(74,59,46,.10);
+  --tn-shadow:      0 4px 14px rgba(74,59,46,.08);
+
+  --tn-accent:    #7a9968;
+  --tn-on-accent: #fbf5e8;
+  --tn-accent-2:  #c08465;
+
+  --tn-warm: #c08465; --tn-moss: #7a9968; --tn-slate: #8a9aa8; --tn-plum: #a67e9a;
+  --tn-good: #5a7a4a; --tn-bad: #b85040;
+
+  --tn-r-sm: 8px; --tn-r-md: 12px; --tn-r-lg: 16px; --tn-r-xl: 22px;
+  --tn-sidebar-w: 240px;
+  --tn-h1-size: 36px; --tn-h1-weight: 500;
+
+  --tn-st-prog-bg: rgba(122,153,104,.20); --tn-st-prog-fg: #3a5a30;
+  --tn-st-start-bg: rgba(192,132,101,.20); --tn-st-start-fg: #6a4030;
+  --tn-st-fin-bg: rgba(122,153,104,.30); --tn-st-fin-fg: #2a4520;
+  --tn-st-out-bg: rgba(74,59,46,.08); --tn-st-out-fg: #8a7866;
+  --tn-pr-high-bg: rgba(184,80,64,.18); --tn-pr-high-fg: #8a3030;
+  --tn-pr-med-bg: rgba(192,132,101,.20); --tn-pr-med-fg: #6a4030;
+  --tn-pr-low-bg: rgba(122,153,104,.20); --tn-pr-low-fg: #3a5a30;
+  --tn-tag-brand-bg: rgba(192,132,101,.20); --tn-tag-brand-fg: #6a4030;
+  --tn-tag-run-bg: rgba(184,80,64,.18); --tn-tag-run-fg: #8a3030;
+  --tn-tag-read-bg: rgba(122,153,104,.20); --tn-tag-read-fg: #3a5a30;
+  --tn-tag-life-bg: rgba(166,126,154,.20); --tn-tag-life-fg: #5a3a52;
+  --tn-tag-work-bg: rgba(138,154,168,.20); --tn-tag-work-fg: #3a4a5a;
+}
+
+body {
+  background: #f5ecdf;
+  background-image: radial-gradient(rgba(74,59,46,.04) 1px, transparent 1.5px);
+  background-size: 16px 16px;
+}
+.page-title { font-family: "Crimson Pro", serif !important; font-weight: 500; letter-spacing: -0.01em; }
+h2, h3 { font-family: "Crimson Pro", serif !important; font-weight: 500; }
+.sidebar-brand .logo { background: #7a9968; color: #fbf5e8; }
+.sidebar a.active { background: rgba(122,153,104,.22); color: #3a5a30; }
+.btn.btn-primary { background: #7a9968; color: #fbf5e8; }
+.btn.btn-primary:hover { background: #6a8858; }
+.gc-bar i { background: #7a9968 !important; }
+.gc-bar i.warm  { background: #c08465 !important; }
+.gc-bar i.moss  { background: #7a9968 !important; }
+.gc-bar i.slate { background: #8a9aa8 !important; }
+.gc-bar i.plum  { background: #a67e9a !important; }

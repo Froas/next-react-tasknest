@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>TaskNest · Mobile preview</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0e0e10; color: #fff; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; padding: 32px 40px 80px; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+.head { padding-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,.08); margin-bottom: 28px; }
+h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.015em; margin-bottom: 8px; }
+h1 small { font-weight: 400; color: rgba(255,255,255,.45); margin-left: 10px; font-size: 14px; }
+p.lede { color: rgba(255,255,255,.62); font-size: 14.5px; max-width: 720px; line-height: 1.55; }
+h3.label { font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,.45); margin-bottom: 14px; }
+
+.controls { display: flex; gap: 24px; align-items: flex-start; margin-bottom: 32px; }
+.controls > div { display: flex; flex-direction: column; gap: 8px; }
+.controls .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.controls a { padding: 6px 12px; background: rgba(255,255,255,.06); color: #fff; border-radius: 999px; font-size: 12.5px; cursor: pointer; text-decoration: none; border: 1px solid transparent; }
+.controls a:hover { background: rgba(255,255,255,.12); }
+.controls a.active { background: #fff; color: #0e0e10; border-color: #fff; font-weight: 500; }
+
+.section { margin-bottom: 48px; }
+.section-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 18px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.section-head h2 { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+.section-head .count { font-size: 12px; color: rgba(255,255,255,.45); padding: 1px 9px; background: rgba(255,255,255,.07); border-radius: 999px; }
+
+.row { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+.phone { flex: 0 0 auto; transition: transform .2s; }
+.phone:hover { transform: translateY(-3px); }
+.phone .lab { text-align: center; margin-top: 12px; font-size: 12.5px; color: rgba(255,255,255,.65); }
+.phone .lab b { color: #fff; font-weight: 500; }
+.phone .lab span { color: rgba(255,255,255,.4); font-size: 11px; display: block; margin-top: 2px; font-family: ui-monospace, monospace; }
+
+.device {
+  width: 320px; height: 692px;
+  border-radius: 46px;
+  background: #0a0a0a;
+  padding: 10px;
+  box-shadow: 0 0 0 2px #2a2a2a, 0 20px 50px rgba(0,0,0,.4);
+  position: relative;
+}
+.device::before {
+  content: ""; position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  width: 102px; height: 30px; background: #0a0a0a; border-radius: 0 0 16px 16px; z-index: 3;
+}
+.device .screen {
+  width: 100%; height: 100%; border-radius: 36px; overflow: hidden; background: #fff;
+  position: relative;
+}
+.device .screen iframe { width: 320px; height: 672px; border: 0; display: block; transform-origin: top left; }
+
+.hint { padding: 16px 20px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; font-size: 13px; color: rgba(255,255,255,.62); line-height: 1.5; margin-bottom: 32px; }
+.hint b { color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <h1>TaskNest <small>· Mobile preview · iPhone 14 Pro</small></h1>
+  <p class="lede">All screens, all themes, in mobile chrome. Switch theme below — every device updates. The actual app uses real <code style="background:rgba(255,255,255,.08);padding:1px 6px;border-radius:4px;font-size:12px">@media (max-width: 880px)</code> rules so this is exactly what users will see.</p>
+</div>
+
+<div class="hint">
+  <b>Note:</b> iframes load the same <code style="background:rgba(255,255,255,.08);padding:1px 6px;border-radius:4px">app/index.html</code> with each route. Mobile responsiveness is driven entirely by viewport width — the iframe itself is 320px wide.
+</div>
+
+<div class="controls">
+  <div>
+    <h3 class="label">Theme</h3>
+    <div class="chips" id="themeBar"></div>
+  </div>
+  <div>
+    <h3 class="label">Quick links</h3>
+    <div class="chips">
+      <a href="index.html#/today">Open full app →</a>
+      <a href="welcome.html">All screens index →</a>
+    </div>
+  </div>
+</div>
+
+<div id="sections"></div>
+
+<script>
+const THEMES = [
+  { id: "notion",     name: "Notion" },
+  { id: "glass",      name: "Glass" },
+  { id: "bento",      name: "Bento" },
+  { id: "glass-dark", name: "Glass Dark" },
+  { id: "terminal",   name: "Terminal" },
+  { id: "brutalist",  name: "Brutalist" },
+  { id: "pixel",      name: "Pixel" },
+  { id: "memphis",    name: "Memphis" },
+  { id: "sketchbook", name: "Sketchbook" },
+  { id: "adventure",  name: "Adventure" },
+];
+
+const SECTIONS = [
+  { title: "Core", routes: [
+    { hash: "today",       label: "Today" },
+    { hash: "goals",       label: "Goals list" },
+    { hash: "goal/g1",     label: "Goal detail" },
+    { hash: "tasks",       label: "Tasks" },
+    { hash: "task/t121",   label: "Task detail" },
+    { hash: "calendar",    label: "Calendar" },
+  ]},
+  { title: "Lists & data", routes: [
+    { hash: "milestones",   label: "Milestones" },
+    { hash: "todos",        label: "Todos" },
+    { hash: "events",       label: "Events" },
+    { hash: "notes",        label: "Notes" },
+    { hash: "tags",         label: "Tags" },
+    { hash: "templates",    label: "Templates" },
+  ]},
+  { title: "Insights", routes: [
+    { hash: "review",        label: "Review" },
+    { hash: "visualization", label: "Visualization" },
+    { hash: "notifications", label: "Notifications" },
+    { hash: "activity",      label: "Activity feed" },
+  ]},
+  { title: "Settings", routes: [
+    { hash: "settings/themes",        label: "Themes" },
+    { hash: "settings/account",       label: "Account" },
+    { hash: "settings/notifications", label: "Notifications prefs" },
+    { hash: "settings/workspace",     label: "Workspace" },
+    { hash: "settings/shortcuts",     label: "Shortcuts" },
+    { hash: "settings/billing",       label: "Billing" },
+  ]},
+  { title: "Auth & onboarding", routes: [
+    { hash: "login",         label: "Login" },
+    { hash: "signup",        label: "Sign up" },
+    { hash: "onboarding/1",  label: "Onboarding 1" },
+    { hash: "onboarding/2",  label: "Onboarding 2" },
+    { hash: "forgot",        label: "Forgot password" },
+    { hash: "2fa",           label: "2FA setup" },
+  ]},
+  { title: "Edge states", routes: [
+    { hash: "loading",         label: "Loading" },
+    { hash: "offline",         label: "Offline" },
+    { hash: "session-expired", label: "Session expired" },
+    { hash: "404",             label: "404" },
+  ]},
+  { title: "Marketing", routes: [
+    { hash: "landing",         label: "Landing" },
+    { hash: "pricing",         label: "Pricing" },
+    { hash: "profile-public",  label: "Public profile" },
+    { hash: "whats-new",       label: "What's new" },
+  ]},
+  { title: "Help", routes: [
+    { hash: "help",            label: "Help" },
+  ]},
+];
+
+let currentTheme = localStorage.getItem("tasknest-design-theme") || "notion";
+
+function renderControls() {
+  const bar = document.getElementById("themeBar");
+  bar.innerHTML = THEMES.map(t => `<a data-id="${t.id}" class="${t.id===currentTheme?'active':''}">${t.name}</a>`).join("");
+  bar.querySelectorAll("a").forEach(a => a.addEventListener("click", () => {
+    currentTheme = a.dataset.id;
+    localStorage.setItem("tasknest-design-theme", currentTheme);
+    renderControls();
+    renderSections();
+  }));
+}
+
+function renderSections() {
+  const wrap = document.getElementById("sections");
+  wrap.innerHTML = SECTIONS.map(s => `
+    <div class="section">
+      <div class="section-head">
+        <h2>${s.title}</h2>
+        <span class="count">${s.routes.length}</span>
+      </div>
+      <div class="row">
+        ${s.routes.map(r => `
+          <div class="phone">
+            <div class="device"><div class="screen">
+              <iframe src="index.html#/${r.hash}"></iframe>
+            </div></div>
+            <div class="lab"><b>${r.label}</b><span>#/${r.hash}</span></div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `).join("");
+}
+
+renderControls();
+renderSections();
+</script>
+</body>
+</html>

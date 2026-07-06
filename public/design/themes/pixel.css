@@ -1,0 +1,147 @@
+/* TaskNest theme — Pixel · muted Game Boy / Playdate */
+@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap");
+
+:root {
+  --tn-font-sans: "VT323", monospace;
+  --tn-font-display: "Press Start 2P", monospace;
+  --tn-font-mono: "Press Start 2P", monospace;
+
+  --tn-bg:         #d8d4c4;
+  --tn-surface:    #c4c0b0;
+  --tn-surface-2:  #b8b3a0;
+  --tn-card:       #c4c0b0;
+  --tn-sidebar-bg: #b8b3a0;
+  --tn-hover:      #b0ab98;
+  --tn-active:     #2a2823;
+  --tn-chip:       rgba(42,40,35,.18);
+  --tn-bar-bg:     #b8b3a0;
+  --tn-icon-bg:    rgba(42,40,35,.18);
+
+  --tn-fg:        #2a2823;
+  --tn-fg-muted:  #5a564b;
+  --tn-fg-dim:    #807a68;
+
+  --tn-line:        2px solid #2a2823;
+  --tn-card-border: 2px solid #2a2823;
+  --tn-shadow:      3px 3px 0 rgba(42,40,35,.5);
+
+  --tn-accent:    #6b8e7f;
+  --tn-on-accent: #d8d4c4;
+  --tn-accent-2:  #a87b5a;
+
+  --tn-warm:  #a87b5a;
+  --tn-moss:  #6b8e7f;
+  --tn-slate: #6c7d96;
+  --tn-plum:  #8a6680;
+  --tn-good:  #5a7a4a;
+  --tn-bad:   #a04030;
+
+  --tn-r-sm: 0; --tn-r-md: 0; --tn-r-lg: 0; --tn-r-xl: 0;
+  --tn-sidebar-w: 220px; --tn-pad-lg: 14px;
+  --tn-h1-size: 22px; --tn-h1-weight: 400;
+
+  /* status — flat retro */
+  --tn-st-prog-bg:  #c9a86b; --tn-st-prog-fg:  #2a2823;
+  --tn-st-start-bg: #a87b5a; --tn-st-start-fg: #d8d4c4;
+  --tn-st-fin-bg:   #6b8e7f; --tn-st-fin-fg:   #d8d4c4;
+  --tn-st-out-bg:   #b8b3a0; --tn-st-out-fg:   #2a2823;
+  --tn-pr-high-bg:  #a04030; --tn-pr-high-fg:  #d8d4c4;
+  --tn-pr-med-bg:   #c9a86b; --tn-pr-med-fg:   #2a2823;
+  --tn-pr-low-bg:   #b8b3a0; --tn-pr-low-fg:   #2a2823;
+  --tn-tag-brand-bg:#6c7d96; --tn-tag-brand-fg:#d8d4c4;
+  --tn-tag-run-bg:  #a04030; --tn-tag-run-fg:  #d8d4c4;
+  --tn-tag-read-bg: #6b8e7f; --tn-tag-read-fg: #d8d4c4;
+  --tn-tag-life-bg: #8a6680; --tn-tag-life-fg: #d8d4c4;
+  --tn-tag-work-bg: #c9a86b; --tn-tag-work-fg: #2a2823;
+}
+
+* { image-rendering: pixelated; }
+body {
+  background-image:
+    linear-gradient(#d8d4c4 23px, transparent 24px),
+    linear-gradient(90deg, #d8d4c4 23px, transparent 24px),
+    linear-gradient(rgba(42,40,35,.04), rgba(42,40,35,.04));
+  background-size: 24px 24px, 24px 24px, 100% 100%;
+}
+
+/* Typography — Press Start for headings + VT323 for body */
+body { font-size: 18px; line-height: 1.3; letter-spacing: 0.01em; }
+.page-title, h1, h2, h3, h4 { font-family: "Press Start 2P", monospace !important; font-weight: 400; line-height: 1.4; letter-spacing: 0.02em; }
+.page-title { font-size: 18px !important; }
+.page .section-head h2 { font-size: 11px !important; text-transform: uppercase; }
+.page-eyebrow { font-family: "Press Start 2P", monospace; font-size: 8px; letter-spacing: 0.1em; }
+.page-lede { font-size: 17px; line-height: 1.45; }
+.s-label { font-family: "Press Start 2P", monospace; font-size: 8px !important; letter-spacing: 0.06em; }
+.s-value { font-family: "Press Start 2P", monospace !important; font-size: 22px !important; letter-spacing: -0.02em; }
+.s-value small { font-family: "Press Start 2P", monospace; font-size: 10px; }
+.s-delta { font-family: "VT323", monospace; font-size: 15px; }
+
+/* Sidebar — left rail with hard borders */
+.sidebar { border-right: 3px solid #2a2823; background: #b8b3a0; padding: 16px 0; }
+.sidebar-brand .logo {
+  border-radius: 0; border: 2px solid #2a2823;
+  background: #c9a86b; color: #2a2823;
+  font-family: "Press Start 2P", monospace; font-size: 14px;
+  box-shadow: 2px 2px 0 rgba(42,40,35,.5);
+}
+.sidebar-brand b { font-family: "Press Start 2P", monospace; font-size: 13px; letter-spacing: 0.04em; }
+.sidebar h4 { font-family: "Press Start 2P", monospace; font-size: 8px !important; letter-spacing: 0.12em; color: #5a564b; }
+.sidebar a { font-family: "VT323", monospace; font-size: 17px; }
+.sidebar a.active { background: #2a2823; color: #c9a86b; }
+.sidebar a.active .ico, .sidebar a.active .count { color: #c9a86b; }
+.sidebar-search { font-family: "VT323", monospace; font-size: 16px; }
+.sidebar-search kbd { font-family: "Press Start 2P", monospace; font-size: 8px; padding: 2px 4px; background: rgba(42,40,35,.2); }
+
+/* Topbar */
+.topbar { border-bottom: 3px solid #2a2823; background: #d8d4c4; }
+.topbar .crumbs { font-family: "Press Start 2P", monospace; font-size: 9px; letter-spacing: 0.04em; }
+.topbar .btn-icon { border: 2px solid #2a2823; background: #c4c0b0; }
+.topbar .btn-icon:hover { background: #a87b5a; color: #d8d4c4; }
+
+/* Cards & stats */
+.card, .stat { background: #c4c0b0; border: 2px solid #2a2823; border-radius: 0; box-shadow: 3px 3px 0 rgba(42,40,35,.5); }
+.goal-card { background: #c4c0b0; border: 2px solid #2a2823; box-shadow: 3px 3px 0 rgba(42,40,35,.5); }
+.goal-card:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 rgba(42,40,35,.6); }
+
+/* Buttons — chunky retro */
+.btn { border: 2px solid #2a2823; border-radius: 0; padding: 9px 14px; font-family: "Press Start 2P", monospace; font-size: 9px; letter-spacing: 0.06em; box-shadow: 2px 2px 0 rgba(42,40,35,.5); text-transform: uppercase; }
+.btn:active { transform: translate(2px, 2px); box-shadow: 0 0 0 rgba(42,40,35,.5); }
+.btn.btn-primary { background: #c9a86b; color: #2a2823; }
+.btn.btn-secondary { background: #c4c0b0; color: #2a2823; }
+.btn.btn-ghost { background: transparent; border-color: transparent; box-shadow: none; }
+
+/* Pills — flat 8-bit chips */
+.pill { border: 2px solid #2a2823; border-radius: 0; padding: 2px 7px; font-family: "Press Start 2P", monospace; font-size: 7px; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.5; }
+
+/* Goal card icon — pixel block */
+.goal-card .gc-ico { border-radius: 0; border: 2px solid #2a2823; box-shadow: 2px 2px 0 rgba(42,40,35,.5); width: 40px; height: 40px; font-size: 18px; }
+.goal-card h3 { font-family: "Press Start 2P", monospace; font-size: 11px !important; line-height: 1.5; letter-spacing: 0.02em; }
+.goal-card p { font-family: "VT323", monospace; font-size: 17px; }
+.gc-pct { font-family: "Press Start 2P", monospace; font-size: 18px; }
+.gc-pct small { font-family: "Press Start 2P", monospace; font-size: 10px; }
+.gc-bar { border: 2px solid #2a2823; border-radius: 0; height: 10px; background: #d8d4c4; }
+.gc-bar i { background: #6b8e7f !important; }
+.gc-bar i.warm { background: #a87b5a !important; }
+.gc-bar i.moss { background: #6b8e7f !important; }
+.gc-bar i.slate { background: #6c7d96 !important; }
+.gc-bar i.plum { background: #8a6680 !important; }
+
+/* Task row */
+.task-row { border-bottom: 2px dashed #5a564b !important; padding: 14px 0; }
+.task-row .cb { border-radius: 0; border: 2px solid #2a2823; background: #d8d4c4; width: 16px; height: 16px; }
+.task-row.done .cb { background: #6b8e7f; color: #d8d4c4; }
+.task-row.done .cb::after { font-family: "Press Start 2P", monospace; font-size: 10px; }
+.task-row .t-title { font-family: "Press Start 2P", monospace; font-size: 11px; line-height: 1.5; }
+.task-row .t-meta { font-family: "VT323", monospace; font-size: 15px; }
+.task-row .t-time { font-family: "Press Start 2P", monospace; font-size: 9px; }
+
+/* Mobile tabbar */
+.mobile-tabbar { background: #b8b3a0; border-top: 3px solid #2a2823; }
+.mobile-tabbar a { font-family: "Press Start 2P", monospace; font-size: 7px; }
+.mobile-tabbar a.active { color: #2a2823; background: #c9a86b; }
+
+/* Search overlay */
+.search-overlay .panel { border: 3px solid #2a2823; border-radius: 0; box-shadow: 6px 6px 0 rgba(42,40,35,.6); background: #c4c0b0; }
+.search-overlay input { font-family: "VT323", monospace; font-size: 22px; }
+.search-overlay .result { font-family: "VT323", monospace; font-size: 17px; }
+.search-overlay .result .kind { font-family: "Press Start 2P", monospace; font-size: 7px; background: #2a2823; color: #c9a86b; border-radius: 0; }

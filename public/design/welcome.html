@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>TaskNest — open the app</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: ui-sans-serif, "Inter", system-ui, sans-serif; background: #fafaf8; color: #14141a; min-height: 100vh; padding: 80px 40px; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1100px; margin: 0 auto; }
+.head { margin-bottom: 48px; padding-bottom: 32px; border-bottom: 1px solid rgba(0,0,0,.08); }
+.brand { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; }
+.brand .logo { width: 40px; height: 40px; border-radius: 10px; background: #14141a; color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 16px; }
+.brand b { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+h1 { font-size: 44px; font-weight: 500; letter-spacing: -0.025em; line-height: 1.1; margin-bottom: 14px; max-width: 720px; }
+h1 em { font-style: normal; color: rgba(20,20,26,.5); }
+p.lead { font-size: 17px; color: rgba(20,20,26,.62); max-width: 640px; line-height: 1.55; }
+
+.grid { display: grid; grid-template-columns: 2fr 1fr; gap: 28px; margin-bottom: 40px; }
+.card { background: #fff; border: 1px solid rgba(0,0,0,.07); border-radius: 16px; padding: 28px 32px; }
+.primary { background: #14141a; color: #fff; }
+.primary h2 { font-size: 22px; font-weight: 600; margin-bottom: 10px; letter-spacing: -0.015em; }
+.primary p { color: rgba(255,255,255,.7); margin-bottom: 24px; font-size: 14.5px; line-height: 1.55; }
+.primary a { display: inline-block; padding: 11px 22px; background: #fff; color: #14141a; border-radius: 999px; font-weight: 600; font-size: 14px; text-decoration: none; margin-right: 8px; }
+.primary a:hover { background: rgba(255,255,255,.85); }
+.primary a.alt { background: rgba(255,255,255,.08); color: #fff; border: 1px solid rgba(255,255,255,.15); }
+.primary a.alt:hover { background: rgba(255,255,255,.15); }
+.kbd-block { padding-top: 24px; margin-top: 24px; border-top: 1px solid rgba(255,255,255,.08); display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: rgba(255,255,255,.6); }
+.kbd-block kbd { background: rgba(255,255,255,.1); padding: 2px 8px; border-radius: 4px; font: inherit; color: rgba(255,255,255,.95); }
+
+.themes h3 { font-size: 13px; font-weight: 500; color: rgba(20,20,26,.5); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 14px; }
+.themes ul { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.themes a { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 8px; text-decoration: none; color: #14141a; font-size: 13.5px; cursor: pointer; }
+.themes a:hover { background: rgba(0,0,0,.04); }
+.themes .sw { width: 28px; height: 18px; border-radius: 4px; display: flex; flex-wrap: wrap; overflow: hidden; border: 1px solid rgba(0,0,0,.08); flex-shrink: 0; }
+.themes .sw i { width: 50%; height: 50%; }
+
+.screens { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+.screens a { padding: 16px 18px; background: #fff; border: 1px solid rgba(0,0,0,.07); border-radius: 12px; text-decoration: none; color: #14141a; transition: all .15s; }
+.screens a:hover { border-color: rgba(0,0,0,.15); transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,.04); }
+.screens b { display: block; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+.screens span { font-size: 12px; color: rgba(20,20,26,.55); }
+.screens .ic { font-size: 18px; margin-bottom: 8px; }
+
+h2.sec { font-size: 14px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: rgba(20,20,26,.5); margin: 36px 0 18px; }
+
+.foot { margin-top: 64px; padding-top: 28px; border-top: 1px solid rgba(0,0,0,.07); font-size: 12px; color: rgba(20,20,26,.45); display: flex; justify-content: space-between; }
+.foot a { color: inherit; text-decoration: none; }
+.foot a:hover { color: #14141a; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="head">
+    <div class="brand"><div class="logo">T</div><b>TaskNest</b></div>
+    <h1>Roadmap as a Service. <em>One app, ten themes, real switcher.</em></h1>
+    <p class="lead">Big goals broken into milestones, tasks and daily todos. Pick a theme that matches your mood, the time of day, or the kind of work ahead — your data stays the same, the whole product reskins.</p>
+  </div>
+
+  <div class="grid">
+    <div class="card primary">
+      <h2>Open the app</h2>
+      <p>Dashboard, goals, tasks, calendar, notes, review, settings — all the screens, all theme-aware. Last selected theme is restored on load.</p>
+      <a href="index.html#/today">Today →</a>
+      <a href="index.html#/settings/themes" class="alt">Theme picker</a>
+      <a href="mobile.html" class="alt">Mobile view</a>
+      <div class="kbd-block">
+        <span>Keyboard: <kbd>⌘K</kbd> opens search · <kbd>⌘N</kbd> quick add · <kbd>Esc</kbd> closes any overlay</span>
+        <span>Routes: <kbd>#/today</kbd> · <kbd>#/goals</kbd> · <kbd>#/goal/g1</kbd> · <kbd>#/task/t121</kbd> · <kbd>#/onboarding/1</kbd></span>
+      </div>
+    </div>
+
+    <div class="card themes">
+      <h3>Quick theme jump</h3>
+      <ul id="themesList"></ul>
+    </div>
+  </div>
+
+  <h2 class="sec">Screens</h2>
+  <div class="screens">
+    <a href="index.html#/today">       <div class="ic">▤</div><b>Today</b>          <span>Hero, stats, schedule, goals</span></a>
+    <a href="index.html#/goals">       <div class="ic">★</div><b>Goals — list</b>   <span>All goals with filters</span></a>
+    <a href="index.html#/goal/g1">     <div class="ic">→</div><b>Goal — detail</b> <span>Hero + milestones + tasks</span></a>
+    <a href="index.html#/milestones">  <div class="ic">🚩</div><b>Milestones</b>    <span>All checkpoints, across goals</span></a>
+    <a href="index.html#/tasks">       <div class="ic">✓</div><b>Tasks</b>          <span>Today / Inbox / Upcoming / Done</span></a>
+    <a href="index.html#/task/t121">   <div class="ic">→</div><b>Task — detail</b> <span>Breakdown + activity</span></a>
+    <a href="index.html#/todos">       <div class="ic">⏱</div><b>Todos</b>          <span>Recurring habits & actions</span></a>
+    <a href="index.html#/events">      <div class="ic">◷</div><b>Events</b>         <span>Calls, meetings, workouts</span></a>
+    <a href="index.html#/calendar">    <div class="ic">▦</div><b>Calendar</b>       <span>Month grid with items</span></a>
+    <a href="index.html#/notes">       <div class="ic">✎</div><b>Notes</b>          <span>List + reader</span></a>
+    <a href="index.html#/tags">        <div class="ic">#</div><b>Tags</b>           <span>Manage cross-cutting labels</span></a>
+    <a href="index.html#/review">      <div class="ic">↗</div><b>Review</b>         <span>Weekly stats, wins, misses</span></a>
+    <a href="index.html#/visualization"><div class="ic">▥</div><b>Visualization</b>  <span>Timeline + charts</span></a>
+    <a href="index.html#/templates">   <div class="ic">▣</div><b>Templates</b>      <span>Starter goal plans</span></a>
+    <a href="index.html#/archive">     <div class="ic">🗃</div><b>Archive</b>        <span>Finished/closed goals</span></a>
+    <a href="index.html#/trash">       <div class="ic">🗑</div><b>Trash</b>          <span>Recently deleted, restorable</span></a>
+    <a href="index.html#/settings/themes"><div class="ic">⚙</div><b>Settings</b>       <span>Account, themes, integrations</span></a>
+    <a href="mobile.html">             <div class="ic">▣</div><b>Mobile view</b>    <span>Side-by-side iPhone frames</span></a>
+  </div>
+
+  <h2 class="sec">Marketing &amp; public</h2>
+  <div class="screens">
+    <a href="index.html#/landing">         <div class="ic">◉</div><b>Landing</b>         <span>Marketing home page</span></a>
+    <a href="index.html#/pricing">         <div class="ic">$</div><b>Pricing</b>         <span>Plans & FAQ</span></a>
+    <a href="index.html#/profile-public">  <div class="ic">@</div><b>Public profile</b> <span>What others see — @alex</span></a>
+    <a href="index.html#/whats-new">       <div class="ic">★</div><b>What's new</b>     <span>Changelog &amp; releases</span></a>
+  </div>
+
+  <h2 class="sec">In-app communication</h2>
+  <div class="screens">
+    <a href="index.html#/notifications">   <div class="ic">✉</div><b>Notifications</b>  <span>Inbox of mentions, updates</span></a>
+    <a href="index.html#/activity">        <div class="ic">⚡</div><b>Activity feed</b>  <span>Workspace-wide log</span></a>
+    <a href="index.html#/help">            <div class="ic">?</div><b>Help &amp; docs</b>   <span>Searchable knowledge base</span></a>
+    <a href="index.html#/goal-v2/g1">      <div class="ic">→</div><b>Goal — tabbed</b>  <span>Overview/Tasks/Activity/Files</span></a>
+    <a href="index.html#/modal/share">     <div class="ic">↗</div><b>Share modal</b>    <span>Permissions + link</span></a>
+    <a href="index.html#/modal/comments">  <div class="ic">💬</div><b>Comments drawer</b><span>Side panel with thread</span></a>
+  </div>
+
+  <h2 class="sec">Auth &amp; system</h2>
+  <div class="screens">
+    <a href="index.html#/login">           <div class="ic">⟶</div><b>Login</b>          <span>Sign-in screen</span></a>
+    <a href="index.html#/signup">          <div class="ic">＋</div><b>Signup</b>         <span>Create account</span></a>
+    <a href="index.html#/onboarding/1">    <div class="ic">◐</div><b>Onboarding</b>     <span>3-step welcome flow</span></a>
+    <a href="index.html#/forgot">          <div class="ic">?</div><b>Forgot password</b><span>Email reset link</span></a>
+    <a href="index.html#/reset">           <div class="ic">↻</div><b>Reset password</b><span>Pick a new password</span></a>
+    <a href="index.html#/magic-sent">      <div class="ic">✨</div><b>Magic link sent</b><span>Email-link sign-in</span></a>
+    <a href="index.html#/verify">          <div class="ic">✉</div><b>Verify email</b>   <span>Check inbox screen</span></a>
+    <a href="index.html#/2fa">             <div class="ic">⌘</div><b>2-step setup</b>   <span>QR + 6-digit code</span></a>
+    <a href="index.html#/session-expired"> <div class="ic">⌛</div><b>Session expired</b><span>Sign back in</span></a>
+    <a href="index.html#/offline">         <div class="ic">⌬</div><b>Offline</b>        <span>Queued changes view</span></a>
+    <a href="index.html#/loading">         <div class="ic">∿</div><b>Loading skeleton</b><span>Placeholder while loading</span></a>
+    <a href="index.html#/404">             <div class="ic">∅</div><b>404</b>            <span>Not-found state</span></a>
+  </div>
+
+  <h2 class="sec">Settings sub-pages</h2>
+  <div class="screens">
+    <a href="index.html#/settings/account">       <div class="ic">○</div><b>Account</b>        <span>Profile, email, handle</span></a>
+    <a href="index.html#/settings/notifications"> <div class="ic">○</div><b>Notifications</b>  <span>Digest, reminders, nudges</span></a>
+    <a href="index.html#/settings/privacy">       <div class="ic">○</div><b>Privacy</b>        <span>Sessions, telemetry, sharing</span></a>
+    <a href="index.html#/settings/workspace">     <div class="ic">○</div><b>Workspace</b>      <span>Name, members, plan</span></a>
+    <a href="index.html#/settings/calendar">      <div class="ic">○</div><b>Calendar</b>       <span>View, week start, sync</span></a>
+    <a href="index.html#/settings/integrations"> <div class="ic">○</div><b>Integrations</b>   <span>All integrations index</span></a>
+    <a href="index.html#/settings/telegram">      <div class="ic">○</div><b>Telegram detail</b><span>Bot connection options</span></a>
+    <a href="index.html#/settings/google">        <div class="ic">○</div><b>Google Cal detail</b><span>Sync options &amp; status</span></a>
+    <a href="index.html#/settings/data">          <div class="ic">○</div><b>Data &amp; export</b><span>Backup, import, reset</span></a>
+    <a href="index.html#/settings/themes">        <div class="ic">○</div><b>Themes</b>         <span>10 themes with live switcher</span></a>
+    <a href="index.html#/settings/shortcuts">     <div class="ic">○</div><b>Keyboard</b>       <span>All hotkeys reference</span></a>
+    <a href="index.html#/settings/billing">       <div class="ic">○</div><b>Billing</b>        <span>Plan + invoices</span></a>
+    <a href="index.html#/settings/about">         <div class="ic">○</div><b>About</b>          <span>Version, legal links</span></a>
+  </div>
+
+  <h2 class="sec">Modals &amp; overlays</h2>
+  <div class="screens">
+    <a href="index.html#/modal/new-goal">     <div class="ic">＋</div><b>New goal</b>        <span>Create-goal modal</span></a>
+    <a href="index.html#/modal/new-task">     <div class="ic">＋</div><b>New task</b>        <span>Create-task modal</span></a>
+    <a href="index.html#/modal/new-milestone"><div class="ic">＋</div><b>New milestone</b>   <span>Create-milestone modal</span></a>
+    <a href="index.html#/modal/new-event">    <div class="ic">＋</div><b>New event</b>       <span>Create-event modal</span></a>
+    <a href="index.html#/modal/subtask">      <div class="ic">→</div><b>Subtask detail</b>  <span>Subtask inspector</span></a>
+    <a href="index.html#/quick-add">          <div class="ic">⚡</div><b>Quick add</b>      <span>Universal — ⌘N</span></a>
+    <a href="index.html#/modal/filter">       <div class="ic">▾</div><b>Filter panel</b>    <span>Slide-in advanced filters</span></a>
+    <a href="index.html#/modal/bulk">         <div class="ic">▤</div><b>Bulk actions</b>    <span>Floating multi-select bar</span></a>
+  </div>
+
+  <footer class="foot">
+    <span>TaskNest · 12 screens × 10 themes · May 2026</span>
+    <span><a href="../redesigns/themes-picker.html">Original theme studio (static)</a></span>
+  </footer>
+</div>
+
+<script src="themes/_registry.js"></script>
+<script>
+const ul = document.getElementById("themesList");
+ul.innerHTML = window.TN_THEMES.map(t => `
+  <li><a href="index.html#/today?theme=${t.id}" data-id="${t.id}">
+    <span class="sw">${t.swatches.map(c => `<i style="background:${c}"></i>`).join("")}</span>
+    <span>${t.name}</span>
+  </a></li>
+`).join("");
+ul.querySelectorAll("a").forEach(a => a.addEventListener("click", e => {
+  e.preventDefault();
+  localStorage.setItem("tasknest-design-theme", a.dataset.id);
+  location.href = "index.html#/today";
+}));
+</script>
+</body>
+</html>

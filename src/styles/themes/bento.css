@@ -1,0 +1,154 @@
+/* TaskNest theme: bento
+ * Auto-scoped to [data-theme="bento"] so all themes can
+ * coexist; ThemeProvider toggles the attribute on <html>.
+ * Source: tasknest-design-system/project/app/themes/bento.css
+ */
+
+
+/* TaskNest theme — Bento · big colourful iOS-widget tiles */
+
+
+[data-theme="bento"] {
+  --tn-font-sans:    "Inter", -apple-system, sans-serif;
+  --tn-font-display: "Inter", sans-serif;
+  --tn-font-mono:    ui-monospace, monospace;
+
+  --tn-bg:         #f1efe9;
+  --tn-surface:    #ffffff;
+  --tn-surface-2:  #fff4dc;
+  --tn-card:       #ffffff;
+  --tn-sidebar-bg: #ffffff;
+  --tn-hover:      rgba(0,0,0,.04);
+  --tn-active:     rgba(0,0,0,.07);
+  --tn-chip:       rgba(0,0,0,.05);
+  --tn-bar-bg:     rgba(0,0,0,.06);
+  --tn-icon-bg:    #fff4dc;
+
+  --tn-fg:       #1a1a1a;
+  --tn-fg-muted: #6b6b6b;
+  --tn-fg-dim:   #a8a8a8;
+
+  --tn-line:        1px solid rgba(0,0,0,.06);
+  --tn-card-border: 1px solid rgba(0,0,0,.06);
+  --tn-shadow:      0 4px 16px rgba(0,0,0,.04);
+
+  --tn-accent:    #ff7a3d;
+  --tn-on-accent: #ffffff;
+  --tn-accent-2:  #161616;
+
+  --tn-warm: #ff7a3d; --tn-moss: #1f9b6f; --tn-slate: #2a5dd9; --tn-plum: #6a4bd9;
+  --tn-good: #1f9b6f; --tn-bad: #e54a4a;
+
+  --tn-r-sm: 8px; --tn-r-md: 12px; --tn-r-lg: 18px; --tn-r-xl: 24px;
+  --tn-sidebar-w: 240px; --tn-pad-lg: 14px;
+  --tn-h1-size: 32px; --tn-h1-weight: 700;
+
+  --tn-st-prog-bg:  #fff4dc; --tn-st-prog-fg:  #b87b1a;
+  --tn-st-start-bg: rgba(42,93,217,.12); --tn-st-start-fg: #2a5dd9;
+  --tn-st-fin-bg:   #d4f5e0; --tn-st-fin-fg:   #1f7d52;
+  --tn-st-out-bg:   #f0f0ed; --tn-st-out-fg:   #6b6b6b;
+  --tn-pr-high-bg:  rgba(229,74,74,.14); --tn-pr-high-fg:  #c93838;
+  --tn-pr-med-bg:   #fff4dc; --tn-pr-med-fg:   #b87b1a;
+  --tn-pr-low-bg:   #d4f5e0; --tn-pr-low-fg:   #1f7d52;
+  --tn-tag-brand-bg: rgba(42,93,217,.12); --tn-tag-brand-fg: #2a5dd9;
+  --tn-tag-run-bg:   rgba(255,122,61,.14); --tn-tag-run-fg:   #c75e21;
+  --tn-tag-read-bg:  #d4f5e0; --tn-tag-read-fg:  #1f7d52;
+  --tn-tag-life-bg:  rgba(106,75,217,.14); --tn-tag-life-fg:  #6a4bd9;
+  --tn-tag-work-bg:  #fff4dc; --tn-tag-work-fg:  #b87b1a;
+}
+
+[data-theme="bento"] body { background: #f1efe9; }
+
+/* Type */
+[data-theme="bento"] .page-title { font-weight: 700; letter-spacing: -0.025em; line-height: 1.05; }
+[data-theme="bento"] h2, [data-theme="bento"] h3 { font-weight: 700; letter-spacing: -0.015em; }
+[data-theme="bento"] .s-value { font-weight: 700; letter-spacing: -0.025em; }
+
+/* Sidebar — clean white, soft */
+[data-theme="bento"] .sidebar { background: #ffffff; border-right: 1px solid rgba(0,0,0,.05); }
+[data-theme="bento"] .sidebar-brand .logo { background: #161616; color: #fff; border-radius: 10px; font-weight: 800; }
+[data-theme="bento"] .sidebar-brand b { font-weight: 700; letter-spacing: -0.01em; }
+[data-theme="bento"] .sidebar h4 { color: #a8a8a8; font-weight: 600; }
+[data-theme="bento"] .sidebar a { border-radius: 0; }
+[data-theme="bento"] .sidebar a:hover { background: rgba(0,0,0,.03); }
+[data-theme="bento"] .sidebar a.active { background: #ff7a3d; color: #fff; }
+[data-theme="bento"] .sidebar a.active .ico, [data-theme="bento"] .sidebar a.active .count { color: #fff; }
+
+[data-theme="bento"] .topbar { background: transparent; border-bottom: 1px solid rgba(0,0,0,.05); }
+[data-theme="bento"] .topbar .btn-icon { border-radius: 10px; }
+
+/* Cards — chunky rounded tiles */
+[data-theme="bento"] .card, [data-theme="bento"] .stat, [data-theme="bento"] .goal-card { background: #fff; border-radius: 18px; border: 1px solid rgba(0,0,0,.05); box-shadow: 0 4px 16px rgba(0,0,0,.04); }
+[data-theme="bento"] .goal-card { padding: 22px; }
+
+/* Stats — colourful tiles */
+[data-theme="bento"] .stats .stat:nth-child(1) { background: #161616; color: #fff; border-color: transparent; }
+[data-theme="bento"] .stats .stat:nth-child(1) .s-label { color: rgba(255,255,255,.55); }
+[data-theme="bento"] .stats .stat:nth-child(2) { background: #ff7a3d; color: #fff; border-color: transparent; }
+[data-theme="bento"] .stats .stat:nth-child(2) .s-label, [data-theme="bento"] .stats .stat:nth-child(2) .s-delta { color: rgba(255,255,255,.7); }
+[data-theme="bento"] .stats .stat:nth-child(3) { background: #fff4dc; }
+[data-theme="bento"] .stats .stat:nth-child(4) { background: #d4f5e0; }
+
+/* Goal cards — different background per goal */
+[data-theme="bento"] .goal-card .gc-ico { width: 44px; height: 44px; border-radius: 12px; font-size: 22px; }
+[data-theme="bento"] .goal-card .gc-ico.warm { background: #ff7a3d; color: #fff; }
+[data-theme="bento"] .goal-card .gc-ico.moss { background: #1f9b6f; color: #fff; }
+[data-theme="bento"] .goal-card .gc-ico.slate { background: #2a5dd9; color: #fff; }
+[data-theme="bento"] .goal-card .gc-ico.plum { background: #6a4bd9; color: #fff; }
+[data-theme="bento"] .goal-card h3 { font-weight: 700; }
+[data-theme="bento"] .gc-pct { font-weight: 700; letter-spacing: -0.02em; }
+[data-theme="bento"] .gc-bar { border-radius: 999px; height: 6px; background: rgba(0,0,0,.06); }
+[data-theme="bento"] .gc-bar i { border-radius: 999px; }
+[data-theme="bento"] .gc-bar i.warm { background: #ff7a3d !important; }
+[data-theme="bento"] .gc-bar i.moss { background: #1f9b6f !important; }
+[data-theme="bento"] .gc-bar i.slate { background: #2a5dd9 !important; }
+[data-theme="bento"] .gc-bar i.plum { background: #6a4bd9 !important; }
+
+/* Buttons */
+[data-theme="bento"] .btn { border-radius: 999px; padding: 9px 18px; font-weight: 600; }
+[data-theme="bento"] .btn.btn-primary { background: #161616; color: #fff; }
+[data-theme="bento"] .btn.btn-primary:hover { background: #2a2a2a; }
+[data-theme="bento"] .btn.btn-secondary { background: #fff; color: #1a1a1a; border: 1px solid rgba(0,0,0,.08); }
+[data-theme="bento"] .btn.btn-secondary:hover { background: rgba(0,0,0,.03); }
+[data-theme="bento"] .btn.btn-ghost:hover { background: rgba(0,0,0,.05); }
+
+/* Pills */
+[data-theme="bento"] .pill { border-radius: 999px; font-weight: 600; padding: 3px 11px; }
+
+/* Task row */
+[data-theme="bento"] .task-row { border-bottom: 1px solid rgba(0,0,0,.05) !important; padding: 12px 0; }
+[data-theme="bento"] .task-row .cb { border-color: #c4c4c4; }
+[data-theme="bento"] .task-row.done .cb { background: #1f9b6f; border-color: #1f9b6f; }
+
+/* Mobile tabbar */
+[data-theme="bento"] .mobile-tabbar { background: #ffffff; border-top: 1px solid rgba(0,0,0,.05); }
+[data-theme="bento"] .mobile-tabbar a.active { color: #ff7a3d; background: rgba(255,122,61,.1); }
+
+/* Search */
+[data-theme="bento"] .search-overlay .panel { background: #fff; border: none; border-radius: 18px; box-shadow: 0 24px 60px rgba(0,0,0,.2); }
+[data-theme="bento"] .search-overlay .result { border-radius: 12px; }
+[data-theme="bento"] .search-overlay .result .kind { background: rgba(255,122,61,.14); color: #c75e21; border-radius: 6px; font-weight: 600; }
+
+/* === shadcn bridge (auto-generated) === */
+[data-theme="bento"] {
+  --background: 45 22.2% 92.9%; /* from --tn-bg */
+  --foreground: 0 0% 10.2%; /* from --tn-fg */
+  --card: 0 0% 100%; /* from --tn-card */
+  --card-foreground: 0 0% 10.2%; /* from --tn-fg */
+  --popover: 0 0% 100%; /* from --tn-card */
+  --popover-foreground: 0 0% 10.2%; /* from --tn-fg */
+  --primary: 19 100% 62%; /* from --tn-accent */
+  --primary-foreground: 0 0% 100%; /* from --tn-on-accent */
+  --secondary: 41 100% 93.1%; /* from --tn-surface-2 */
+  --secondary-foreground: 0 0% 10.2%; /* from --tn-fg */
+  --muted: 41 100% 93.1%; /* from --tn-surface-2 */
+  --muted-foreground: 0 0% 42%; /* from --tn-fg-muted */
+  --accent: 0 0% 8.6%; /* from --tn-accent-2 */
+  --accent-foreground: 0 0% 100%; /* from --tn-on-accent */
+  --destructive: 0 74.9% 59.4%; /* from --tn-bad */
+  --destructive-foreground: 0 0% 100%; /* from --tn-on-accent */
+  --border: 45 11.7% 87.4%; /* from --tn-line-color */
+  --input: 45 11.7% 87.4%; /* from --tn-line-color */
+  --ring: 19 100% 62%; /* from --tn-accent */
+  --radius: 0.75rem; /* from --tn-r-md */
+}

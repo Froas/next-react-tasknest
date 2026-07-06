@@ -1,0 +1,169 @@
+/* TaskNest theme: memphis
+ * Auto-scoped to [data-theme="memphis"] so all themes can
+ * coexist; ThemeProvider toggles the attribute on <html>.
+ * Source: tasknest-design-system/project/app/themes/memphis.css
+ */
+
+
+/* TaskNest theme — Memphis '85 · postmodern playground */
+
+
+[data-theme="memphis"] {
+  --tn-font-sans:    "Space Grotesk", system-ui, sans-serif;
+  --tn-font-display: "Archivo Black", sans-serif;
+  --tn-font-mono:    "Space Grotesk", monospace;
+
+  --tn-bg:         #fef6e0;
+  --tn-surface:    #ffffff;
+  --tn-surface-2:  #fff8d9;
+  --tn-card:       #ffffff;
+  --tn-sidebar-bg: #ffd028;
+  --tn-hover:      rgba(0,0,0,.06);
+  --tn-active:     #0a0a0a;
+  --tn-chip:       #fef6e0;
+  --tn-bar-bg:     rgba(0,0,0,.12);
+  --tn-icon-bg:    #fef6e0;
+
+  --tn-fg:       #0a0a0a;
+  --tn-fg-muted: #4a4a4a;
+  --tn-fg-dim:   #888888;
+
+  --tn-line:        3px solid #0a0a0a;
+  --tn-card-border: 3px solid #0a0a0a;
+  --tn-shadow:      5px 5px 0 #0a0a0a;
+
+  --tn-accent:    #ff4fa3;
+  --tn-on-accent: #ffffff;
+  --tn-accent-2:  #2c4cff;
+
+  --tn-warm: #ff4fa3; --tn-moss: #00b8c4; --tn-slate: #2c4cff; --tn-plum: #8a4eff;
+  --tn-good: #00b8c4; --tn-bad: #ff3a26;
+
+  --tn-r-sm: 0; --tn-r-md: 0; --tn-r-lg: 0; --tn-r-xl: 0;
+  --tn-sidebar-w: 220px; --tn-pad-lg: 14px;
+  --tn-h1-size: 56px; --tn-h1-weight: 900;
+
+  --tn-st-prog-bg:  #ffd028; --tn-st-prog-fg:  #0a0a0a;
+  --tn-st-start-bg: #2c4cff; --tn-st-start-fg: #ffffff;
+  --tn-st-fin-bg:   #00b8c4; --tn-st-fin-fg:   #0a0a0a;
+  --tn-st-out-bg:   #ffffff; --tn-st-out-fg:   #0a0a0a;
+  --tn-pr-high-bg:  #ff3a26; --tn-pr-high-fg:  #ffffff;
+  --tn-pr-med-bg:   #ffd028; --tn-pr-med-fg:   #0a0a0a;
+  --tn-pr-low-bg:   #ffffff; --tn-pr-low-fg:   #0a0a0a;
+  --tn-tag-brand-bg: #2c4cff; --tn-tag-brand-fg: #ffffff;
+  --tn-tag-run-bg:   #ff3a26; --tn-tag-run-fg:   #ffffff;
+  --tn-tag-read-bg:  #00b8c4; --tn-tag-read-fg:  #0a0a0a;
+  --tn-tag-life-bg:  #ff4fa3; --tn-tag-life-fg:  #ffffff;
+  --tn-tag-work-bg:  #ffd028; --tn-tag-work-fg:  #0a0a0a;
+}
+
+[data-theme="memphis"] body {
+  background:
+    radial-gradient(circle at 88% 7%, #ff4fa3 0, transparent 8px),
+    radial-gradient(circle at 5% 55%, #00b8c4 0, transparent 6px),
+    radial-gradient(circle at 95% 80%, #ffd028 0, transparent 7px),
+    radial-gradient(circle at 50% 95%, #2c4cff 0, transparent 5px),
+    #fef6e0;
+  background-size: 220px 220px, 260px 260px, 300px 300px, 340px 340px;
+  background-attachment: fixed;
+}
+
+/* Type */
+[data-theme="memphis"] .page-title { font-family: "Archivo Black", sans-serif !important; letter-spacing: -0.03em; line-height: 0.95; }
+[data-theme="memphis"] h2, [data-theme="memphis"] h3 { font-family: "Archivo Black", sans-serif !important; letter-spacing: -0.02em; }
+[data-theme="memphis"] .page-eyebrow { font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; font-size: 10px; }
+[data-theme="memphis"] .s-label { font-family: "Archivo Black", sans-serif; letter-spacing: 0.06em !important; font-size: 10px !important; text-transform: uppercase; }
+[data-theme="memphis"] .s-value { font-family: "Archivo Black", sans-serif !important; letter-spacing: -0.03em; }
+
+/* Shell */
+[data-theme="memphis"] .sidebar { background: #ffd028; border-right: 3px solid #0a0a0a; }
+[data-theme="memphis"] .sidebar-brand .logo { border: 3px solid #0a0a0a; border-radius: 0; background: #ff4fa3; color: #fff; font-family: "Archivo Black", sans-serif; box-shadow: 3px 3px 0 #0a0a0a; transform: rotate(-3deg); }
+[data-theme="memphis"] .sidebar-brand b { font-family: "Archivo Black", sans-serif; }
+[data-theme="memphis"] .sidebar h4 { font-family: "Archivo Black", sans-serif; letter-spacing: 0.1em; }
+[data-theme="memphis"] .sidebar a { font-weight: 600; }
+[data-theme="memphis"] .sidebar a:hover { background: rgba(255,255,255,.4); }
+[data-theme="memphis"] .sidebar a.active { background: #0a0a0a; color: #ffd028; }
+[data-theme="memphis"] .sidebar a.active .ico, [data-theme="memphis"] .sidebar a.active .count { color: #ffd028; }
+[data-theme="memphis"] .sidebar-foot { border-top: 3px solid #0a0a0a; background: #ffd028; }
+[data-theme="memphis"] .sidebar-foot .av { border: 2px solid #0a0a0a; border-radius: 50%; box-shadow: 2px 2px 0 #0a0a0a; background: #ff4fa3; }
+
+[data-theme="memphis"] .topbar { background: #fff; border-bottom: 3px solid #0a0a0a; }
+[data-theme="memphis"] .topbar .crumbs { font-family: "Archivo Black", sans-serif; letter-spacing: 0.06em; text-transform: uppercase; font-size: 11px; }
+[data-theme="memphis"] .topbar .btn-icon { border: 2px solid #0a0a0a; border-radius: 0; background: #fff; box-shadow: 2px 2px 0 #0a0a0a; }
+[data-theme="memphis"] .topbar .btn-icon:hover { background: #ff4fa3; color: #fff; }
+
+/* Cards & stats — tilted, hard-shadow */
+[data-theme="memphis"] .card, [data-theme="memphis"] .stat { background: #fff; border: 3px solid #0a0a0a; border-radius: 0; box-shadow: 5px 5px 0 #0a0a0a; }
+[data-theme="memphis"] .stat:nth-child(1) { background: #ffd028; transform: rotate(-0.8deg); }
+[data-theme="memphis"] .stat:nth-child(2) { background: #ff4fa3; color: #fff; transform: rotate(0.6deg); }
+[data-theme="memphis"] .stat:nth-child(2) .s-label, [data-theme="memphis"] .stat:nth-child(2) .s-value, [data-theme="memphis"] .stat:nth-child(2) .s-delta { color: #fff; }
+[data-theme="memphis"] .stat:nth-child(3) { background: #00b8c4; transform: rotate(-0.4deg); }
+[data-theme="memphis"] .stat:nth-child(4) { background: #2c4cff; color: #fff; transform: rotate(0.5deg); }
+[data-theme="memphis"] .stat:nth-child(4) .s-label, [data-theme="memphis"] .stat:nth-child(4) .s-value, [data-theme="memphis"] .stat:nth-child(4) .s-delta { color: #fff; }
+
+[data-theme="memphis"] .goal-card { background: #fff; border: 3px solid #0a0a0a; box-shadow: 5px 5px 0 #0a0a0a; }
+[data-theme="memphis"] .goal-card:nth-child(odd) { transform: rotate(-0.5deg); }
+[data-theme="memphis"] .goal-card:nth-child(even) { transform: rotate(0.5deg); }
+[data-theme="memphis"] .goal-card:hover { transform: rotate(0) translate(-2px,-2px); box-shadow: 7px 7px 0 #0a0a0a; }
+[data-theme="memphis"] .goal-card .gc-ico { border: 3px solid #0a0a0a; border-radius: 0; box-shadow: 3px 3px 0 #0a0a0a; transform: rotate(-3deg); }
+[data-theme="memphis"] .goal-card .gc-ico.warm { background: #ff4fa3; color: #fff; }
+[data-theme="memphis"] .goal-card .gc-ico.moss { background: #00b8c4; color: #0a0a0a; }
+[data-theme="memphis"] .goal-card .gc-ico.slate { background: #2c4cff; color: #fff; }
+[data-theme="memphis"] .goal-card .gc-ico.plum { background: #ffd028; color: #0a0a0a; }
+[data-theme="memphis"] .goal-card h3 { font-family: "Archivo Black", sans-serif; }
+[data-theme="memphis"] .gc-bar { border: 2px solid #0a0a0a; border-radius: 0; height: 12px; background: #fff; }
+[data-theme="memphis"] .gc-bar i { background: repeating-linear-gradient(45deg, #0a0a0a 0 6px, #ffd028 6px 12px) !important; }
+[data-theme="memphis"] .gc-bar i.warm { background: repeating-linear-gradient(45deg, #0a0a0a 0 6px, #ff4fa3 6px 12px) !important; }
+[data-theme="memphis"] .gc-bar i.moss { background: repeating-linear-gradient(45deg, #0a0a0a 0 6px, #00b8c4 6px 12px) !important; }
+[data-theme="memphis"] .gc-bar i.slate { background: repeating-linear-gradient(45deg, #0a0a0a 0 6px, #2c4cff 6px 12px) !important; }
+[data-theme="memphis"] .gc-bar i.plum { background: repeating-linear-gradient(45deg, #0a0a0a 0 6px, #8a4eff 6px 12px) !important; }
+
+/* Buttons */
+[data-theme="memphis"] .btn { border: 3px solid #0a0a0a; border-radius: 0; padding: 7px 16px; font-family: "Archivo Black", sans-serif; letter-spacing: 0.04em; text-transform: uppercase; font-size: 12px; box-shadow: 4px 4px 0 #0a0a0a; }
+[data-theme="memphis"] .btn:hover { transform: translate(-1px,-1px); box-shadow: 5px 5px 0 #0a0a0a; }
+[data-theme="memphis"] .btn:active { transform: translate(2px,2px); box-shadow: 0 0 0 #0a0a0a; }
+[data-theme="memphis"] .btn.btn-primary { background: #ff4fa3; color: #fff; }
+[data-theme="memphis"] .btn.btn-secondary { background: #ffd028; color: #0a0a0a; }
+[data-theme="memphis"] .btn.btn-ghost { border-color: transparent; box-shadow: none; }
+
+/* Pills */
+[data-theme="memphis"] .pill { border: 2px solid #0a0a0a; border-radius: 0; padding: 2px 8px; font-family: "Archivo Black", sans-serif; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; }
+
+/* Task row */
+[data-theme="memphis"] .task-row { border-bottom: 2px dashed #0a0a0a !important; padding: 14px 0; }
+[data-theme="memphis"] .task-row .cb { border: 2px solid #0a0a0a; border-radius: 0; background: #fff; }
+[data-theme="memphis"] .task-row.done .cb { background: #00b8c4; }
+
+/* Mobile tabbar */
+[data-theme="memphis"] .mobile-tabbar { background: #ffd028; border-top: 3px solid #0a0a0a; }
+[data-theme="memphis"] .mobile-tabbar a { font-family: "Archivo Black", sans-serif; letter-spacing: 0.04em; font-size: 9px; text-transform: uppercase; }
+[data-theme="memphis"] .mobile-tabbar a.active { color: #ffd028; background: #0a0a0a; }
+
+/* Search */
+[data-theme="memphis"] .search-overlay .panel { border: 3px solid #0a0a0a; border-radius: 0; box-shadow: 8px 8px 0 #ff4fa3; background: #fff; }
+[data-theme="memphis"] .search-overlay input { font-family: "Archivo Black", sans-serif; letter-spacing: -0.02em; }
+[data-theme="memphis"] .search-overlay .result .kind { background: #0a0a0a; color: #ffd028; border-radius: 0; font-family: "Archivo Black", sans-serif; }
+
+/* === shadcn bridge (auto-generated) === */
+[data-theme="memphis"] {
+  --background: 44 93.8% 93.7%; /* from --tn-bg */
+  --foreground: 0 0% 3.9%; /* from --tn-fg */
+  --card: 0 0% 100%; /* from --tn-card */
+  --card-foreground: 0 0% 3.9%; /* from --tn-fg */
+  --popover: 0 0% 100%; /* from --tn-card */
+  --popover-foreground: 0 0% 3.9%; /* from --tn-fg */
+  --primary: 331 100% 65.5%; /* from --tn-accent */
+  --primary-foreground: 0 0% 100%; /* from --tn-on-accent */
+  --secondary: 49 100% 92.5%; /* from --tn-surface-2 */
+  --secondary-foreground: 0 0% 3.9%; /* from --tn-fg */
+  --muted: 49 100% 92.5%; /* from --tn-surface-2 */
+  --muted-foreground: 0 0% 29%; /* from --tn-fg-muted */
+  --accent: 231 100% 58.6%; /* from --tn-accent-2 */
+  --accent-foreground: 0 0% 100%; /* from --tn-on-accent */
+  --destructive: 6 100% 57.5%; /* from --tn-bad */
+  --destructive-foreground: 0 0% 100%; /* from --tn-on-accent */
+  --border: 0 0% 3.9%; /* from --tn-line-color */
+  --input: 0 0% 3.9%; /* from --tn-line-color */
+  --ring: 331 100% 65.5%; /* from --tn-accent */
+  --radius: 0; /* from --tn-r-md */
+}

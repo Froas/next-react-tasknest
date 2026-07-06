@@ -1,523 +1,434 @@
-import { GoalItem as Goal, MilestoneItem as Milestone, TaskItem as Task, TodoItem as Todo, StatusType, PriorityType, User, Event, Tag, SubtaskItem as Subtask } from './types';
+import { GoalItem as Goal, MilestoneItem as Milestone, TaskItem as Task, TodoItem as Todo, User, Event, Tag, SubtaskItem as Subtask } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-// Function to handle session expiration
+// Function to handle session expiration.
+// Throttled so a wave of 401s from concurrent requests doesn't spam
+// signOut() and trigger redirect loops. Also skips redirecting when
+// already on /login or /signup (the user is in the auth flow).
+let _expirationHandledAt = 0;
 const handleSessionExpiration = () => {
-  // Check if we're in the browser environment
-  if (typeof window !== 'undefined') {
-    // Clear localStorage
-    localStorage.removeItem('access_token');
-    
-    // Import signOut dynamically to avoid SSR issues
-    import('next-auth/react').then(({ signOut }) => {
-      signOut({ 
-        callbackUrl: '/login?expired=1',
-        redirect: true 
-      });
-    });
-  }
+ if (typeof window === 'undefined') return;
+ const now = Date.now();
+ if (now - _expirationHandledAt < 3000) return; // throttle: 3s
+ _expirationHandledAt = now;
+
+ // Clear localStorage regardless.
+ try { localStorage.removeItem('access_token'); } catch { /* ignore */ }
+
+ const onAuthPage =
+ window.location.pathname === '/login' ||
+ window.location.pathname === '/signup';
+ if (onAuthPage) {
+ // Just clean state silently; don't redirect (would loop the login page).
+ return;
+ }
+
+ import('next-auth/react').then(({ signOut }) => {
+ signOut({
+ callbackUrl: '/login?expired=1',
+ redirect: true,
+ });
+ });
 };
 
-// Helper function to get auth headers without session calls
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('access_token');
-  if (!token) {
-    console.warn('No access token found. Redirecting to login...');
-    handleSessionExpiration();
-    throw new Error('No access token found');
-  }
-  return {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  };
+// Helper function to get auth headers without session calls.
+// IMPORTANT: returns null when no token (instead of throwing) so callers
+// can no-op gracefully. Throwing here used to bubble an uncaught Error to
+// React's dev overlay (the giant dark "Error: ..." block in the middle of
+// the page) every time the user lacked a token.
+const getAuthHeaders = (): { Authorization: string; 'Content-Type': string } | null => {
+ if (typeof window === 'undefined') return null;
+ const token = localStorage.getItem('access_token');
+ if (!token) {
+ handleSessionExpiration();
+ return null;
+ }
+ return {
+ Authorization: `Bearer ${token}`,
+ 'Content-Type': 'application/json',
+ };
 };
 
-// Auth API
-export const authApi = {
-  login: async (username: string, password: string): Promise<{ access_token: string; token_type: string }> => {
-    const formData = new FormData();
-    formData.append('username', username);
-    formData.append('password', password);
-
-    const response = await fetch(`${API_BASE_URL}/users/token`, {
-      method: 'POST',
-      body: formData,
-    });
-    
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Failed to login' }));
-      throw new Error(error.detail || 'Failed to login');
-    }
-    
-    const data = await response.json();
-    // Save token to localStorage
-    localStorage.setItem('access_token', data.access_token);
-    return data;
-  },
-
-  getCurrentUser: async (): Promise<User> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/users/me`, { headers });
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Failed to get current user' }));
-      throw new Error(error.detail || 'Failed to get current user');
-    }
-    return response.json();
-  },
-
-  logout: () => {
-    localStorage.removeItem('access_token');
-  },
+// Centralised authed JSON request. Handles 401/403 → session expiration,
+// extracts error detail from the response body, and parses successful JSON.
+type RequestOptions = {
+ method?: string;
+ body?: unknown;
+ errorMessage?: string;
 };
+
+async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+ const { method = 'GET', body, errorMessage } = options;
+ const headers = getAuthHeaders();
+
+ // No token → don't fire the request, throw a friendly typed error that
+ // callers can recognise and ignore.
+ if (!headers) {
+ throw new AuthRequiredError();
+ }
+
+ let response: Response;
+ try {
+ response = await fetch(`${API_BASE_URL}${path}`, {
+ method,
+ headers,
+ body: body !== undefined ? JSON.stringify(body) : undefined,
+ });
+ } catch (networkErr) {
+ // Backend is down / CORS rejected / DNS failure. Throw a clear
+ // message instead of letting the raw TypeError bubble to React.
+ throw new Error(
+ errorMessage
+ ? `${errorMessage} (network unreachable)`
+ : `Can't reach the API at ${API_BASE_URL}`,
+ );
+ }
+
+ if (response.status === 401 || response.status === 403) {
+ handleSessionExpiration();
+ throw new AuthRequiredError('Session expired');
+ }
+
+ if (!response.ok) {
+ const fallback = errorMessage || `Request failed: ${method} ${path}`;
+ const detail = await response
+ .json()
+ .then((data) => data.detail || fallback)
+ .catch(() => fallback);
+ throw new Error(detail);
+ }
+
+ if (response.status === 204) {
+ return undefined as T;
+ }
+
+ return response.json() as Promise<T>;
+}
+
+// Typed error so callers (Zustand actions, page effects) can swallow
+// auth-required failures silently without rendering them to the user.
+export class AuthRequiredError extends Error {
+ constructor(message = 'Authentication required') {
+ super(message);
+ this.name = 'AuthRequiredError';
+ }
+}
 
 // Users API
 export const usersApi = {
-  getAll: async (): Promise<User[]> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/users/`, { headers });
-    if (!response.ok) throw new Error('Failed to fetch users');
-    return response.json();
-  },
+ getAll: () => apiRequest<User[]>('/users/', { errorMessage: 'Failed to fetch users' }),
 
-  create: async (userData: Omit<User, 'id'>): Promise<User> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/users/`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(userData),
-    });
-    if (!response.ok) throw new Error('Failed to create user');
-    return response.json();
-  },
+ create: (userData: Omit<User, 'id'>) =>
+ apiRequest<User>('/users/', { method: 'POST', body: userData, errorMessage: 'Failed to create user' }),
 
-  update: async (userData: Partial<User>): Promise<User> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/users/update`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify(userData),
-    });
-    if (!response.ok) throw new Error('Failed to update user');
-    return response.json();
-  },
+ update: (userData: Partial<User>) =>
+ apiRequest<User>('/users/update', { method: 'PATCH', body: userData, errorMessage: 'Failed to update user' }),
 
-  delete: async (userId: string): Promise<void> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/users/${userId}/delete`, {
-      method: 'DELETE',
-      headers,
-    });
-    if (!response.ok) throw new Error('Failed to delete user');
-  },
+ delete: (userId: string) =>
+ apiRequest<void>(`/users/${userId}/delete`, { method: 'DELETE', errorMessage: 'Failed to delete user' }),
 
-  me: async (): Promise<User> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/users/me`, { headers });
-    if (!response.ok) throw new Error('Failed to fetch current user');
-    return response.json();
-  },
-  
-  saveGoogleCalendar: async (googleCalendarData: any): Promise<{ message: string }> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/calendars/google-calendar/token`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(googleCalendarData),
-    });
-    if (!response.ok) throw new Error('Failed to save Google Calendar token');
-    return response.json();
-  },
+ me: () => apiRequest<User>('/users/me', { errorMessage: 'Failed to fetch current user' }),
+
+ saveGoogleCalendar: (googleCalendarData: any) =>
+ apiRequest<{ message: string }>('/calendars/google-calendar/token', {
+ method: 'POST',
+ body: googleCalendarData,
+ errorMessage: 'Failed to save Google Calendar token',
+ }),
 };
 
 // Goals API
 export const goalsApi = {
-  getAll: async (): Promise<Goal[]> => {
-    try {
-      const headers = getAuthHeaders();
-      const response = await fetch(`${API_BASE_URL}/user/goals`, { headers });
-      if (!response.ok) {
-        // Check if it's an authentication error (401 or 403)
-        if (response.status === 401 || response.status === 403) {
-          console.warn('Session expired or unauthorized. Redirecting to login...');
-          handleSessionExpiration();
-          throw new Error('Session expired');
-        }
-        const error = await response.json().catch(() => ({ detail: 'Failed to fetch goals' }));
-        throw new Error(error.detail || 'Failed to fetch goals');
-      }
-      return response.json();
-    } catch (error) {
-      console.error('Error fetching goals:', error);
-      throw error;
-    }
-  },
+ getAll: () => apiRequest<Goal[]>('/user/goals', { errorMessage: 'Failed to fetch goals' }),
 
-  create: async (goalData: Omit<Goal, 'id' | 'milestones'>): Promise<Goal> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/goals`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(goalData),
-    });
-    if (!response.ok) throw new Error('Failed to create goal');
-    return response.json();
-  },
+ create: (goalData: Omit<Goal, 'id' | 'milestones'>) =>
+ apiRequest<Goal>('/user/goals', { method: 'POST', body: goalData, errorMessage: 'Failed to create goal' }),
 
-  update: async (goalData: Partial<Goal>): Promise<Goal> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/goals/update`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify(goalData),
-    });
-    if (!response.ok) throw new Error('Failed to update goal');
-    return response.json();
-  },
+ update: (goalData: Partial<Goal>) =>
+ apiRequest<Goal>('/user/goals/update', { method: 'PATCH', body: goalData, errorMessage: 'Failed to update goal' }),
 
-  getById: async (goalId: string, options?: { 
-    include_milestones?: boolean;
-    include_tasks?: boolean;
-    include_subtasks?: boolean;
-    include_todos?: boolean;
-  }): Promise<Goal> => {
-    const headers = getAuthHeaders();
-    const params = new URLSearchParams();
-    if (options?.include_milestones) params.append('include_milestones', 'true');
-    if (options?.include_tasks) params.append('include_tasks', 'true');
-    if (options?.include_subtasks) params.append('include_subtasks', 'true');
-    if (options?.include_todos) params.append('include_todos', 'true');
-    
-    const url = `${API_BASE_URL}/user/goals/${goalId}${params.toString() ? `?${params.toString()}` : ''}`;
-    const response = await fetch(url, { headers });
-    if (!response.ok) throw new Error('Failed to fetch goal');
-    return response.json();
-  },
+ getById: (
+ goalId: string,
+ options?: {
+ include_milestones?: boolean;
+ include_tasks?: boolean;
+ include_subtasks?: boolean;
+ include_todos?: boolean;
+ }
+ ) => {
+ const params = new URLSearchParams();
+ if (options?.include_milestones) params.append('include_milestones', 'true');
+ if (options?.include_tasks) params.append('include_tasks', 'true');
+ if (options?.include_subtasks) params.append('include_subtasks', 'true');
+ if (options?.include_todos) params.append('include_todos', 'true');
+ const query = params.toString() ? `?${params.toString()}` : '';
+ return apiRequest<Goal>(`/user/goals/${goalId}${query}`, { errorMessage: 'Failed to fetch goal' });
+ },
 
-  delete: async (goalId: string): Promise<void> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/goals/${goalId}/delete`, {
-      method: 'DELETE',
-      headers,
-    });
-    if (!response.ok) throw new Error('Failed to delete goal');
-  },
+ delete: (goalId: string) =>
+ apiRequest<void>(`/user/goals/${goalId}/delete`, { method: 'DELETE', errorMessage: 'Failed to delete goal' }),
 };
 
 // Milestones API
 export const milestonesApi = {
-  getAll: async (): Promise<Milestone[]> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/milestones`, { headers });
-    if (!response.ok) throw new Error('Failed to fetch milestones');
-    return response.json();
-  },
+ getAll: () => apiRequest<Milestone[]>('/user/milestones', { errorMessage: 'Failed to fetch milestones' }),
 
-  create: async (milestoneData: Omit<Milestone, 'id' | 'tasks' | 'todos'>): Promise<Milestone> => {
-    const headers = getAuthHeaders();
-    console.log(milestoneData);
-    const response = await fetch(`${API_BASE_URL}/user/milestones`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(milestoneData),
-    });
-    if (!response.ok) throw new Error('Failed to create milestone');
-    return response.json();
-  },
+ create: (milestoneData: Omit<Milestone, 'id' | 'tasks' | 'todos'>) =>
+ apiRequest<Milestone>('/user/milestones', {
+ method: 'POST',
+ body: milestoneData,
+ errorMessage: 'Failed to create milestone',
+ }),
 
-  update: async (milestoneData: Partial<Milestone>): Promise<Milestone> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/milestones/update`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify(milestoneData),
-    });
-    if (!response.ok) throw new Error('Failed to update milestone');
-    return response.json();
-  },
+ update: (milestoneData: Partial<Milestone>) =>
+ apiRequest<Milestone>('/user/milestones/update', {
+ method: 'PATCH',
+ body: milestoneData,
+ errorMessage: 'Failed to update milestone',
+ }),
 
-  reorder: async (milestoneIds: string[]): Promise<void> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/milestones/reorder`, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify({ milestone_ids: milestoneIds }),
-    });
-    if (!response.ok) throw new Error('Failed to reorder milestones');
-  },
+ reorder: (milestoneIds: string[]) =>
+ apiRequest<void>('/user/milestones/reorder', {
+ method: 'PUT',
+ body: { milestone_ids: milestoneIds },
+ errorMessage: 'Failed to reorder milestones',
+ }),
 
-  getById: async (
-    milestoneId: string,
-    include_tasks: boolean = false,
-    include_subtasks: boolean = false,
-    include_todos: boolean = false
-  ): Promise<Milestone> => {
-    const headers = getAuthHeaders();
-    const queryParams = new URLSearchParams({
-      include_tasks: include_tasks.toString(),
-      include_subtasks: include_subtasks.toString(),
-      include_todos: include_todos.toString()
-    });
-    const response = await fetch(
-      `${API_BASE_URL}/user/milestones/${milestoneId}?${queryParams}`,
-      { headers }
-    );
-    if (!response.ok) throw new Error('Failed to fetch milestone');
-    return response.json();
-  },
+ getById: (
+ milestoneId: string,
+ include_tasks: boolean = false,
+ include_subtasks: boolean = false,
+ include_todos: boolean = false
+ ) => {
+ const queryParams = new URLSearchParams({
+ include_tasks: include_tasks.toString(),
+ include_subtasks: include_subtasks.toString(),
+ include_todos: include_todos.toString(),
+ });
+ return apiRequest<Milestone>(`/user/milestones/${milestoneId}?${queryParams}`, {
+ errorMessage: 'Failed to fetch milestone',
+ });
+ },
 
-  delete: async (milestoneId: string): Promise<void> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/milestones/${milestoneId}/delete`, {
-      method: 'DELETE',
-      headers,
-    });
-    if (!response.ok) throw new Error('Failed to delete milestone');
-  },
+ delete: (milestoneId: string) =>
+ apiRequest<void>(`/user/milestones/${milestoneId}/delete`, {
+ method: 'DELETE',
+ errorMessage: 'Failed to delete milestone',
+ }),
 };
 
 // Tasks API
 export const tasksApi = {
-  getAll: async (include_subtasks: boolean = true, include_todos: boolean = true): Promise<Task[]> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(
-      `${API_BASE_URL}/user/tasks?include_subtasks=${include_subtasks}&include_todos=${include_todos}`,
-      { headers }
-    );
-    if (!response.ok) throw new Error('Failed to fetch tasks');
-    return response.json();
-  },
+ getAll: (include_subtasks: boolean = true, include_todos: boolean = true) =>
+ apiRequest<Task[]>(
+ `/user/tasks?include_subtasks=${include_subtasks}&include_todos=${include_todos}`,
+ { errorMessage: 'Failed to fetch tasks' }
+ ),
 
-  get: async (taskId: string, include_subtasks: boolean = true, include_todos: boolean = true): Promise<Task> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(
-      `${API_BASE_URL}/user/tasks/${taskId}?include_subtasks=${include_subtasks}&include_todos=${include_todos}`,
-      { headers }
-    );
-    if (!response.ok) throw new Error('Failed to fetch task');
-    return response.json();
-  },
+ get: (taskId: string, include_subtasks: boolean = true, include_todos: boolean = true) =>
+ apiRequest<Task>(
+ `/user/tasks/${taskId}?include_subtasks=${include_subtasks}&include_todos=${include_todos}`,
+ { errorMessage: 'Failed to fetch task' }
+ ),
 
-  create: async (taskData: Omit<Task, 'id'>): Promise<Task> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/tasks`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(taskData),
-    });
-    if (!response.ok) throw new Error('Failed to create task');
-    return response.json();
-  },
+ create: (taskData: Omit<Task, 'id'>) =>
+ apiRequest<Task>('/user/tasks', { method: 'POST', body: taskData, errorMessage: 'Failed to create task' }),
 
-  update: async (taskData: Partial<Task> & { id: string }): Promise<Task> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/tasks/update`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify(taskData),
-    });
-    if (!response.ok) throw new Error('Failed to update task');
-    return response.json();
-  },
+ update: (taskData: Partial<Task> & { id: string }) =>
+ apiRequest<Task>('/user/tasks/update', {
+ method: 'PATCH',
+ body: taskData,
+ errorMessage: 'Failed to update task',
+ }),
 
-  delete: async (taskId: string): Promise<void> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/tasks/${taskId}/delete`, {
-      method: 'DELETE',
-      headers,
-    });
-    if (!response.ok) throw new Error('Failed to delete task');
-  }
+ delete: (taskId: string) =>
+ apiRequest<void>(`/user/tasks/${taskId}/delete`, { method: 'DELETE', errorMessage: 'Failed to delete task' }),
 };
 
 // Todos API
 export const todosApi = {
-  getAll: async (): Promise<Todo[]> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/todos`, { headers });
-    if (!response.ok) throw new Error('Failed to fetch todos');
-    return response.json();
-  },
+ getAll: () => apiRequest<Todo[]>('/user/todos', { errorMessage: 'Failed to fetch todos' }),
 
-  create: async (todoData: Omit<Todo, 'id'>): Promise<Todo> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/todos`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(todoData),
-    });
-    if (!response.ok) throw new Error('Failed to create todo');
-    return response.json();
-  },
+ create: (todoData: Omit<Todo, 'id'>) =>
+ apiRequest<Todo>('/user/todos', { method: 'POST', body: todoData, errorMessage: 'Failed to create todo' }),
 
-  update: async (todoData: Partial<Todo> & { id: string }): Promise<Todo> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/todos/update`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify(todoData),
-    });
-    if (!response.ok) throw new Error('Failed to update todo');
-    return response.json();
-  },
+ update: (todoData: Partial<Todo> & { id: string }) =>
+ apiRequest<Todo>('/user/todos/update', {
+ method: 'PATCH',
+ body: todoData,
+ errorMessage: 'Failed to update todo',
+ }),
 
-  getById: async (todoId: string): Promise<Todo> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/todos/${todoId}`, { headers });
-    if (!response.ok) throw new Error('Failed to fetch todo');
-    return response.json();
-  },
+ getById: (todoId: string) =>
+ apiRequest<Todo>(`/user/todos/${todoId}`, { errorMessage: 'Failed to fetch todo' }),
 
-  delete: async (todoId: string): Promise<void> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/todos/${todoId}/delete`, {
-      method: 'DELETE',
-      headers,
-    });
-    if (!response.ok) throw new Error('Failed to delete todo');
-  },
+ delete: (todoId: string) =>
+ apiRequest<void>(`/user/todos/${todoId}/delete`, { method: 'DELETE', errorMessage: 'Failed to delete todo' }),
 };
 
 // Events API
 export const eventsApi = {
-  getAll: async (): Promise<Event[]> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/events`, { headers });
-    if (!response.ok) throw new Error('Failed to fetch events');
-    return response.json();
-  },
+ getAll: () => apiRequest<Event[]>('/user/events', { errorMessage: 'Failed to fetch events' }),
 
-  create: async (eventData: Omit<Event, 'id'>): Promise<Event> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/events`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(eventData),
-    });
-    if (!response.ok) throw new Error('Failed to create event');
-    return response.json();
-  },
+ create: (eventData: Omit<Event, 'id'>) =>
+ apiRequest<Event>('/user/events', { method: 'POST', body: eventData, errorMessage: 'Failed to create event' }),
 
-  update: async (eventData: Partial<Event>): Promise<Event> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/events/update`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify(eventData),
-    });
-    if (!response.ok) throw new Error('Failed to update event');
-    return response.json();
-  },
+ update: (eventData: Partial<Event>) =>
+ apiRequest<Event>('/user/events/update', {
+ method: 'PATCH',
+ body: eventData,
+ errorMessage: 'Failed to update event',
+ }),
 
-  getById: async (eventId: string): Promise<Event> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/events/${eventId}`, { headers });
-    if (!response.ok) throw new Error('Failed to fetch event');
-    return response.json();
-  },
+ getById: (eventId: string) =>
+ apiRequest<Event>(`/user/events/${eventId}`, { errorMessage: 'Failed to fetch event' }),
 
-  delete: async (eventId: string): Promise<void> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/events/${eventId}/delete`, {
-      method: 'DELETE',
-      headers,
-    });
-    if (!response.ok) throw new Error('Failed to delete event');
-  },
+ delete: (eventId: string) =>
+ apiRequest<void>(`/user/events/${eventId}/delete`, { method: 'DELETE', errorMessage: 'Failed to delete event' }),
 };
 
 // Tags API
 export const tagsApi = {
-  getAll: async (): Promise<Tag[]> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/tags`, { headers });
-    if (!response.ok) throw new Error('Failed to fetch tags');
-    return response.json();
-  },
+ getAll: () => apiRequest<Tag[]>('/tags', { errorMessage: 'Failed to fetch tags' }),
 
-  create: async (tagData: Omit<Tag, 'id'>): Promise<Tag> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/tags`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(tagData),
-    });
-    if (!response.ok) throw new Error('Failed to create tag');
-    return response.json();
-  },
+ create: (tagData: Omit<Tag, 'id'>) =>
+ apiRequest<Tag>('/tags', { method: 'POST', body: tagData, errorMessage: 'Failed to create tag' }),
 
-  update: async (tagData: Partial<Tag>): Promise<Tag> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/tags/update`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify(tagData),
-    });
-    if (!response.ok) throw new Error('Failed to update tag');
-    return response.json();
-  },
+ update: (tagData: Partial<Tag>) =>
+ apiRequest<Tag>('/tags/update', { method: 'PATCH', body: tagData, errorMessage: 'Failed to update tag' }),
 
-  getById: async (tagId: string): Promise<Tag> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/tags/${tagId}`, { headers });
-    if (!response.ok) throw new Error('Failed to fetch tag');
-    return response.json();
-  },
+ getById: (tagId: string) =>
+ apiRequest<Tag>(`/tags/${tagId}`, { errorMessage: 'Failed to fetch tag' }),
 
-  delete: async (tagId: string): Promise<void> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/tags/delete/${tagId}`, {
-      method: 'DELETE',
-      headers,
-    });
-    if (!response.ok) throw new Error('Failed to delete tag');
-  },
+ delete: (tagId: string) =>
+ apiRequest<void>(`/tags/delete/${tagId}`, { method: 'DELETE', errorMessage: 'Failed to delete tag' }),
 };
 
 // Subtasks API
 export const subtasksApi = {
-  getAll: async (): Promise<Subtask[]> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/task/subtasks`, { headers });
-    if (!response.ok) throw new Error('Failed to fetch subtasks');
-    return response.json();
-  },
+ getAll: () => apiRequest<Subtask[]>('/user/task/subtasks', { errorMessage: 'Failed to fetch subtasks' }),
 
-  create: async (subtaskData: Omit<Subtask, 'id'>): Promise<Subtask> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/task/subtasks`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(subtaskData),
-    });
-    if (!response.ok) throw new Error('Failed to create subtask');
-    return response.json();
-  },
+ create: (subtaskData: Omit<Subtask, 'id'>) =>
+ apiRequest<Subtask>('/user/task/subtasks', {
+ method: 'POST',
+ body: subtaskData,
+ errorMessage: 'Failed to create subtask',
+ }),
 
-  update: async (subtaskData: Partial<Subtask>): Promise<Subtask> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/task/subtasks/update`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify(subtaskData),
-    });
-    if (!response.ok) throw new Error('Failed to update subtask');
-    return response.json();
-  },
+ update: (subtaskData: Partial<Subtask>) =>
+ apiRequest<Subtask>('/user/task/subtasks/update', {
+ method: 'PATCH',
+ body: subtaskData,
+ errorMessage: 'Failed to update subtask',
+ }),
 
-  getById: async (subtaskId: string): Promise<Subtask> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/task/subtasks/${subtaskId}`, { headers });
-    if (!response.ok) throw new Error('Failed to fetch subtask');
-    return response.json();
-  },
+ getById: (subtaskId: string) =>
+ apiRequest<Subtask>(`/user/task/subtasks/${subtaskId}`, { errorMessage: 'Failed to fetch subtask' }),
 
-  delete: async (subtaskId: string): Promise<void> => {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/user/task/subtasks/${subtaskId}/delete`, {
-      method: 'DELETE',
-      headers,
-    });
-    if (!response.ok) throw new Error('Failed to delete subtask');
-  },
+ delete: (subtaskId: string) =>
+ apiRequest<void>(`/user/task/subtasks/${subtaskId}/delete`, {
+ method: 'DELETE',
+ errorMessage: 'Failed to delete subtask',
+ }),
+};
+
+// ============================================================
+// Notes API
+// ============================================================
+export interface NoteItem {
+ id: string;
+ title: string;
+ body?: string | null;
+ tag?: string | null;
+ pinned: boolean;
+ created_at: string;
+ updated_at: string;
+}
+
+export const notesApi = {
+ getAll: () => apiRequest<NoteItem[]>('/user/notes', { errorMessage: 'Failed to fetch notes' }),
+
+ create: (data: { title: string; body?: string | null; tag?: string | null; pinned?: boolean }) =>
+ apiRequest<NoteItem>('/user/notes', { method: 'POST', body: data, errorMessage: 'Failed to create note' }),
+
+ update: (data: { id: string; title?: string; body?: string | null; tag?: string | null; pinned?: boolean }) =>
+ apiRequest<NoteItem>('/user/notes/update', { method: 'PATCH', body: data, errorMessage: 'Failed to update note' }),
+
+ getById: (id: string) => apiRequest<NoteItem>(`/user/notes/${id}`, { errorMessage: 'Failed to fetch note' }),
+
+ delete: (id: string) =>
+ apiRequest<{ message: string }>(`/user/notes/${id}/delete`, { method: 'DELETE', errorMessage: 'Failed to delete note' }),
+};
+
+// ============================================================
+// Templates API (goal blueprints)
+// ============================================================
+export interface TemplateItem {
+ id: string;
+ title: string;
+ description?: string | null;
+ emoji?: string | null;
+ tags?: string[] | null;
+ blueprint?: {
+ milestones?: Array<{
+ title: string;
+ description?: string;
+ tasks?: Array<{ title: string; description?: string }>;
+ }>;
+ } | null;
+ created_at: string;
+ user_id: string | null;
+}
+
+export const templatesApi = {
+ getAll: () => apiRequest<TemplateItem[]>('/user/templates', { errorMessage: 'Failed to fetch templates' }),
+
+ create: (data: Omit<TemplateItem, 'id' | 'created_at' | 'user_id'>) =>
+ apiRequest<TemplateItem>('/user/templates', { method: 'POST', body: data, errorMessage: 'Failed to create template' }),
+
+ update: (data: Partial<TemplateItem> & { id: string }) =>
+ apiRequest<TemplateItem>('/user/templates/update', { method: 'PATCH', body: data, errorMessage: 'Failed to update template' }),
+
+ getById: (id: string) => apiRequest<TemplateItem>(`/user/templates/${id}`, { errorMessage: 'Failed to fetch template' }),
+
+ delete: (id: string) =>
+ apiRequest<{ message: string }>(`/user/templates/${id}/delete`, { method: 'DELETE', errorMessage: 'Failed to delete template' }),
+
+ /** Materialise a template into a real Goal owned by the user. */
+ instantiate: (id: string, overrides?: { title_override?: string; start_datetime?: string; end_datetime?: string }) =>
+ apiRequest<Goal>(`/user/templates/${id}/instantiate`, { method: 'POST', body: overrides ?? {}, errorMessage: 'Failed to instantiate template' }),
+};
+
+// ============================================================
+// Trash API (soft-deleted items across all entities)
+// ============================================================
+export type TrashKind = 'goal' | 'milestone' | 'task' | 'todo' | 'event' | 'note';
+
+export interface TrashItemBE {
+ id: string;
+ kind: TrashKind;
+ title: string;
+ deleted_at: string;
+}
+
+export const trashApi = {
+ list: () => apiRequest<TrashItemBE[]>('/user/trash', { errorMessage: 'Failed to fetch trash' }),
+
+ restore: (kind: TrashKind, id: string) =>
+ apiRequest<{ message: string }>(`/user/trash/${kind}/${id}/restore`, { method: 'POST', errorMessage: 'Failed to restore' }),
+
+ purge: (kind: TrashKind, id: string) =>
+ apiRequest<{ message: string }>(`/user/trash/${kind}/${id}`, { method: 'DELETE', errorMessage: 'Failed to purge' }),
+
+ empty: () =>
+ apiRequest<{ message: string; removed: number }>('/user/trash', { method: 'DELETE', errorMessage: 'Failed to empty trash' }),
+};
+
+// ============================================================
+// User preferences (preferred_theme, etc.)
+// ============================================================
+export const userPrefsApi = {
+ updateMe: (data: { preferred_theme?: string | null }) =>
+ apiRequest<User>('/users/me', { method: 'PATCH', body: data, errorMessage: 'Failed to update profile' }),
 };

@@ -1,0 +1,162 @@
+/* TaskNest theme: brutalist
+ * Auto-scoped to [data-theme="brutalist"] so all themes can
+ * coexist; ThemeProvider toggles the attribute on <html>.
+ * Source: tasknest-design-system/project/app/themes/brutalist.css
+ */
+
+
+/* TaskNest theme — Brutalist Mono · pure B&W with hard rules */
+
+
+[data-theme="brutalist"] {
+  --tn-font-sans:    "Geist Mono", ui-monospace, SFMono-Regular, monospace;
+  --tn-font-display: "Geist Mono", ui-monospace, monospace;
+  --tn-font-mono:    "Geist Mono", monospace;
+
+  --tn-bg:         #ffffff;
+  --tn-surface:    #ffffff;
+  --tn-surface-2:  #f4f4f4;
+  --tn-card:       #ffffff;
+  --tn-sidebar-bg: #ffffff;
+  --tn-hover:      #f4f4f4;
+  --tn-active:     #0a0a0a;
+  --tn-chip:       #f4f4f4;
+  --tn-bar-bg:     #ffffff;
+  --tn-icon-bg:    #f4f4f4;
+
+  --tn-fg:        #0a0a0a;
+  --tn-fg-muted:  #4a4a4a;
+  --tn-fg-dim:    #888888;
+
+  --tn-line:        3px solid #0a0a0a;
+  --tn-card-border: 3px solid #0a0a0a;
+  --tn-shadow:      4px 4px 0 #0a0a0a;
+
+  --tn-accent:    #0a0a0a;
+  --tn-on-accent: #ffffff;
+  --tn-accent-2:  #0a0a0a;
+
+  --tn-warm:  #0a0a0a;
+  --tn-moss:  #0a0a0a;
+  --tn-slate: #0a0a0a;
+  --tn-plum:  #0a0a0a;
+  --tn-good:  #0a0a0a;
+  --tn-bad:   #0a0a0a;
+
+  --tn-r-sm: 0; --tn-r-md: 0; --tn-r-lg: 0; --tn-r-xl: 0;
+  --tn-sidebar-w: 220px; --tn-pad-lg: 14px;
+  --tn-h1-size: 56px; --tn-h1-weight: 900;
+
+  --tn-st-prog-bg:  #0a0a0a; --tn-st-prog-fg:  #ffffff;
+  --tn-st-start-bg: #ffffff; --tn-st-start-fg: #0a0a0a;
+  --tn-st-fin-bg:   #0a0a0a; --tn-st-fin-fg:   #ffffff;
+  --tn-st-out-bg:   #ffffff; --tn-st-out-fg:   #0a0a0a;
+  --tn-pr-high-bg:  repeating-linear-gradient(45deg,#0a0a0a 0 4px,#fff 4px 8px); --tn-pr-high-fg: transparent;
+  --tn-pr-med-bg:   #ffffff; --tn-pr-med-fg:  #0a0a0a;
+  --tn-pr-low-bg:   #ffffff; --tn-pr-low-fg:  #0a0a0a;
+  --tn-tag-brand-bg: #0a0a0a; --tn-tag-brand-fg: #ffffff;
+  --tn-tag-run-bg:   #0a0a0a; --tn-tag-run-fg:   #ffffff;
+  --tn-tag-read-bg:  #0a0a0a; --tn-tag-read-fg:  #ffffff;
+  --tn-tag-life-bg:  #0a0a0a; --tn-tag-life-fg:  #ffffff;
+  --tn-tag-work-bg:  #0a0a0a; --tn-tag-work-fg:  #ffffff;
+}
+
+[data-theme="brutalist"] body { font-size: 13px; line-height: 1.4; letter-spacing: -0.01em; }
+
+/* Hard 3px grid everywhere */
+[data-theme="brutalist"] .app { border-left: 3px solid #0a0a0a; border-right: 3px solid #0a0a0a; max-width: 1400px; margin: 0 auto; }
+[data-theme="brutalist"] .sidebar { border-right: 3px solid #0a0a0a; }
+[data-theme="brutalist"] .topbar { border-bottom: 3px solid #0a0a0a; }
+
+/* Typography — uppercase tracking everywhere */
+[data-theme="brutalist"] .page-title { font-family: "Geist Mono", monospace !important; font-weight: 900; letter-spacing: -0.04em; line-height: 0.95; text-transform: uppercase; font-size: 56px !important; }
+[data-theme="brutalist"] h2, [data-theme="brutalist"] h3 { font-family: "Geist Mono", monospace !important; font-weight: 800; letter-spacing: -0.02em; text-transform: uppercase; }
+[data-theme="brutalist"] .page-eyebrow { font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; font-size: 10px; }
+[data-theme="brutalist"] .page-lede { font-size: 13px; }
+[data-theme="brutalist"] .s-label { font-weight: 700; letter-spacing: 0.14em !important; font-size: 9px !important; }
+[data-theme="brutalist"] .s-value { font-family: "Geist Mono", monospace !important; font-weight: 900; letter-spacing: -0.04em; font-size: 36px !important; }
+[data-theme="brutalist"] .section-head h2 { font-size: 11px !important; letter-spacing: 0.18em; padding-bottom: 8px; border-bottom: 3px solid #0a0a0a; flex: 1; }
+
+/* Sidebar — terminal-aesthetic nav */
+[data-theme="brutalist"] .sidebar-brand .logo { border: 2px solid #0a0a0a; border-radius: 0; background: #ffffff; color: #0a0a0a; font-weight: 900; }
+[data-theme="brutalist"] .sidebar-brand b { font-weight: 900; letter-spacing: -0.02em; text-transform: uppercase; }
+[data-theme="brutalist"] .sidebar h4 { font-weight: 700; letter-spacing: 0.16em; font-size: 10px; }
+[data-theme="brutalist"] .sidebar a { padding: 8px 18px; font-weight: 500; letter-spacing: 0.02em; }
+[data-theme="brutalist"] .sidebar a:hover { background: #f4f4f4; }
+[data-theme="brutalist"] .sidebar a.active { background: #0a0a0a; color: #ffffff; }
+[data-theme="brutalist"] .sidebar a.active .ico, [data-theme="brutalist"] .sidebar a.active .count { color: #ffffff; }
+[data-theme="brutalist"] .sidebar-search { font-weight: 500; }
+[data-theme="brutalist"] .sidebar-search kbd { background: #0a0a0a; color: #ffffff; padding: 2px 6px; font-weight: 700; }
+
+/* Topbar */
+[data-theme="brutalist"] .topbar .crumbs { font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; font-size: 11px; }
+[data-theme="brutalist"] .topbar .btn-icon { border: 2px solid #0a0a0a; border-radius: 0; background: #fff; }
+[data-theme="brutalist"] .topbar .btn-icon:hover { background: #0a0a0a; color: #fff; }
+
+/* Cards */
+[data-theme="brutalist"] .card, [data-theme="brutalist"] .stat { background: #ffffff; border: 3px solid #0a0a0a; border-radius: 0; box-shadow: 4px 4px 0 #0a0a0a; padding: 20px; }
+[data-theme="brutalist"] .goal-card { background: #ffffff; border: 3px solid #0a0a0a; border-radius: 0; box-shadow: 5px 5px 0 #0a0a0a; }
+[data-theme="brutalist"] .goal-card:hover { transform: translate(-2px,-2px); box-shadow: 7px 7px 0 #0a0a0a; }
+
+/* Buttons */
+[data-theme="brutalist"] .btn { border: 2px solid #0a0a0a; border-radius: 0; padding: 7px 16px; font-family: "Geist Mono", monospace; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; font-size: 11px; box-shadow: 3px 3px 0 #0a0a0a; }
+[data-theme="brutalist"] .btn:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 #0a0a0a; }
+[data-theme="brutalist"] .btn:active { transform: translate(2px,2px); box-shadow: 0 0 0 #0a0a0a; }
+[data-theme="brutalist"] .btn.btn-primary { background: #0a0a0a; color: #ffffff; }
+[data-theme="brutalist"] .btn.btn-secondary { background: #ffffff; color: #0a0a0a; }
+[data-theme="brutalist"] .btn.btn-ghost { border-color: transparent; box-shadow: none; }
+[data-theme="brutalist"] .btn.btn-ghost:hover { background: #f4f4f4; transform: none; box-shadow: none; }
+
+/* Pills — chunky, all-caps */
+[data-theme="brutalist"] .pill { border: 2px solid #0a0a0a; border-radius: 0; padding: 2px 8px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; font-size: 10px; line-height: 1.6; }
+[data-theme="brutalist"] .pill.priority-high { background: repeating-linear-gradient(45deg, #0a0a0a 0 4px, #fff 4px 8px); color: transparent; }
+[data-theme="brutalist"] .pill.priority-high::before { content: "HIGH"; color: #0a0a0a; background: #fff; padding: 0 4px; }
+
+/* Goal card */
+[data-theme="brutalist"] .goal-card .gc-ico { border: 2px solid #0a0a0a; border-radius: 0; background: #ffffff !important; color: #0a0a0a !important; font-weight: 900; box-shadow: 2px 2px 0 #0a0a0a; width: 44px; height: 44px; }
+[data-theme="brutalist"] .goal-card h3 { font-weight: 900; letter-spacing: -0.02em; text-transform: uppercase; }
+[data-theme="brutalist"] .goal-card .gc-meta b { font-weight: 700; }
+[data-theme="brutalist"] .gc-pct { font-weight: 900; letter-spacing: -0.03em; font-size: 28px; }
+[data-theme="brutalist"] .gc-bar { border: 2px solid #0a0a0a; border-radius: 0; height: 10px; background: #ffffff; }
+[data-theme="brutalist"] .gc-bar i { background: #0a0a0a !important; }
+
+/* Tabular goal listing — overrides default grid */
+[data-theme="brutalist"] .task-row { border-bottom: 1px dashed #0a0a0a !important; padding: 14px 0; }
+[data-theme="brutalist"] .task-row .cb { border: 2px solid #0a0a0a; border-radius: 0; background: #ffffff; }
+[data-theme="brutalist"] .task-row.done .cb { background: #0a0a0a; }
+[data-theme="brutalist"] .task-row .t-title { font-weight: 700; letter-spacing: -0.01em; }
+[data-theme="brutalist"] .task-row .t-time { font-weight: 700; letter-spacing: 0.04em; }
+
+/* Mobile tabbar */
+[data-theme="brutalist"] .mobile-tabbar { background: #ffffff; border-top: 3px solid #0a0a0a; }
+[data-theme="brutalist"] .mobile-tabbar a { font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; font-size: 9px; }
+[data-theme="brutalist"] .mobile-tabbar a.active { color: #ffffff; background: #0a0a0a; }
+
+/* Search */
+[data-theme="brutalist"] .search-overlay .panel { border: 3px solid #0a0a0a; border-radius: 0; box-shadow: 8px 8px 0 #0a0a0a; }
+[data-theme="brutalist"] .search-overlay input { font-family: "Geist Mono", monospace; font-weight: 700; letter-spacing: -0.01em; }
+[data-theme="brutalist"] .search-overlay .result .kind { background: #0a0a0a; color: #fff; border-radius: 0; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+
+/* === shadcn bridge (auto-generated) === */
+[data-theme="brutalist"] {
+  --background: 0 0% 100%; /* from --tn-bg */
+  --foreground: 0 0% 3.9%; /* from --tn-fg */
+  --card: 0 0% 100%; /* from --tn-card */
+  --card-foreground: 0 0% 3.9%; /* from --tn-fg */
+  --popover: 0 0% 100%; /* from --tn-card */
+  --popover-foreground: 0 0% 3.9%; /* from --tn-fg */
+  --primary: 0 0% 3.9%; /* from --tn-accent */
+  --primary-foreground: 0 0% 100%; /* from --tn-on-accent */
+  --secondary: 0 0% 95.7%; /* from --tn-surface-2 */
+  --secondary-foreground: 0 0% 3.9%; /* from --tn-fg */
+  --muted: 0 0% 95.7%; /* from --tn-surface-2 */
+  --muted-foreground: 0 0% 29%; /* from --tn-fg-muted */
+  --accent: 0 0% 3.9%; /* from --tn-accent-2 */
+  --accent-foreground: 0 0% 100%; /* from --tn-on-accent */
+  --destructive: 0 0% 3.9%; /* from --tn-bad */
+  --destructive-foreground: 0 0% 100%; /* from --tn-on-accent */
+  --border: 0 0% 3.9%; /* from --tn-line-color */
+  --input: 0 0% 3.9%; /* from --tn-line-color */
+  --ring: 0 0% 3.9%; /* from --tn-accent */
+  --radius: 0; /* from --tn-r-md */
+}

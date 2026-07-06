@@ -1,0 +1,99 @@
+/* TaskNest theme: cottagecore
+ * Auto-scoped to [data-theme="cottagecore"] so all themes can
+ * coexist; ThemeProvider toggles the attribute on <html>.
+ * Source: tasknest-design-system/project/app/themes/cottagecore.css
+ */
+
+
+/* TaskNest theme — Cottagecore · soft botanical, sage + clay + oat */
+
+
+[data-theme="cottagecore"] {
+  --tn-font-sans:    "DM Sans", system-ui, sans-serif;
+  --tn-font-display: "Crimson Pro", serif;
+  --tn-font-mono:    ui-monospace, monospace;
+
+  --tn-bg:         #f5ecdf;
+  --tn-surface:    #fbf5e8;
+  --tn-surface-2:  #ebe0cf;
+  --tn-card:       #fbf5e8;
+  --tn-sidebar-bg: #ebe0cf;
+  --tn-hover:      rgba(74,59,46,.06);
+  --tn-active:     rgba(122,153,104,.18);
+  --tn-chip:       rgba(74,59,46,.08);
+  --tn-bar-bg:     rgba(74,59,46,.10);
+  --tn-icon-bg:    rgba(122,153,104,.18);
+
+  --tn-fg:       #4a3b2e;
+  --tn-fg-muted: #8a7866;
+  --tn-fg-dim:   #b0a293;
+
+  --tn-line:        1px solid rgba(74,59,46,.15);
+  --tn-card-border: 1px solid rgba(74,59,46,.10);
+  --tn-shadow:      0 4px 14px rgba(74,59,46,.08);
+
+  --tn-accent:    #7a9968;
+  --tn-on-accent: #fbf5e8;
+  --tn-accent-2:  #c08465;
+
+  --tn-warm: #c08465; --tn-moss: #7a9968; --tn-slate: #8a9aa8; --tn-plum: #a67e9a;
+  --tn-good: #5a7a4a; --tn-bad: #b85040;
+
+  --tn-r-sm: 8px; --tn-r-md: 12px; --tn-r-lg: 16px; --tn-r-xl: 22px;
+  --tn-sidebar-w: 240px;
+  --tn-h1-size: 36px; --tn-h1-weight: 500;
+
+  --tn-st-prog-bg: rgba(122,153,104,.20); --tn-st-prog-fg: #3a5a30;
+  --tn-st-start-bg: rgba(192,132,101,.20); --tn-st-start-fg: #6a4030;
+  --tn-st-fin-bg: rgba(122,153,104,.30); --tn-st-fin-fg: #2a4520;
+  --tn-st-out-bg: rgba(74,59,46,.08); --tn-st-out-fg: #8a7866;
+  --tn-pr-high-bg: rgba(184,80,64,.18); --tn-pr-high-fg: #8a3030;
+  --tn-pr-med-bg: rgba(192,132,101,.20); --tn-pr-med-fg: #6a4030;
+  --tn-pr-low-bg: rgba(122,153,104,.20); --tn-pr-low-fg: #3a5a30;
+  --tn-tag-brand-bg: rgba(192,132,101,.20); --tn-tag-brand-fg: #6a4030;
+  --tn-tag-run-bg: rgba(184,80,64,.18); --tn-tag-run-fg: #8a3030;
+  --tn-tag-read-bg: rgba(122,153,104,.20); --tn-tag-read-fg: #3a5a30;
+  --tn-tag-life-bg: rgba(166,126,154,.20); --tn-tag-life-fg: #5a3a52;
+  --tn-tag-work-bg: rgba(138,154,168,.20); --tn-tag-work-fg: #3a4a5a;
+}
+
+[data-theme="cottagecore"] body {
+  background: #f5ecdf;
+  background-image: radial-gradient(rgba(74,59,46,.04) 1px, transparent 1.5px);
+  background-size: 16px 16px;
+}
+[data-theme="cottagecore"] .page-title { font-family: "Crimson Pro", serif !important; font-weight: 500; letter-spacing: -0.01em; }
+[data-theme="cottagecore"] h2, [data-theme="cottagecore"] h3 { font-family: "Crimson Pro", serif !important; font-weight: 500; }
+[data-theme="cottagecore"] .sidebar-brand .logo { background: #7a9968; color: #fbf5e8; }
+[data-theme="cottagecore"] .sidebar a.active { background: rgba(122,153,104,.22); color: #3a5a30; }
+[data-theme="cottagecore"] .btn.btn-primary { background: #7a9968; color: #fbf5e8; }
+[data-theme="cottagecore"] .btn.btn-primary:hover { background: #6a8858; }
+[data-theme="cottagecore"] .gc-bar i { background: #7a9968 !important; }
+[data-theme="cottagecore"] .gc-bar i.warm { background: #c08465 !important; }
+[data-theme="cottagecore"] .gc-bar i.moss { background: #7a9968 !important; }
+[data-theme="cottagecore"] .gc-bar i.slate { background: #8a9aa8 !important; }
+[data-theme="cottagecore"] .gc-bar i.plum { background: #a67e9a !important; }
+
+/* === shadcn bridge (auto-generated) === */
+[data-theme="cottagecore"] {
+  --background: 35 52.4% 91.8%; /* from --tn-bg */
+  --foreground: 28 23.3% 23.5%; /* from --tn-fg */
+  --card: 41 70.4% 94.7%; /* from --tn-card */
+  --card-foreground: 28 23.3% 23.5%; /* from --tn-fg */
+  --popover: 41 70.4% 94.7%; /* from --tn-card */
+  --popover-foreground: 28 23.3% 23.5%; /* from --tn-fg */
+  --primary: 98 19.4% 50.4%; /* from --tn-accent */
+  --primary-foreground: 41 70.4% 94.7%; /* from --tn-on-accent */
+  --secondary: 36 41.2% 86.7%; /* from --tn-surface-2 */
+  --secondary-foreground: 28 23.3% 23.5%; /* from --tn-fg */
+  --muted: 36 41.2% 86.7%; /* from --tn-surface-2 */
+  --muted-foreground: 30 15% 47.1%; /* from --tn-fg-muted */
+  --accent: 20 41.9% 57.5%; /* from --tn-accent-2 */
+  --accent-foreground: 41 70.4% 94.7%; /* from --tn-on-accent */
+  --destructive: 8 48.4% 48.6%; /* from --tn-bad */
+  --destructive-foreground: 41 70.4% 94.7%; /* from --tn-on-accent */
+  --border: 34 24.3% 81.5%; /* from --tn-line-color */
+  --input: 34 24.3% 81.5%; /* from --tn-line-color */
+  --ring: 98 19.4% 50.4%; /* from --tn-accent */
+  --radius: 0.75rem; /* from --tn-r-md */
+}

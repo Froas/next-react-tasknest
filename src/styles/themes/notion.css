@@ -1,0 +1,120 @@
+/* TaskNest theme: notion
+ * Auto-scoped to [data-theme="notion"] so all themes can
+ * coexist; ThemeProvider toggles the attribute on <html>.
+ * Source: tasknest-design-system/project/app/themes/notion.css
+ */
+
+
+/* THEME: Notion / Doc-style — the base theme.
+   Defines every CSS variable that base.css and screen modules reference.
+   Other themes copy this structure and override colors/typography/effects. */
+
+[data-theme="notion"] {
+  /* === Fonts === */
+  --tn-font-sans: ui-sans-serif, "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --tn-font-display: var(--tn-font-sans);
+  --tn-font-mono: ui-monospace, "Geist Mono", "SF Mono", Menlo, monospace;
+
+  /* === Surfaces === */
+  --tn-bg:         #ffffff;
+  --tn-surface:    #ffffff;
+  --tn-surface-2:  #f7f6f3;
+  --tn-card:       #ffffff;
+  --tn-sidebar-bg: #f7f6f3;
+  --tn-hover:      rgba(55,53,47,0.06);
+  --tn-active:     rgba(55,53,47,0.09);
+  --tn-chip:       rgba(55,53,47,0.07);
+  --tn-bar-bg:     rgba(55,53,47,0.10);
+  --tn-icon-bg:    rgba(55,53,47,0.07);
+
+  /* === Foreground === */
+  --tn-fg:        #37352f;
+  --tn-fg-muted: rgba(55,53,47,0.62);
+  --tn-fg-dim:   rgba(55,53,47,0.4);
+
+  /* === Lines === */
+  --tn-line:        1px solid #e9e8e3;
+  --tn-card-border: 1px solid #e9e8e3;
+  --tn-shadow:      0 1px 2px rgba(15,15,15,.04);
+
+  /* === Accent (the brand colour for active state) === */
+  --tn-accent:     #2d6cdf;
+  --tn-on-accent:  #ffffff;
+  --tn-accent-2:   #c25d63;
+
+  /* === Goal-color slots (used in goal cards across all themes) === */
+  --tn-warm:  #d8855a;
+  --tn-moss:  #6a8a5a;
+  --tn-slate: #5a6f8c;
+  --tn-plum:  #8a6594;
+
+  /* Good / bad semantic */
+  --tn-good: #2f7d50;
+  --tn-bad:  #c25d63;
+
+  /* === Radii === */
+  --tn-r-sm: 4px;
+  --tn-r-md: 6px;
+  --tn-r-lg: 8px;
+  --tn-r-xl: 12px;
+
+  /* === Layout === */
+  --tn-sidebar-w: 240px;
+  --tn-pad-lg: 14px;
+
+  /* === Typography sizes === */
+  --tn-h1-size:   32px;
+  --tn-h1-weight: 600;
+
+  /* === Status pills (Notion-coloured) === */
+  --tn-st-prog-bg:  #ddebf1; --tn-st-prog-fg:  #29485f;
+  --tn-st-start-bg: #fbf3db; --tn-st-start-fg: #69552d;
+  --tn-st-fin-bg:   #ddedea; --tn-st-fin-fg:   #2c5950;
+  --tn-st-out-bg:   #ebeced; --tn-st-out-fg:   #4a4a48;
+
+  /* === Priority pills === */
+  --tn-pr-high-bg: #fbe4e4; --tn-pr-high-fg: #6e3630;
+  --tn-pr-med-bg:  #faebdd; --tn-pr-med-fg:  #6c4622;
+  --tn-pr-low-bg:  #ddedea; --tn-pr-low-fg:  #2c5950;
+
+  /* === Tag pills (per goal) === */
+  --tn-tag-brand-bg: #eae4f2; --tn-tag-brand-fg: #4a3477;
+  --tn-tag-run-bg:   #ddedea; --tn-tag-run-fg:   #2c5950;
+  --tn-tag-read-bg:  #ddebf1; --tn-tag-read-fg:  #29485f;
+  --tn-tag-life-bg:  #f4dfeb; --tn-tag-life-fg:  #6f2c4d;
+  --tn-tag-work-bg:  #faebdd; --tn-tag-work-fg:  #6c4622;
+}
+
+/* Tiny extras specific to the Notion look */
+[data-theme="notion"] .sidebar-brand .logo { background: #37352f; }
+[data-theme="notion"] .app .sidebar a { padding-left: 18px; padding-right: 18px; }
+[data-theme="notion"] .app .topbar .crumbs { font-size: 13px; }
+[data-theme="notion"] .page-title { font-weight: 700; }
+
+/* Notion-style emoji-icon goal cards: subtle squares, not vivid */
+[data-theme="notion"] .goal-card .gc-ico { background: var(--tn-chip); color: var(--tn-fg); font-size: 20px; }
+[data-theme="notion"] .goal-card .gc-ico.warm, [data-theme="notion"] .goal-card .gc-ico.moss, [data-theme="notion"] .goal-card .gc-ico.slate, [data-theme="notion"] .goal-card .gc-ico.plum { background: var(--tn-chip); color: var(--tn-fg); }
+
+/* === shadcn bridge (auto-generated) === */
+[data-theme="notion"] {
+  --background: 0 0% 100%; /* from --tn-bg */
+  --foreground: 45 7.8% 20%; /* from --tn-fg */
+  --card: 0 0% 100%; /* from --tn-card */
+  --card-foreground: 45 7.8% 20%; /* from --tn-fg */
+  --popover: 0 0% 100%; /* from --tn-card */
+  --popover-foreground: 45 7.8% 20%; /* from --tn-fg */
+  --primary: 219 73.6% 52.5%; /* from --tn-accent */
+  --primary-foreground: 0 0% 100%; /* from --tn-on-accent */
+  --secondary: 45 20% 96.1%; /* from --tn-surface-2 */
+  --secondary-foreground: 45 7.8% 20%; /* from --tn-fg */
+  --muted: 45 20% 96.1%; /* from --tn-surface-2 */
+  --muted-foreground: 45 2% 50.4%; /* from --tn-fg-muted */
+  --accent: 356 45.3% 56.3%; /* from --tn-accent-2 */
+  --accent-foreground: 0 0% 100%; /* from --tn-on-accent */
+  --destructive: 356 45.3% 56.3%; /* from --tn-bad */
+  --destructive-foreground: 0 0% 100%; /* from --tn-on-accent */
+  --border: 50 12% 90.2%; /* from --tn-line-color */
+  --input: 50 12% 90.2%; /* from --tn-line-color */
+  --ring: 219 73.6% 52.5%; /* from --tn-accent */
+  --radius: 0.375rem; /* from --tn-r-md */
+}

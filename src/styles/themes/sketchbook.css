@@ -1,0 +1,164 @@
+/* TaskNest theme: sketchbook
+ * Auto-scoped to [data-theme="sketchbook"] so all themes can
+ * coexist; ThemeProvider toggles the attribute on <html>.
+ * Source: tasknest-design-system/project/app/themes/sketchbook.css
+ */
+
+
+/* TaskNest theme — Sketchbook · hand-drawn frames + scattered stickers */
+
+
+[data-theme="sketchbook"] {
+  --tn-font-sans:    "Patrick Hand", "Kalam", cursive;
+  --tn-font-display: "Caveat", cursive;
+  --tn-font-mono:    "Patrick Hand", monospace;
+
+  --tn-bg:         #f7f1e3;
+  --tn-surface:    #fdfaf0;
+  --tn-surface-2:  #efe7d2;
+  --tn-card:       #fdfaf0;
+  --tn-sidebar-bg: #efe7d2;
+  --tn-hover:      rgba(42,36,24,.07);
+  --tn-active:     rgba(42,36,24,.14);
+  --tn-chip:       rgba(42,36,24,.08);
+  --tn-bar-bg:     #efe7d2;
+  --tn-icon-bg:    rgba(42,36,24,.1);
+
+  --tn-fg:       #2a2418;
+  --tn-fg-muted: #5d5240;
+  --tn-fg-dim:   #8a7d65;
+
+  --tn-line:        1.5px solid #2a2418;
+  --tn-card-border: 2px solid #2a2418;
+  --tn-shadow:      1px 2px 0 #2a2418, 4px 6px 0 rgba(42,36,24,.08);
+
+  --tn-accent:    #c44a3a;
+  --tn-on-accent: #fdfaf0;
+  --tn-accent-2:  #3a5fa0;
+
+  --tn-warm: #c44a3a; --tn-moss: #5a7a3a; --tn-slate: #3a5fa0; --tn-plum: #7a4a8a;
+  --tn-good: #5a7a3a; --tn-bad: #c44a3a;
+
+  --tn-r-sm: 4px; --tn-r-md: 8px; --tn-r-lg: 12px; --tn-r-xl: 16px;
+  --tn-sidebar-w: 220px; --tn-pad-lg: 14px;
+  --tn-h1-size: 48px; --tn-h1-weight: 700;
+
+  --tn-st-prog-bg:  #d8a92a; --tn-st-prog-fg:  #2a2418;
+  --tn-st-start-bg: #3a5fa0; --tn-st-start-fg: #fdfaf0;
+  --tn-st-fin-bg:   #5a7a3a; --tn-st-fin-fg:   #fdfaf0;
+  --tn-st-out-bg:   #efe7d2; --tn-st-out-fg:   #5d5240;
+  --tn-pr-high-bg:  #c44a3a; --tn-pr-high-fg:  #fdfaf0;
+  --tn-pr-med-bg:   #d8a92a; --tn-pr-med-fg:   #2a2418;
+  --tn-pr-low-bg:   #efe7d2; --tn-pr-low-fg:   #2a2418;
+  --tn-tag-brand-bg: #3a5fa0; --tn-tag-brand-fg: #fdfaf0;
+  --tn-tag-run-bg:   #c44a3a; --tn-tag-run-fg:   #fdfaf0;
+  --tn-tag-read-bg:  #5a7a3a; --tn-tag-read-fg:  #fdfaf0;
+  --tn-tag-life-bg:  #d8a92a; --tn-tag-life-fg:  #2a2418;
+  --tn-tag-work-bg:  #7a4a8a; --tn-tag-work-fg:  #fdfaf0;
+}
+
+[data-theme="sketchbook"] body {
+  background-image: radial-gradient(rgba(42,36,24,.04) 1px, transparent 1.5px);
+  background-size: 6px 6px;
+  background-color: #f7f1e3;
+  font-size: 17px; line-height: 1.45;
+}
+
+/* Type */
+[data-theme="sketchbook"] .page-title { font-family: "Caveat", cursive !important; font-weight: 700; line-height: 1; }
+[data-theme="sketchbook"] h2, [data-theme="sketchbook"] h3 { font-family: "Caveat", cursive !important; font-weight: 700; line-height: 1.1; }
+[data-theme="sketchbook"] .page .section-head h2 { font-size: 28px !important; }
+[data-theme="sketchbook"] .page-title { font-size: 48px !important; }
+[data-theme="sketchbook"] .page-eyebrow { font-family: "Caveat", cursive; font-size: 16px; letter-spacing: 0.04em; }
+[data-theme="sketchbook"] .s-label { font-family: "Caveat", cursive !important; font-size: 16px !important; letter-spacing: 0.02em; text-transform: lowercase; }
+[data-theme="sketchbook"] .s-value { font-family: "Caveat", cursive !important; font-size: 40px !important; font-weight: 700; }
+[data-theme="sketchbook"] .s-delta { font-family: "Patrick Hand", cursive; font-size: 14px; }
+
+/* Wonky borders — repeated radius asymmetry */
+[data-theme="sketchbook"] .card, [data-theme="sketchbook"] .stat { background: #fdfaf0; border: 2px solid #2a2418; border-radius: 14px 8px 16px 6px / 6px 14px 8px 16px; box-shadow: 1px 2px 0 #2a2418, 4px 6px 0 rgba(42,36,24,.08); }
+[data-theme="sketchbook"] .goal-card { border-radius: 16px 8px 18px 6px / 6px 16px 8px 18px; }
+[data-theme="sketchbook"] .goal-card:nth-child(odd) { transform: rotate(-0.4deg); }
+[data-theme="sketchbook"] .goal-card:nth-child(even) { transform: rotate(0.4deg); }
+[data-theme="sketchbook"] .goal-card:hover { transform: rotate(0) translate(-1px,-2px); }
+
+/* Sidebar */
+[data-theme="sketchbook"] .sidebar { background: #efe7d2; border-right: 2px dashed #5d5240; }
+[data-theme="sketchbook"] .sidebar-brand .logo { border: 2px solid #2a2418; border-radius: 18px 8px 22px 10px / 10px 18px 8px 22px; background: #d8a92a; color: #2a2418; font-family: "Caveat", cursive; font-weight: 700; font-size: 22px; transform: rotate(-4deg); box-shadow: 1px 2px 0 #2a2418; }
+[data-theme="sketchbook"] .sidebar-brand b { font-family: "Caveat", cursive; font-weight: 700; font-size: 22px; line-height: 1; }
+[data-theme="sketchbook"] .sidebar h4 { font-family: "Caveat", cursive; font-size: 15px; letter-spacing: 0.04em; color: #5d5240; text-transform: lowercase; }
+[data-theme="sketchbook"] .sidebar a { font-family: "Patrick Hand", cursive; font-size: 17px; }
+[data-theme="sketchbook"] .sidebar a.active { background: #c44a3a; color: #fdfaf0; }
+[data-theme="sketchbook"] .sidebar a.active .ico, [data-theme="sketchbook"] .sidebar a.active .count { color: #fdfaf0; }
+[data-theme="sketchbook"] .sidebar-search { font-family: "Patrick Hand", cursive; font-size: 16px; }
+
+/* Topbar */
+[data-theme="sketchbook"] .topbar { background: #f7f1e3; border-bottom: 2px dashed #5d5240; }
+[data-theme="sketchbook"] .topbar .crumbs { font-family: "Caveat", cursive; font-size: 18px; letter-spacing: 0.01em; }
+[data-theme="sketchbook"] .topbar .btn-icon { border: 1.5px solid #2a2418; border-radius: 12px 4px 14px 6px / 6px 12px 4px 14px; background: #fdfaf0; }
+
+/* Buttons */
+[data-theme="sketchbook"] .btn { border: 2px solid #2a2418; border-radius: 18px 6px 22px 8px / 8px 22px 6px 18px; font-family: "Caveat", cursive; font-weight: 700; font-size: 18px; padding: 4px 18px; box-shadow: 1px 2px 0 rgba(42,36,24,.3); line-height: 1.3; }
+[data-theme="sketchbook"] .btn:hover { transform: rotate(-1deg); }
+[data-theme="sketchbook"] .btn.btn-primary { background: #c44a3a; color: #fdfaf0; }
+[data-theme="sketchbook"] .btn.btn-secondary { background: #d8a92a; color: #2a2418; }
+[data-theme="sketchbook"] .btn.btn-ghost { border-color: transparent; box-shadow: none; }
+
+/* Pills */
+[data-theme="sketchbook"] .pill { border: 1.5px solid #2a2418; border-radius: 8px 3px 10px 4px / 4px 8px 3px 10px; padding: 1px 9px; font-family: "Patrick Hand", cursive; font-size: 13px; line-height: 1.4; font-weight: 400; text-transform: lowercase; }
+
+/* Goal icon */
+[data-theme="sketchbook"] .goal-card .gc-ico { border: 2px solid #2a2418; border-radius: 14px 6px 16px 8px / 8px 14px 6px 16px; box-shadow: 1px 2px 0 #2a2418; }
+[data-theme="sketchbook"] .goal-card h3 { font-family: "Caveat", cursive; font-weight: 700; font-size: 24px; line-height: 1.1; }
+[data-theme="sketchbook"] .goal-card p { font-family: "Patrick Hand", cursive; font-size: 16px; }
+[data-theme="sketchbook"] .gc-pct { font-family: "Caveat", cursive; font-weight: 700; font-size: 36px; line-height: 1; color: #c44a3a; }
+[data-theme="sketchbook"] .gc-bar { border: 2px solid #2a2418; border-radius: 10px 3px 12px 4px / 4px 10px 3px 12px; height: 10px; background: #f7f1e3; }
+[data-theme="sketchbook"] .gc-bar i { background: #c44a3a !important; }
+[data-theme="sketchbook"] .gc-bar i.warm { background: #c44a3a !important; }
+[data-theme="sketchbook"] .gc-bar i.moss { background: #5a7a3a !important; }
+[data-theme="sketchbook"] .gc-bar i.slate { background: #3a5fa0 !important; }
+[data-theme="sketchbook"] .gc-bar i.plum { background: #7a4a8a !important; }
+[data-theme="sketchbook"] .gc-meta { font-family: "Patrick Hand", cursive; font-size: 14px; }
+
+/* Task row */
+[data-theme="sketchbook"] .task-row { border-bottom: 1px dashed #8a7d65 !important; padding: 12px 0; }
+[data-theme="sketchbook"] .task-row .cb { border: 2px solid #2a2418; border-radius: 6px 2px 8px 4px / 4px 6px 2px 8px; background: #fdfaf0; }
+[data-theme="sketchbook"] .task-row.done .cb { background: #5a7a3a; }
+[data-theme="sketchbook"] .task-row.done .cb::after { font-family: "Caveat", cursive; font-weight: 700; }
+[data-theme="sketchbook"] .task-row .t-title { font-family: "Patrick Hand", cursive; font-size: 17px; font-weight: 400; }
+[data-theme="sketchbook"] .task-row .t-meta { font-family: "Patrick Hand", cursive; font-size: 14px; }
+[data-theme="sketchbook"] .task-row .t-time { font-family: "Caveat", cursive; font-size: 18px; font-weight: 700; }
+
+/* Mobile tabbar */
+[data-theme="sketchbook"] .mobile-tabbar { background: #efe7d2; border-top: 2px dashed #5d5240; }
+[data-theme="sketchbook"] .mobile-tabbar a { font-family: "Caveat", cursive; font-size: 14px; font-weight: 700; }
+[data-theme="sketchbook"] .mobile-tabbar a.active { color: #c44a3a; }
+
+/* Search */
+[data-theme="sketchbook"] .search-overlay .panel { border: 2px solid #2a2418; border-radius: 18px 8px 22px 10px / 10px 18px 8px 22px; box-shadow: 3px 5px 0 #2a2418; background: #fdfaf0; }
+[data-theme="sketchbook"] .search-overlay input { font-family: "Caveat", cursive; font-weight: 700; font-size: 22px; }
+[data-theme="sketchbook"] .search-overlay .result { font-family: "Patrick Hand", cursive; font-size: 16px; }
+[data-theme="sketchbook"] .search-overlay .result .kind { font-family: "Caveat", cursive; background: #d8a92a; color: #2a2418; border-radius: 8px 3px 10px 4px / 4px 8px 3px 10px; padding: 2px 8px; font-size: 13px; }
+
+/* === shadcn bridge (auto-generated) === */
+[data-theme="sketchbook"] {
+  --background: 42 55.6% 92.9%; /* from --tn-bg */
+  --foreground: 40 27.3% 12.9%; /* from --tn-fg */
+  --card: 46 76.5% 96.7%; /* from --tn-card */
+  --card-foreground: 40 27.3% 12.9%; /* from --tn-fg */
+  --popover: 46 76.5% 96.7%; /* from --tn-card */
+  --popover-foreground: 40 27.3% 12.9%; /* from --tn-fg */
+  --primary: 7 54.3% 49.8%; /* from --tn-accent */
+  --primary-foreground: 46 76.5% 96.7%; /* from --tn-on-accent */
+  --secondary: 43 47.5% 88%; /* from --tn-surface-2 */
+  --secondary-foreground: 40 27.3% 12.9%; /* from --tn-fg */
+  --muted: 43 47.5% 88%; /* from --tn-surface-2 */
+  --muted-foreground: 37 18.5% 30.8%; /* from --tn-fg-muted */
+  --accent: 218 46.8% 42.7%; /* from --tn-accent-2 */
+  --accent-foreground: 46 76.5% 96.7%; /* from --tn-on-accent */
+  --destructive: 7 54.3% 49.8%; /* from --tn-bad */
+  --destructive-foreground: 46 76.5% 96.7%; /* from --tn-on-accent */
+  --border: 40 27.3% 12.9%; /* from --tn-line-color */
+  --input: 40 27.3% 12.9%; /* from --tn-line-color */
+  --ring: 7 54.3% 49.8%; /* from --tn-accent */
+  --radius: 0.5rem; /* from --tn-r-md */
+}

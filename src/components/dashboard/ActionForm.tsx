@@ -1,0 +1,346 @@
+import React, { useState } from 'react';
+import { SubtaskItem as Subtask, TodoItem as Todo, StatusType, PriorityType } from '@/lib/types';
+import { subtasksApi, todosApi } from '@/lib/api';
+import { toDateInput, toDateTimeInput } from '@/lib/utils';
+import { USER_FACING_STATUSES, STATUS_LABELS } from '@/lib/sort';
+import { useFormDraft } from '@/lib/useFormDraft';
+
+//"Action" is the unified UX for both Subtasks (one-time) and Todos
+// (recurring). Both share title/description/status/priority/dates; the
+// difference is whether the user wants the action to repeat — that's a
+// single checkbox now. Internally we still call the right API to honour
+// the backend split.
+
+export type ActionKind = 'subtask' | 'todo';
+
+interface ActionFormProps {
+ goalId: string;
+ milestoneId: string;
+ taskId: string;
+ defaultKind?: ActionKind;
+ initialData?: Partial<Subtask | Todo>;
+ onSuccess: (item: Subtask | Todo, kind: ActionKind, goalId: string, milestoneId: string, taskId: string) => void;
+ onCancel: () => void;
+}
+
+const REPEAT_OPTIONS = [
+ { value: '', label: 'No repeat' },
+ { value: 'daily', label: 'Daily' },
+ { value: 'weekly', label: 'Weekly' },
+ { value: 'monthly', label: 'Monthly' },
+ { value: 'yearly', label: 'Yearly' },
+];
+
+export const ActionForm: React.FC<ActionFormProps> = ({
+ goalId,
+ milestoneId,
+ taskId,
+ defaultKind = 'subtask',
+ initialData,
+ onSuccess,
+ onCancel,
+}) => {
+ const initialRepeat = (initialData as Partial<Todo> | undefined)?.repeat_interval ?? '';
+ const [kind, setKind] = useState<ActionKind>(
+ defaultKind === 'todo' || initialRepeat ? 'todo' : 'subtask'
+ );
+
+ const defaultEndIso = (() => {
+ const d = new Date();
+ d.setHours(d.getHours() + 1);
+ return d.toISOString();
+ })();
+
+ const draftKey = initialData?.id
+ ? `action:edit:${initialData.id}`
+ : `action:new:${taskId}`;
+ const [formData, setFormData, clearDraft] = useFormDraft(draftKey, {
+ title: initialData?.title || '',
+ description: initialData?.description || '',
+ status: initialData?.status || StatusType.OUTSTANDING,
+ priority: initialData?.priority || PriorityType.MEDIUM,
+ due_date: toDateInput(initialData?.due_date),
+ start_datetime: toDateTimeInput(initialData?.start_datetime),
+ end_datetime: toDateTimeInput(initialData?.end_datetime ?? defaultEndIso),
+ repeat_interval: initialRepeat,
+ next_due_date: toDateInput((initialData as Partial<Todo> | undefined)?.next_due_date),
+ });
+
+ const [isSubmitting, setIsSubmitting] = useState(false);
+ const [error, setError] = useState<string | null>(null);
+
+ const validate = (): string | null => {
+ if (!formData.title.trim()) return 'Title is required';
+ if (formData.title.length > 200) return 'Title must be under 200 characters';
+ if (formData.start_datetime && formData.end_datetime) {
+ if (new Date(formData.end_datetime) < new Date(formData.start_datetime)) {
+ return 'End time cannot be before start time';
+ }
+ }
+ if (kind === 'todo' && !formData.repeat_interval) {
+ return 'Pick a repeat interval for recurring actions';
+ }
+ return null;
+ };
+
+ const handleSubmit = async (e: React.FormEvent) => {
+ e.preventDefault();
+ const validationError = validate();
+ if (validationError) {
+ setError(validationError);
+ return;
+ }
+ setIsSubmitting(true);
+ setError(null);
+
+ try {
+ if (kind === 'todo') {
+ const todoPayload = {
+ title: formData.title,
+ description: formData.description,
+ status: formData.status,
+ priority: formData.priority,
+ due_date: formData.due_date,
+ start_datetime: formData.start_datetime,
+ end_datetime: formData.end_datetime,
+ repeat_interval: formData.repeat_interval,
+ next_due_date: formData.next_due_date,
+ task_id: taskId,
+ } as Omit<Todo, 'id'>;
+ const todo = initialData?.id
+ ? await todosApi.update({ ...todoPayload, id: initialData.id } as Partial<Todo> & { id: string })
+ : await todosApi.create(todoPayload);
+ onSuccess(todo, 'todo', goalId, milestoneId, taskId);
+ clearDraft();
+ } else {
+ const subtaskPayload = {
+ title: formData.title,
+ description: formData.description,
+ status: formData.status,
+ priority: formData.priority,
+ due_date: formData.due_date,
+ start_datetime: formData.start_datetime,
+ end_datetime: formData.end_datetime,
+ task_id: taskId,
+ } as Omit<Subtask, 'id'>;
+ const subtask = initialData?.id
+ ? await subtasksApi.update({ ...subtaskPayload, id: initialData.id })
+ : await subtasksApi.create(subtaskPayload);
+ onSuccess(subtask, 'subtask', goalId, milestoneId, taskId);
+ clearDraft();
+ }
+ } catch (err) {
+ setError(err instanceof Error ? err.message : 'Failed to save action');
+ } finally {
+ setIsSubmitting(false);
+ }
+ };
+
+ const handleChange = (
+ e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+ ) => {
+ const { name, value } = e.target;
+ setFormData((prev) => ({ ...prev, [name]: value }));
+ };
+
+ return (
+ <form onSubmit={handleSubmit} className="space-y-4">
+ {error && (
+ <div className="bg-red-50 text-red-800 p-3 rounded-lg text-sm">{error}</div>
+ )}
+
+ <div className="flex items-center space-x-2 bg-muted dark:bg-card rounded-lg p-1">
+ <button
+ type="button"
+ onClick={() => setKind('subtask')}
+ className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+ kind === 'subtask'
+ ? 'bg-card dark:bg-card text-foreground shadow-sm'
+ : 'text-foreground dark:text-muted-foreground/60 hover:text-foreground dark:hover:text-white'
+ }`}
+ >
+ One-time (Subtask)
+ </button>
+ <button
+ type="button"
+ onClick={() => setKind('todo')}
+ className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+ kind === 'todo'
+ ? 'bg-card dark:bg-card text-foreground shadow-sm'
+ : 'text-foreground dark:text-muted-foreground/60 hover:text-foreground dark:hover:text-white'
+ }`}
+ >
+ Recurring (Todo)
+ </button>
+ </div>
+
+ <div>
+ <label htmlFor="title" className="block text-sm font-medium text-foreground dark:text-muted-foreground/60 mb-1">
+ Title
+ </label>
+ <input
+ type="text"
+ id="title"
+ name="title"
+ value={formData.title}
+ onChange={handleChange}
+ required
+ className="w-full px-3 py-2 border border-border dark:border-border bg-card dark:bg-card text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+ />
+ </div>
+
+ <div>
+ <label htmlFor="description" className="block text-sm font-medium text-foreground dark:text-muted-foreground/60 mb-1">
+ Description
+ </label>
+ <textarea
+ id="description"
+ name="description"
+ value={formData.description}
+ onChange={handleChange}
+ rows={3}
+ className="w-full px-3 py-2 border border-border dark:border-border bg-card dark:bg-card text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+ />
+ </div>
+
+ <div className="grid grid-cols-2 gap-4">
+ <div>
+ <label htmlFor="status" className="block text-sm font-medium text-foreground dark:text-muted-foreground/60 mb-1">
+ Status
+ </label>
+ <select
+ id="status"
+ name="status"
+ value={formData.status}
+ onChange={handleChange}
+ className="w-full px-3 py-2 border border-border dark:border-border bg-card dark:bg-card text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+ >
+ {USER_FACING_STATUSES.map((status) => (
+ <option key={status} value={status}>
+ {STATUS_LABELS[status]}
+ </option>
+ ))}
+ </select>
+ </div>
+
+ <div>
+ <label htmlFor="priority" className="block text-sm font-medium text-foreground dark:text-muted-foreground/60 mb-1">
+ Priority
+ </label>
+ <select
+ id="priority"
+ name="priority"
+ value={formData.priority}
+ onChange={handleChange}
+ className="w-full px-3 py-2 border border-border dark:border-border bg-card dark:bg-card text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+ >
+ {Object.values(PriorityType).map((priority) => (
+ <option key={priority} value={priority}>
+ {priority}
+ </option>
+ ))}
+ </select>
+ </div>
+ </div>
+
+ <div className="grid grid-cols-3 gap-4">
+ <div>
+ <label htmlFor="due_date" className="block text-sm font-medium text-foreground dark:text-muted-foreground/60 mb-1">
+ Due Date
+ </label>
+ <input
+ type="date"
+ id="due_date"
+ name="due_date"
+ value={formData.due_date}
+ onChange={handleChange}
+ className="w-full px-3 py-2 border border-border dark:border-border bg-card dark:bg-card text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+ />
+ </div>
+ <div>
+ <label htmlFor="start_datetime" className="block text-sm font-medium text-foreground dark:text-muted-foreground/60 mb-1">
+ Start Time
+ </label>
+ <input
+ type="datetime-local"
+ id="start_datetime"
+ name="start_datetime"
+ value={formData.start_datetime}
+ onChange={handleChange}
+ className="w-full px-3 py-2 border border-border dark:border-border bg-card dark:bg-card text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+ />
+ </div>
+ <div>
+ <label htmlFor="end_datetime" className="block text-sm font-medium text-foreground dark:text-muted-foreground/60 mb-1">
+ End Time
+ </label>
+ <input
+ type="datetime-local"
+ id="end_datetime"
+ name="end_datetime"
+ value={formData.end_datetime}
+ onChange={handleChange}
+ className="w-full px-3 py-2 border border-border dark:border-border bg-card dark:bg-card text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+ />
+ </div>
+ </div>
+
+ {kind === 'todo' && (
+ <div className="grid grid-cols-2 gap-4">
+ <div>
+ <label htmlFor="repeat_interval" className="block text-sm font-medium text-foreground dark:text-muted-foreground/60 mb-1">
+ Repeat
+ </label>
+ <select
+ id="repeat_interval"
+ name="repeat_interval"
+ value={formData.repeat_interval}
+ onChange={handleChange}
+ className="w-full px-3 py-2 border border-border dark:border-border bg-card dark:bg-card text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+ >
+ {REPEAT_OPTIONS.map((opt) => (
+ <option key={opt.value} value={opt.value}>
+ {opt.label}
+ </option>
+ ))}
+ </select>
+ </div>
+ <div>
+ <label htmlFor="next_due_date" className="block text-sm font-medium text-foreground dark:text-muted-foreground/60 mb-1">
+ Next Due Date
+ </label>
+ <input
+ type="date"
+ id="next_due_date"
+ name="next_due_date"
+ value={formData.next_due_date}
+ onChange={handleChange}
+ className="w-full px-3 py-2 border border-border dark:border-border bg-card dark:bg-card text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+ />
+ </div>
+ </div>
+ )}
+
+ <div className="flex justify-end space-x-3 pt-4">
+ <button
+ type="button"
+ onClick={onCancel}
+ className="px-4 py-2 text-sm font-medium text-foreground dark:text-muted-foreground/60 bg-muted dark:bg-card rounded-lg hover:bg-muted dark:hover:bg-muted focus:outline-none focus:ring-2 focus:ring-gray-400"
+ >
+ Cancel
+ </button>
+ <button
+ type="submit"
+ disabled={isSubmitting}
+ className="px-4 py-2 text-sm font-medium text-white bg-card dark:bg-card rounded-lg hover:bg-card dark:hover:bg-muted focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50"
+ >
+ {isSubmitting
+ ? 'Saving...'
+ : initialData?.id
+ ? `Update ${kind === 'todo' ? 'Todo' : 'Subtask'}`
+ : `Create ${kind === 'todo' ? 'Todo' : 'Subtask'}`}
+ </button>
+ </div>
+ </form>
+ );
+};

@@ -1,0 +1,131 @@
+/* TaskNest theme — Adventure · parchment, gold leaf, vermilion seals */
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;500;600;700&display=swap");
+
+:root {
+  --tn-font-sans:    "Inter", system-ui, sans-serif;
+  --tn-font-display: "Cinzel", serif;
+  --tn-font-mono:    "Inter", monospace;
+
+  --tn-bg:         #f1e3c2;
+  --tn-surface:    #e6d3a3;
+  --tn-surface-2:  #d6bf85;
+  --tn-card:       #e6d3a3;
+  --tn-sidebar-bg: #d6bf85;
+  --tn-hover:      rgba(58,40,20,.06);
+  --tn-active:     rgba(58,40,20,.14);
+  --tn-chip:       rgba(58,40,20,.1);
+  --tn-bar-bg:     #d6bf85;
+  --tn-icon-bg:    #c8932a;
+
+  --tn-fg:       #3a2814;
+  --tn-fg-muted: #5d3f20;
+  --tn-fg-dim:   #8a6a3f;
+
+  --tn-line:        2px solid #3a2814;
+  --tn-card-border: 2px solid #3a2814;
+  --tn-shadow:      0 0 0 3px #f1e3c2, 0 0 0 4px #8a6a3f, 4px 4px 0 rgba(58,40,20,.15);
+
+  --tn-accent:    #c8932a;
+  --tn-on-accent: #3a2814;
+  --tn-accent-2:  #a14424;
+
+  --tn-warm: #a14424; --tn-moss: #4d6b3a; --tn-slate: #2f4858; --tn-plum: #6a4470;
+  --tn-good: #4d6b3a; --tn-bad: #a14424;
+
+  --tn-r-sm: 4px; --tn-r-md: 6px; --tn-r-lg: 8px; --tn-r-xl: 10px;
+  --tn-sidebar-w: 230px; --tn-pad-lg: 16px;
+  --tn-h1-size: 36px; --tn-h1-weight: 700;
+
+  --tn-st-prog-bg:  #c8932a; --tn-st-prog-fg:  #3a2814;
+  --tn-st-start-bg: #d6bf85; --tn-st-start-fg: #3a2814;
+  --tn-st-fin-bg:   #4d6b3a; --tn-st-fin-fg:   #f1e3c2;
+  --tn-st-out-bg:   #f1e3c2; --tn-st-out-fg:   #5d3f20;
+  --tn-pr-high-bg:  #a14424; --tn-pr-high-fg:  #f1e3c2;
+  --tn-pr-med-bg:   #c8932a; --tn-pr-med-fg:   #3a2814;
+  --tn-pr-low-bg:   #d6bf85; --tn-pr-low-fg:   #3a2814;
+  --tn-tag-brand-bg: #2f4858; --tn-tag-brand-fg: #f1e3c2;
+  --tn-tag-run-bg:   #a14424; --tn-tag-run-fg:   #f1e3c2;
+  --tn-tag-read-bg:  #4d6b3a; --tn-tag-read-fg:  #f1e3c2;
+  --tn-tag-life-bg:  #c8932a; --tn-tag-life-fg:  #3a2814;
+  --tn-tag-work-bg:  #6a4470; --tn-tag-work-fg:  #f1e3c2;
+}
+
+body {
+  background:
+    radial-gradient(ellipse at 30% 10%, rgba(58,40,20,.06), transparent 60%),
+    radial-gradient(ellipse at 80% 90%, rgba(58,40,20,.08), transparent 60%),
+    repeating-radial-gradient(circle at 20% 30%, rgba(58,40,20,.03) 0 1px, transparent 1px 4px),
+    #f1e3c2;
+  background-attachment: fixed;
+}
+
+/* Type — Cinzel for headings, Inter body */
+.page-title { font-family: "Cinzel", serif !important; font-weight: 700; letter-spacing: 0.01em; line-height: 1.15; }
+h2, h3 { font-family: "Cinzel", serif !important; font-weight: 700; letter-spacing: 0.04em; }
+.page-eyebrow { font-family: "Cinzel", serif; letter-spacing: 0.2em; text-transform: uppercase; color: #5d3f20; }
+.s-label { font-family: "Cinzel", serif !important; letter-spacing: 0.14em !important; text-transform: uppercase; color: #5d3f20; }
+.s-value { font-family: "Cinzel", serif !important; font-weight: 700; }
+
+/* Shell — banner-like */
+.sidebar { background: #d6bf85; border-right: 2px solid #3a2814; }
+.sidebar-brand .logo { background: #c8932a; color: #3a2814; clip-path: polygon(50% 0, 100% 0, 100% 70%, 50% 100%, 0 70%, 0 0); border-radius: 0; font-family: "Cinzel", serif; font-weight: 700; border: none; box-shadow: none; width: 36px; height: 42px; }
+.sidebar-brand b { font-family: "Cinzel", serif; font-weight: 700; letter-spacing: 0.04em; }
+.sidebar h4 { font-family: "Cinzel", serif; letter-spacing: 0.18em; color: #5d3f20; font-size: 10px; }
+.sidebar a { font-family: "Inter", sans-serif; }
+.sidebar a:hover { background: rgba(58,40,20,.08); }
+.sidebar a.active { background: #c8932a; color: #3a2814; font-weight: 600; }
+.sidebar a.active .ico, .sidebar a.active .count { color: #3a2814; }
+.sidebar-search { color: #5d3f20; }
+.sidebar-search kbd { background: rgba(58,40,20,.15); padding: 2px 6px; }
+.sidebar-foot { border-top: 2px solid #3a2814; background: #d6bf85; }
+.sidebar-foot .av { background: #a14424; color: #f1e3c2; border: 2px solid #3a2814; }
+
+/* Topbar */
+.topbar { background: #e6d3a3; border-bottom: 2px solid #3a2814; }
+.topbar .crumbs { font-family: "Cinzel", serif; letter-spacing: 0.08em; text-transform: uppercase; font-size: 11px; }
+.topbar .btn-icon { border: 2px solid #3a2814; background: #f1e3c2; box-shadow: 2px 2px 0 #8a6a3f; border-radius: 6px; }
+.topbar .btn-icon:hover { background: #c8932a; }
+
+/* Cards — frame + parchment + seal */
+.card, .stat { background: #e6d3a3; border: 2px solid #3a2814; border-radius: 8px; box-shadow: 0 0 0 3px #f1e3c2, 0 0 0 4px #8a6a3f, 4px 4px 0 rgba(58,40,20,.15); margin: 4px 4px 12px; }
+.goal-card { background: #e6d3a3; border: 2px solid #3a2814; border-radius: 8px; box-shadow: 0 0 0 3px #f1e3c2, 0 0 0 4px #8a6a3f, 4px 4px 0 rgba(58,40,20,.15); margin: 4px; }
+.goal-card:hover { transform: translate(-2px,-2px); }
+
+.goal-card .gc-ico { background: #c8932a !important; color: #3a2814 !important; border: 2px solid #3a2814; border-radius: 50%; width: 44px; height: 44px; font-family: "Cinzel", serif; font-weight: 700; }
+.goal-card h3 { font-family: "Cinzel", serif; font-weight: 700; letter-spacing: 0.01em; font-size: 18px; }
+.gc-pct { font-family: "Cinzel", serif; font-weight: 700; color: #a14424; }
+.gc-bar { border: 1.5px solid #3a2814; border-radius: 4px; height: 8px; background: #f1e3c2; }
+.gc-bar i { background: #4d6b3a !important; }
+.gc-bar i.warm  { background: #a14424 !important; }
+.gc-bar i.moss  { background: #4d6b3a !important; }
+.gc-bar i.slate { background: #2f4858 !important; }
+.gc-bar i.plum  { background: #6a4470 !important; }
+
+/* Buttons */
+.btn { border: 2px solid #3a2814; border-radius: 6px; font-family: "Cinzel", serif; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; font-size: 11px; box-shadow: 2px 2px 0 #8a6a3f; padding: 7px 16px; }
+.btn:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 #8a6a3f; }
+.btn:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 #8a6a3f; }
+.btn.btn-primary { background: #c8932a; color: #3a2814; }
+.btn.btn-secondary { background: #f1e3c2; color: #3a2814; }
+.btn.btn-ghost { border-color: transparent; box-shadow: none; }
+
+/* Pills */
+.pill { border: 1.5px solid #3a2814; border-radius: 0; padding: 1px 8px; font-family: "Cinzel", serif; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.7; font-weight: 600; }
+
+/* Task row */
+.task-row { border-bottom: 1px dashed #8a6a3f !important; padding: 12px 0; }
+.task-row .cb { border: 2px solid #3a2814; background: #f1e3c2; }
+.task-row.done .cb { background: #4d6b3a; }
+.task-row .t-title { font-weight: 500; }
+.task-row .t-time { font-family: "Cinzel", serif; font-weight: 700; letter-spacing: 0.04em; }
+
+/* Mobile tabbar */
+.mobile-tabbar { background: #d6bf85; border-top: 2px solid #3a2814; }
+.mobile-tabbar a { font-family: "Cinzel", serif; letter-spacing: 0.06em; font-size: 9px; text-transform: uppercase; }
+.mobile-tabbar a.active { color: #f1e3c2; background: #a14424; }
+
+/* Search */
+.search-overlay .panel { background: #e6d3a3; border: 2px solid #3a2814; border-radius: 8px; box-shadow: 0 0 0 3px #f1e3c2, 0 0 0 4px #8a6a3f, 6px 6px 0 rgba(58,40,20,.2); }
+.search-overlay input { font-family: "Cinzel", serif; letter-spacing: 0.04em; color: #3a2814 !important; background: #e6d3a3 !important; }
+.search-overlay .result:hover { background: #c8932a; }
+.search-overlay .result .kind { background: #2f4858; color: #f1e3c2; font-family: "Cinzel", serif; letter-spacing: 0.06em; }

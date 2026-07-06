@@ -1,0 +1,123 @@
+/* TaskNest theme — Bento · big colourful iOS-widget tiles */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+:root {
+  --tn-font-sans:    "Inter", -apple-system, sans-serif;
+  --tn-font-display: "Inter", sans-serif;
+  --tn-font-mono:    ui-monospace, monospace;
+
+  --tn-bg:         #f1efe9;
+  --tn-surface:    #ffffff;
+  --tn-surface-2:  #fff4dc;
+  --tn-card:       #ffffff;
+  --tn-sidebar-bg: #ffffff;
+  --tn-hover:      rgba(0,0,0,.04);
+  --tn-active:     rgba(0,0,0,.07);
+  --tn-chip:       rgba(0,0,0,.05);
+  --tn-bar-bg:     rgba(0,0,0,.06);
+  --tn-icon-bg:    #fff4dc;
+
+  --tn-fg:       #1a1a1a;
+  --tn-fg-muted: #6b6b6b;
+  --tn-fg-dim:   #a8a8a8;
+
+  --tn-line:        1px solid rgba(0,0,0,.06);
+  --tn-card-border: 1px solid rgba(0,0,0,.06);
+  --tn-shadow:      0 4px 16px rgba(0,0,0,.04);
+
+  --tn-accent:    #ff7a3d;
+  --tn-on-accent: #ffffff;
+  --tn-accent-2:  #161616;
+
+  --tn-warm: #ff7a3d; --tn-moss: #1f9b6f; --tn-slate: #2a5dd9; --tn-plum: #6a4bd9;
+  --tn-good: #1f9b6f; --tn-bad: #e54a4a;
+
+  --tn-r-sm: 8px; --tn-r-md: 12px; --tn-r-lg: 18px; --tn-r-xl: 24px;
+  --tn-sidebar-w: 240px; --tn-pad-lg: 14px;
+  --tn-h1-size: 32px; --tn-h1-weight: 700;
+
+  --tn-st-prog-bg:  #fff4dc; --tn-st-prog-fg:  #b87b1a;
+  --tn-st-start-bg: rgba(42,93,217,.12); --tn-st-start-fg: #2a5dd9;
+  --tn-st-fin-bg:   #d4f5e0; --tn-st-fin-fg:   #1f7d52;
+  --tn-st-out-bg:   #f0f0ed; --tn-st-out-fg:   #6b6b6b;
+  --tn-pr-high-bg:  rgba(229,74,74,.14); --tn-pr-high-fg:  #c93838;
+  --tn-pr-med-bg:   #fff4dc; --tn-pr-med-fg:   #b87b1a;
+  --tn-pr-low-bg:   #d4f5e0; --tn-pr-low-fg:   #1f7d52;
+  --tn-tag-brand-bg: rgba(42,93,217,.12); --tn-tag-brand-fg: #2a5dd9;
+  --tn-tag-run-bg:   rgba(255,122,61,.14); --tn-tag-run-fg:   #c75e21;
+  --tn-tag-read-bg:  #d4f5e0; --tn-tag-read-fg:  #1f7d52;
+  --tn-tag-life-bg:  rgba(106,75,217,.14); --tn-tag-life-fg:  #6a4bd9;
+  --tn-tag-work-bg:  #fff4dc; --tn-tag-work-fg:  #b87b1a;
+}
+
+body { background: #f1efe9; }
+
+/* Type */
+.page-title { font-weight: 700; letter-spacing: -0.025em; line-height: 1.05; }
+h2, h3 { font-weight: 700; letter-spacing: -0.015em; }
+.s-value { font-weight: 700; letter-spacing: -0.025em; }
+
+/* Sidebar — clean white, soft */
+.sidebar { background: #ffffff; border-right: 1px solid rgba(0,0,0,.05); }
+.sidebar-brand .logo { background: #161616; color: #fff; border-radius: 10px; font-weight: 800; }
+.sidebar-brand b { font-weight: 700; letter-spacing: -0.01em; }
+.sidebar h4 { color: #a8a8a8; font-weight: 600; }
+.sidebar a { border-radius: 0; }
+.sidebar a:hover { background: rgba(0,0,0,.03); }
+.sidebar a.active { background: #ff7a3d; color: #fff; }
+.sidebar a.active .ico, .sidebar a.active .count { color: #fff; }
+
+.topbar { background: transparent; border-bottom: 1px solid rgba(0,0,0,.05); }
+.topbar .btn-icon { border-radius: 10px; }
+
+/* Cards — chunky rounded tiles */
+.card, .stat, .goal-card { background: #fff; border-radius: 18px; border: 1px solid rgba(0,0,0,.05); box-shadow: 0 4px 16px rgba(0,0,0,.04); }
+.goal-card { padding: 22px; }
+
+/* Stats — colourful tiles */
+.stats .stat:nth-child(1) { background: #161616; color: #fff; border-color: transparent; }
+.stats .stat:nth-child(1) .s-label { color: rgba(255,255,255,.55); }
+.stats .stat:nth-child(2) { background: #ff7a3d; color: #fff; border-color: transparent; }
+.stats .stat:nth-child(2) .s-label, .stats .stat:nth-child(2) .s-delta { color: rgba(255,255,255,.7); }
+.stats .stat:nth-child(3) { background: #fff4dc; }
+.stats .stat:nth-child(4) { background: #d4f5e0; }
+
+/* Goal cards — different background per goal */
+.goal-card .gc-ico { width: 44px; height: 44px; border-radius: 12px; font-size: 22px; }
+.goal-card .gc-ico.warm  { background: #ff7a3d; color: #fff; }
+.goal-card .gc-ico.moss  { background: #1f9b6f; color: #fff; }
+.goal-card .gc-ico.slate { background: #2a5dd9; color: #fff; }
+.goal-card .gc-ico.plum  { background: #6a4bd9; color: #fff; }
+.goal-card h3 { font-weight: 700; }
+.gc-pct { font-weight: 700; letter-spacing: -0.02em; }
+.gc-bar { border-radius: 999px; height: 6px; background: rgba(0,0,0,.06); }
+.gc-bar i { border-radius: 999px; }
+.gc-bar i.warm  { background: #ff7a3d !important; }
+.gc-bar i.moss  { background: #1f9b6f !important; }
+.gc-bar i.slate { background: #2a5dd9 !important; }
+.gc-bar i.plum  { background: #6a4bd9 !important; }
+
+/* Buttons */
+.btn { border-radius: 999px; padding: 9px 18px; font-weight: 600; }
+.btn.btn-primary { background: #161616; color: #fff; }
+.btn.btn-primary:hover { background: #2a2a2a; }
+.btn.btn-secondary { background: #fff; color: #1a1a1a; border: 1px solid rgba(0,0,0,.08); }
+.btn.btn-secondary:hover { background: rgba(0,0,0,.03); }
+.btn.btn-ghost:hover { background: rgba(0,0,0,.05); }
+
+/* Pills */
+.pill { border-radius: 999px; font-weight: 600; padding: 3px 11px; }
+
+/* Task row */
+.task-row { border-bottom: 1px solid rgba(0,0,0,.05) !important; padding: 12px 0; }
+.task-row .cb { border-color: #c4c4c4; }
+.task-row.done .cb { background: #1f9b6f; border-color: #1f9b6f; }
+
+/* Mobile tabbar */
+.mobile-tabbar { background: #ffffff; border-top: 1px solid rgba(0,0,0,.05); }
+.mobile-tabbar a.active { color: #ff7a3d; background: rgba(255,122,61,.1); }
+
+/* Search */
+.search-overlay .panel { background: #fff; border: none; border-radius: 18px; box-shadow: 0 24px 60px rgba(0,0,0,.2); }
+.search-overlay .result { border-radius: 12px; }
+.search-overlay .result .kind { background: rgba(255,122,61,.14); color: #c75e21; border-radius: 6px; font-weight: 600; }

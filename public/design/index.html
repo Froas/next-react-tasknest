@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>TaskNest</title>
+<link rel="stylesheet" href="base.css" />
+<link rel="stylesheet" id="theme-css" href="themes/notion.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="data.js"></script>
+<script src="themes/_registry.js"></script>
+<script src="store.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="screens.jsx"></script>
+<script type="text/babel" src="screens-extra.jsx"></script>
+<script type="text/babel" src="screens-edge.jsx"></script>
+<script type="text/babel" src="screens-more.jsx"></script>
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+const parseRoute = () => (location.hash.replace(/^#\/?/, "") || "today");
+const setRouteHash = (r) => { location.hash = "#/" + r; };
+
+const App = () => {
+  const [route, setRoute] = useState(parseRoute());
+  const [theme, setTheme] = useState(localStorage.getItem("tasknest-design-theme") || "notion");
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [modal, setModal] = useState(null); // 'new-goal' | 'new-task' | 'new-milestone' | 'new-event' | 'filter' | 'bulk'
+
+  // Apply theme
+  useEffect(() => {
+    const t = window.TN_THEMES.find(x => x.id === theme) || window.TN_THEMES[0];
+    document.getElementById("theme-css").href = "themes/" + t.id + ".css";
+    document.documentElement.dataset.theme = t.id;
+    localStorage.setItem("tasknest-design-theme", theme);
+  }, [theme]);
+
+  // Route sync
+  useEffect(() => {
+    const onHash = () => setRoute(parseRoute());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
+  const go = useCallback((r) => {
+    if (r === "search") { setSearchOpen(true); return; }
+    if (r === "quick-add") { setQuickAddOpen(true); return; }
+    if (r.startsWith("modal/")) { setModal(r.slice(6)); return; }
+    setRouteHash(r);
+    setRoute(r);
+  }, []);
+
+  // ⌘K search, ⌘N quick add
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setSearchOpen(true); }
+      if ((e.metaKey || e.ctrlKey) && e.key === "n") { e.preventDefault(); setQuickAddOpen(true); }
+      if (e.key === "Escape") { setSearchOpen(false); setQuickAddOpen(false); setModal(null); }
+    };
+      if (e.key === "Escape") setSearchOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // Route parser: "goal/g1", "settings/themes", "task/t121", "onboarding/2", etc
+  const [base, sub] = route.split("/");
+  const crumbs = base === "goal"
+    ? ["Goals", window.TN_DATA.goals.find(g => g.id === sub)?.title || "Goal"]
+    : base === "task"
+    ? ["Tasks", "Task detail"]
+    : base === "settings"
+    ? ["Settings", (sub || "themes").replace(/^./, s => s.toUpperCase())]
+    : base === "onboarding"
+    ? ["Onboarding", "Step " + (sub || "1")]
+    : base === "404"
+    ? ["Not found"]
+    : [(base || "today").replace(/^./, s => s.toUpperCase())];
+
+  let screen;
+  // Standalone screens (no sidebar) — login, signup, onboarding, auth, system
+  if (base === "login") return <ScreenLogin go={go} />;
+  if (base === "signup") return <ScreenSignup go={go} />;
+  if (base === "onboarding") return <ScreenOnboarding go={go} sub={sub} />;
+  if (base === "forgot") return <ScreenForgot go={go} />;
+  if (base === "reset") return <ScreenReset go={go} />;
+  if (base === "verify") return <ScreenVerify go={go} />;
+  if (base === "magic-sent") return <ScreenMagicSent go={go} />;
+  if (base === "2fa") return <Screen2FA go={go} />;
+  if (base === "session-expired") return <ScreenSessionExpired go={go} />;
+  if (base === "landing") return <ScreenLanding go={go} />;
+  if (base === "pricing") return <ScreenPricing go={go} />;
+  if (base === "profile-public") return <ScreenPublicProfile go={go} />;
+  if (base === "today") screen = <ScreenToday go={go} />;
+  else if (base === "goals") screen = <ScreenGoals go={go} />;
+  else if (base === "goal") screen = <ScreenGoalDetail id={sub} go={go} />;
+  else if (base === "tasks") screen = <ScreenTasks go={go} />;
+  else if (base === "task") screen = <ScreenTaskDetail id={sub} go={go} />;
+  else if (base === "milestones") screen = <ScreenMilestones go={go} />;
+  else if (base === "todos") screen = <ScreenTodos go={go} />;
+  else if (base === "events") screen = <ScreenEvents go={go} />;
+  else if (base === "calendar") screen = <ScreenCalendar go={go} />;
+  else if (base === "notes") screen = <ScreenNotes go={go} />;
+  else if (base === "review") screen = <ScreenReview go={go} />;
+  else if (base === "visualization") screen = <ScreenVisualization go={go} />;
+  else if (base === "settings") screen = <ScreenSettings go={go} theme={theme} setTheme={setTheme} sub={sub} />;
+  else if (base === "tags") screen = <ScreenTags go={go} />;
+  else if (base === "archive") screen = <ScreenArchive go={go} />;
+  else if (base === "trash") screen = <ScreenTrash go={go} />;
+  else if (base === "templates") screen = <ScreenTemplates go={go} />;
+  else if (base === "notifications") screen = <ScreenNotifications go={go} />;
+  else if (base === "activity") screen = <ScreenActivity go={go} />;
+  else if (base === "help") screen = <ScreenHelp go={go} />;
+  else if (base === "whats-new") screen = <ScreenWhatsNew go={go} />;
+  else if (base === "goal-v2") screen = <ScreenGoalDetailTabbed id={sub} go={go} />;
+  else if (base === "loading") screen = <ScreenLoading />;
+  else if (base === "offline") screen = <ScreenOffline go={go} />;
+  else if (base === "404") screen = <ScreenNotFound go={go} />;
+  else screen = <ScreenNotFound go={go} />;
+
+  return (
+    <div className="app">
+      <Sidebar route={base} go={go} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
+      <div className="main">
+        <Topbar route={base} crumbs={crumbs} setMobileOpen={setMobileOpen} go={go} />
+        {screen}
+      </div>
+      <MobileTabbar route={base} go={go} />
+      {searchOpen && <SearchOverlay close={() => setSearchOpen(false)} go={go} />}
+      {quickAddOpen && <QuickAddModal onClose={() => setQuickAddOpen(false)} go={go} />}
+      {modal === "new-goal"      && <NewGoalModal      onClose={() => setModal(null)} />}
+      {modal === "new-task"      && <NewTaskModal      onClose={() => setModal(null)} />}
+      {modal === "new-milestone" && <NewMilestoneModal onClose={() => setModal(null)} />}
+      {modal === "new-event"     && <NewEventModal     onClose={() => setModal(null)} />}
+      {modal === "subtask"       && <SubtaskDetailModal task={{title:"Set up MDX pipeline"}} subtask={{title:"Add code highlighting", description:"Use shiki, server-render at build time", status:"outstanding"}} onClose={() => setModal(null)} />}
+      {modal === "filter"        && <FilterPanel onClose={() => setModal(null)} />}
+      {modal === "bulk"          && <BulkActionsBar count={3} onClose={() => setModal(null)} />}
+      {modal === "share"         && <ShareModal onClose={() => setModal(null)} />}
+      {modal === "comments"      && <CommentsDrawer onClose={() => setModal(null)} />}
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

@@ -1,3 +1,5 @@
+@import "../styles/themes/index.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,6 +15,23 @@ body {
 }
 
 @layer base {
+  /*
+   * Bootstrap defaults — used ONLY when no `[data-theme]` is set yet
+   * (the brief window before DesignThemeProvider hydrates from
+   * localStorage). Every theme file overrides these with higher
+   * specificity via the `[data-theme="..."]` selector.
+   *
+   * IMPORTANT: the original shadcn boilerplate also defined a `.dark
+   * { ... }` block that flipped all these vars to near-black. That was
+   * being toggled by the legacy light/dark ThemeContext, and it was
+   * winning the cascade over `[data-theme]` because the two have
+   * equal specificity and `.dark` came later in the file. Result: a
+   * Solarpunk page on a user whose ThemeContext was 'dark' rendered
+   * with `--card: 240 10% 3.9%` (near-black) instead of Solarpunk's
+   * cream. That `.dark { ... }` block is removed below; design theme
+   * files own all colour decisions now. Light/dark mode toggling is
+   * delegated to the design theme selector (some themes are dark).
+   */
   :root {
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
@@ -40,32 +59,15 @@ body {
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
   }
-  .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-  }
+  /*
+   * Legacy `.dark { ... }` block intentionally removed — see comment on
+   * the :root block above. Design theme files (`[data-theme="..."]`)
+   * are now the single source of truth for these tokens. Dark themes
+   * (cyber, glass-dark, terminal) define their own dark palette via
+   * the same `[data-theme]` selector and DesignThemeProvider mirrors
+   * `.dark` onto <html> only for consumers that still need it
+   * (react-calendar, third-party widgets).
+   */
 }
 
 @layer base {
@@ -77,66 +79,49 @@ body {
   }
 }
 
-/* React Calendar Dark Theme Styles */
-.dark .react-calendar {
-  background: rgb(31 41 55) !important;
-  border: 1px solid rgb(75 85 99) !important;
-  color: rgb(243 244 246) !important;
-}
+/* Legacy `.dark .react-calendar` overrides removed — the dashboard
+ * CalendarWidget no longer uses react-calendar (replaced with a
+ * theme-token-driven mini-grid) and `/calendar` already has its own
+ * theme-aware rendering. If any third-party react-calendar instance
+ * remains, it falls back to the library's default light styling, which
+ * looks fine across both light and dark design themes. */
 
-.dark .react-calendar__navigation button {
-  background: transparent !important;
-  color: rgb(243 244 246) !important;
-}
+/* Density: compact mode shrinks padding on common surfaces. Toggle from
+   the header. Adds the `density-compact` class to <html> and we tighten
+   spacing across the app by overriding utility classes. */
+.density-compact main { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+.density-compact .p-6 { padding: 0.75rem !important; }
+.density-compact .py-8 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+.density-compact .mb-8 { margin-bottom: 1rem !important; }
+.density-compact .mb-6 { margin-bottom: 0.75rem !important; }
+.density-compact .space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.75rem !important; }
+.density-compact .gap-6 { gap: 0.75rem !important; }
+.density-compact .h-16 { height: 3rem !important; }
 
-.dark .react-calendar__navigation button:hover {
-  background: rgb(55 65 81) !important;
-}
-
-.dark .react-calendar__navigation button:disabled {
-  color: rgb(107 114 128) !important;
-}
-
-.dark .react-calendar__month-view__weekdays {
-  color: rgb(156 163 175) !important;
-}
-
-.dark .react-calendar__tile {
-  background: transparent !important;
-  color: rgb(243 244 246) !important;
-  border: none !important;
-}
-
-.dark .react-calendar__tile:enabled:hover {
-  background: rgb(55 65 81) !important;
-}
-
-.dark .react-calendar__tile:enabled:focus {
-  background: rgb(59 130 246) !important;
-}
-
-.dark .react-calendar__tile--active {
-  background: rgb(59 130 246) !important;
-  color: white !important;
-}
-
-.dark .react-calendar__tile--active:enabled:hover {
-  background: rgb(37 99 235) !important;
-}
-
-.dark .react-calendar__tile--now {
-  background: rgb(75 85 99) !important;
-}
-
-.dark .react-calendar__tile--now:enabled:hover {
-  background: rgb(55 65 81) !important;
-}
-
-.dark .react-calendar__tile--hasActive {
-  background: rgb(59 130 246) !important;
-  color: white !important;
-}
-
-.dark .react-calendar__tile--neighbor {
-  color: rgb(107 114 128) !important;
+/* Print styles — make goal/milestone/task pages print as a clean document.
+   Hides chrome (header, sidebar, action buttons), forces light colours,
+   widens content to full page, and avoids breaks inside cards. */
+@media print {
+  html, body { background: white !important; color: black !important; }
+  header, nav, footer, aside { display: none !important; }
+  .no-print, [aria-modal="true"], button[aria-label="Toggle theme"],
+  button[aria-label="Toggle density"], button[aria-label="Open menu"] { display: none !important; }
+  main { padding: 0 !important; max-width: 100% !important; }
+  a { color: black !important; text-decoration: none !important; }
+  a[href^="http"]::after { content: " (" attr(href) ")"; color: #666; font-size: 0.85em; }
+  .rounded-xl, .rounded-lg, .shadow-sm, .shadow-md, .shadow-lg, .shadow {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    border: 1px solid #ddd !important;
+  }
+  .bg-gradient-to-r, .bg-gradient-to-br, .bg-gradient-to-tr {
+    background: none !important;
+  }
+  /* Avoid splitting cards across pages where possible. */
+  .grid > *, ul > li, [class*="rounded"] {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  /* Spinner / animations static. */
+  .animate-pulse, .animate-spin { animation: none !important; }
 }

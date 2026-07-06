@@ -1,0 +1,180 @@
+/* TaskNest theme: glass-dark
+ * Auto-scoped to [data-theme="glass-dark"] so all themes can
+ * coexist; ThemeProvider toggles the attribute on <html>.
+ * Source: tasknest-design-system/project/app/themes/glass-dark.css
+ */
+
+
+/* TaskNest theme — Glass Dark · late-night focus, frosted + neon */
+
+
+[data-theme="glass-dark"] {
+  --tn-font-sans:    "Inter", -apple-system, sans-serif;
+  --tn-font-display: "Inter", sans-serif;
+  --tn-font-mono:    ui-monospace, "JetBrains Mono", monospace;
+
+  --tn-bg:         #0a0612;
+  --tn-surface:    rgba(255,255,255,.06);
+  --tn-surface-2:  rgba(255,255,255,.03);
+  --tn-card:       rgba(255,255,255,.06);
+  --tn-sidebar-bg: rgba(255,255,255,.03);
+  --tn-hover:      rgba(255,255,255,.06);
+  --tn-active:     rgba(255,255,255,.10);
+  --tn-chip:       rgba(255,255,255,.08);
+  --tn-bar-bg:     rgba(255,255,255,.08);
+  --tn-icon-bg:    rgba(255,255,255,.10);
+
+  --tn-fg:        rgba(255,255,255,.94);
+  --tn-fg-muted:  rgba(255,255,255,.62);
+  --tn-fg-dim:    rgba(255,255,255,.38);
+
+  --tn-line:        1px solid rgba(255,255,255,.10);
+  --tn-card-border: 1px solid rgba(255,255,255,.12);
+  --tn-shadow:      0 12px 40px rgba(0,0,0,.5);
+
+  --tn-accent:    #ff5fa2;
+  --tn-on-accent: #0a0612;
+  --tn-accent-2:  #9d6dff;
+
+  --tn-warm: #ff5fa2; --tn-moss: #b6ff5f; --tn-slate: #5fe3ff; --tn-plum: #9d6dff;
+  --tn-good: #b6ff5f; --tn-bad: #ff5fa2;
+
+  --tn-r-sm: 6px; --tn-r-md: 10px; --tn-r-lg: 16px; --tn-r-xl: 20px;
+  --tn-sidebar-w: 240px; --tn-pad-lg: 14px;
+  --tn-h1-size: 36px; --tn-h1-weight: 600;
+
+  --tn-st-prog-bg:  rgba(95,227,255,.18); --tn-st-prog-fg:  #5fe3ff;
+  --tn-st-start-bg: rgba(157,109,255,.18); --tn-st-start-fg: #9d6dff;
+  --tn-st-fin-bg:   rgba(182,255,95,.18); --tn-st-fin-fg:   #b6ff5f;
+  --tn-st-out-bg:   rgba(255,255,255,.08); --tn-st-out-fg:   rgba(255,255,255,.6);
+  --tn-pr-high-bg:  rgba(255,95,162,.22); --tn-pr-high-fg:  #ff5fa2;
+  --tn-pr-med-bg:   rgba(255,193,95,.22); --tn-pr-med-fg:   #ffc15f;
+  --tn-pr-low-bg:   rgba(255,255,255,.08); --tn-pr-low-fg:   rgba(255,255,255,.6);
+  --tn-tag-brand-bg: rgba(255,95,162,.18);  --tn-tag-brand-fg: #ff5fa2;
+  --tn-tag-run-bg:   rgba(95,227,255,.18);  --tn-tag-run-fg:   #5fe3ff;
+  --tn-tag-read-bg:  rgba(182,255,95,.18);  --tn-tag-read-fg:  #b6ff5f;
+  --tn-tag-life-bg:  rgba(157,109,255,.18); --tn-tag-life-fg:  #9d6dff;
+  --tn-tag-work-bg:  rgba(255,193,95,.20);  --tn-tag-work-fg:  #ffc15f;
+}
+
+/* Ambient orbs in the background */
+[data-theme="glass-dark"] body { background: #0a0612; position: relative; }
+[data-theme="glass-dark"] body::before {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(255,95,162,.55) 0, transparent 35%),
+    radial-gradient(circle at 88% 78%, rgba(95,227,255,.50) 0, transparent 35%),
+    radial-gradient(circle at 50% 50%, rgba(157,109,255,.30) 0, transparent 40%);
+  filter: blur(80px);
+}
+[data-theme="glass-dark"] body::after {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.4;
+  background-image:
+    linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+[data-theme="glass-dark"] .app { position: relative; z-index: 1; }
+
+/* Frosted panels everywhere */
+[data-theme="glass-dark"] .sidebar, [data-theme="glass-dark"] .topbar, [data-theme="glass-dark"] .card, [data-theme="glass-dark"] .stat, [data-theme="glass-dark"] .goal-card, [data-theme="glass-dark"] .mobile-tabbar {
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+}
+[data-theme="glass-dark"] .sidebar { background: rgba(255,255,255,.04); border-right: 1px solid rgba(255,255,255,.08); }
+[data-theme="glass-dark"] .topbar { background: rgba(255,255,255,.03); border-bottom: 1px solid rgba(255,255,255,.08); }
+[data-theme="glass-dark"] .card, [data-theme="glass-dark"] .stat, [data-theme="glass-dark"] .goal-card { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.10); border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,.5), 0 1px 0 rgba(255,255,255,.06) inset; }
+
+/* Type */
+[data-theme="glass-dark"] .page-title { letter-spacing: -0.025em; line-height: 1.05; }
+[data-theme="glass-dark"] .page-eyebrow { color: rgba(255,255,255,.5); }
+[data-theme="glass-dark"] .s-label { color: rgba(255,255,255,.55); }
+[data-theme="glass-dark"] .s-value { color: rgba(255,255,255,.95); }
+
+/* Sidebar */
+[data-theme="glass-dark"] .sidebar-brand .logo { background: linear-gradient(135deg, #ff5fa2, #9d6dff); color: #fff; box-shadow: 0 0 20px rgba(255,95,162,.5); }
+[data-theme="glass-dark"] .sidebar h4 { color: rgba(255,255,255,.45); }
+[data-theme="glass-dark"] .sidebar a { color: rgba(255,255,255,.7); }
+[data-theme="glass-dark"] .sidebar a:hover { background: rgba(255,255,255,.06); color: #fff; }
+[data-theme="glass-dark"] .sidebar a.active { background: rgba(255,95,162,.18); color: #ff5fa2; }
+[data-theme="glass-dark"] .sidebar a.active .ico, [data-theme="glass-dark"] .sidebar a.active .count { color: #ff5fa2; }
+
+[data-theme="glass-dark"] .topbar .crumbs { color: rgba(255,255,255,.6); }
+[data-theme="glass-dark"] .topbar .crumbs .current { color: #fff; }
+[data-theme="glass-dark"] .topbar .btn-icon { color: rgba(255,255,255,.7); }
+[data-theme="glass-dark"] .topbar .btn-icon:hover { background: rgba(255,255,255,.10); color: #fff; }
+
+/* Goal cards — color-bound icons + neon bars */
+[data-theme="glass-dark"] .goal-card .gc-ico { border-radius: 12px; box-shadow: 0 0 16px var(--tn-glow, rgba(255,95,162,.4)); }
+[data-theme="glass-dark"] .goal-card .gc-ico.warm { background: rgba(255,95,162,.18); border: 1px solid rgba(255,95,162,.5); color: #ff5fa2; }
+[data-theme="glass-dark"] .goal-card .gc-ico.moss { background: rgba(182,255,95,.18); border: 1px solid rgba(182,255,95,.5); color: #b6ff5f; }
+[data-theme="glass-dark"] .goal-card .gc-ico.slate { background: rgba(95,227,255,.18); border: 1px solid rgba(95,227,255,.5); color: #5fe3ff; }
+[data-theme="glass-dark"] .goal-card .gc-ico.plum { background: rgba(157,109,255,.18); border: 1px solid rgba(157,109,255,.5); color: #9d6dff; }
+[data-theme="glass-dark"] .goal-card h3 { color: rgba(255,255,255,.96); }
+[data-theme="glass-dark"] .goal-card p { color: rgba(255,255,255,.65); }
+[data-theme="glass-dark"] .gc-bar { background: rgba(255,255,255,.08); border-radius: 999px; height: 5px; }
+[data-theme="glass-dark"] .gc-bar i.warm { background: linear-gradient(90deg, #ff5fa2, #9d6dff) !important; box-shadow: 0 0 12px rgba(255,95,162,.6); }
+[data-theme="glass-dark"] .gc-bar i.moss { background: linear-gradient(90deg, #b6ff5f, #5fe3ff) !important; box-shadow: 0 0 12px rgba(182,255,95,.6); }
+[data-theme="glass-dark"] .gc-bar i.slate { background: linear-gradient(90deg, #5fe3ff, #9d6dff) !important; box-shadow: 0 0 12px rgba(95,227,255,.6); }
+[data-theme="glass-dark"] .gc-bar i.plum { background: linear-gradient(90deg, #9d6dff, #ff5fa2) !important; box-shadow: 0 0 12px rgba(157,109,255,.6); }
+[data-theme="glass-dark"] .gc-bar i { background: linear-gradient(90deg, #ff5fa2, #9d6dff) !important; }
+
+/* Buttons */
+[data-theme="glass-dark"] .btn { border-radius: 10px; padding: 8px 18px; font-weight: 500; }
+[data-theme="glass-dark"] .btn.btn-primary { background: linear-gradient(135deg, #ff5fa2, #9d6dff); color: #fff; box-shadow: 0 0 24px rgba(255,95,162,.4), 0 4px 14px rgba(0,0,0,.4); }
+[data-theme="glass-dark"] .btn.btn-primary:hover { box-shadow: 0 0 32px rgba(255,95,162,.6), 0 4px 14px rgba(0,0,0,.4); }
+[data-theme="glass-dark"] .btn.btn-secondary { background: rgba(255,255,255,.08); color: #fff; border: 1px solid rgba(255,255,255,.12); }
+[data-theme="glass-dark"] .btn.btn-secondary:hover { background: rgba(255,255,255,.13); }
+[data-theme="glass-dark"] .btn.btn-ghost { color: rgba(255,255,255,.7); }
+[data-theme="glass-dark"] .btn.btn-ghost:hover { background: rgba(255,255,255,.08); color: #fff; }
+
+/* Pills */
+[data-theme="glass-dark"] .pill { border-radius: 999px; padding: 3px 10px; font-weight: 500; font-size: 11px; backdrop-filter: blur(8px); }
+
+/* Task row */
+[data-theme="glass-dark"] .task-row { border-bottom: 1px solid rgba(255,255,255,.08) !important; }
+[data-theme="glass-dark"] .task-row .cb { border-color: rgba(255,255,255,.3); background: rgba(255,255,255,.04); }
+[data-theme="glass-dark"] .task-row.done .cb { background: linear-gradient(135deg, #ff5fa2, #9d6dff); border: none; }
+[data-theme="glass-dark"] .task-row.done .cb::after { color: #fff; }
+[data-theme="glass-dark"] .task-row .t-title { color: rgba(255,255,255,.95); }
+[data-theme="glass-dark"] .task-row .t-meta { color: rgba(255,255,255,.5); }
+[data-theme="glass-dark"] .task-row .t-time { color: rgba(255,255,255,.7); }
+
+/* Input */
+[data-theme="glass-dark"] input, [data-theme="glass-dark"] select, [data-theme="glass-dark"] textarea { background: rgba(255,255,255,.05) !important; color: #fff !important; border-color: rgba(255,255,255,.12) !important; }
+
+/* Mobile tabbar */
+[data-theme="glass-dark"] .mobile-tabbar { background: rgba(255,255,255,.05); border-top: 1px solid rgba(255,255,255,.08); }
+[data-theme="glass-dark"] .mobile-tabbar a { color: rgba(255,255,255,.55); }
+[data-theme="glass-dark"] .mobile-tabbar a.active { color: #ff5fa2; background: rgba(255,95,162,.12); }
+
+/* Search */
+[data-theme="glass-dark"] .search-overlay { background: rgba(0,0,0,.6); }
+[data-theme="glass-dark"] .search-overlay .panel { background: rgba(20,20,30,.6); backdrop-filter: blur(40px) saturate(1.6); border: 1px solid rgba(255,255,255,.12); box-shadow: 0 24px 60px rgba(0,0,0,.6); }
+[data-theme="glass-dark"] .search-overlay input { background: transparent !important; color: #fff !important; }
+[data-theme="glass-dark"] .search-overlay .result:hover { background: rgba(255,255,255,.06); }
+[data-theme="glass-dark"] .search-overlay .result .kind { background: rgba(255,255,255,.08); color: rgba(255,255,255,.7); }
+
+/* === shadcn bridge (auto-generated) === */
+[data-theme="glass-dark"] {
+  --background: 260 50% 4.7%; /* from --tn-bg */
+  --foreground: 260 2.5% 94.3%; /* from --tn-fg */
+  --card: 260 21.2% 10.4%; /* from --tn-card */
+  --card-foreground: 260 2.5% 94.3%; /* from --tn-fg */
+  --popover: 260 21.2% 10.4%; /* from --tn-card */
+  --popover-foreground: 260 2.5% 94.3%; /* from --tn-fg */
+  --primary: 335 100% 68.6%; /* from --tn-accent */
+  --primary-foreground: 260 50% 4.7%; /* from --tn-on-accent */
+  --secondary: 260 30.2% 7.6%; /* from --tn-surface-2 */
+  --secondary-foreground: 260 2.5% 94.3%; /* from --tn-fg */
+  --muted: 260 30.2% 7.6%; /* from --tn-surface-2 */
+  --muted-foreground: 260 2.5% 63.8%; /* from --tn-fg-muted */
+  --accent: 260 100% 71.4%; /* from --tn-accent-2 */
+  --accent-foreground: 260 50% 4.7%; /* from --tn-on-accent */
+  --destructive: 335 100% 68.6%; /* from --tn-bad */
+  --destructive-foreground: 260 50% 4.7%; /* from --tn-on-accent */
+  --border: 260 14.9% 14.2%; /* from --tn-line-color */
+  --input: 260 14.9% 14.2%; /* from --tn-line-color */
+  --ring: 335 100% 68.6%; /* from --tn-accent */
+  --radius: 0.625rem; /* from --tn-r-md */
+}

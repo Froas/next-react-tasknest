@@ -5,174 +5,232 @@ import { GoalItem as Goal, StatusType } from '@/lib/types';
 import GoalCard from './GoalCard';
 import { useStore } from '@/store/useStore';
 import { CalendarWidget } from './CalendarWidget';
+import { TodayWidget } from './TodayWidget';
+import { RecentActivity } from './RecentActivity';
+import { InboxWidget } from './InboxWidget';
+import { GoalTemplatePicker } from './GoalTemplatePicker';
+import { ActivityHeatmap } from './ActivityHeatmap';
+import { priorityWeight } from '@/lib/sort';
+import { GoalListSkeleton } from '@/components/ui/Skeletons';
+import { usePinnedGoals } from '@/store/usePinnedGoals';
+import { Sparkles, Pin } from 'lucide-react';
 
 interface DashboardViewProps {
-  onSelectGoal: (goalId: string) => void;
-  onGoalUpdate: (updatedGoals: Goal[]) => void;
-  onCreateGoal: () => void;
-  orderBy: 'title' | 'start_desc' | 'start_asc' | 'priority_desc' | 'priority_asc';
-  setOrderBy: React.Dispatch<React.SetStateAction<'title' | 'start_desc' | 'start_asc' | 'priority_desc' | 'priority_asc'>>;
+ onSelectGoal: (goalId: string) => void;
+ onGoalUpdate: (updatedGoals: Goal[]) => void;
+ onCreateGoal: () => void;
+ orderBy: 'title' | 'start_desc' | 'start_asc' | 'priority_desc' | 'priority_asc';
+ setOrderBy: React.Dispatch<React.SetStateAction<'title' | 'start_desc' | 'start_asc' | 'priority_desc' | 'priority_asc'>>;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
-  onSelectGoal,
-  onGoalUpdate,
-  onCreateGoal,
-  orderBy,
-  setOrderBy,
+ onSelectGoal,
+ onGoalUpdate,
+ onCreateGoal,
+ orderBy,
+ setOrderBy,
 }) => {
+ const [isPickingTemplate, setIsPickingTemplate] = React.useState(false);
+ const goals = useStore((s) => s.goals);
+ const isLoadingGoals = useStore((s) => s.isLoadingGoals);
+ const goalsError = useStore((s) => s.goalsError);
+ const fetchGoals = useStore((s) => s.fetchGoals);
+ const pinnedIds = usePinnedGoals((s) => s.pinned);
+ const togglePin = usePinnedGoals((s) => s.toggle);
+
+ const totalGoals = goals.length;
+ const completedGoals = goals.filter((g: Goal) => g.status === StatusType.FINISHED).length;
+ const overallProgress = totalGoals > 0 ? (completedGoals / totalGoals) * 100 : 0;
+
+ // Get active goals (not completed or cancelled)
+
+ const activeGoals = goals.filter(
+ (goal: Goal) => goal.status !== StatusType.FINISHED && goal.status !== StatusType.CANCELLED
+ );
+
+ // Sort active goals based on orderBy
+ const sortedActiveGoals = [...activeGoals].sort((a, b) => {
+ if (orderBy === 'title') {
+ return (a.title || '').localeCompare(b.title || '');
+ }
+ if (orderBy === 'start_desc') {
+ return new Date(b.start_datetime || 0).getTime() - new Date(a.start_datetime || 0).getTime();
+ }
+ if (orderBy === 'start_asc') {
+ return new Date(a.start_datetime || 0).getTime() - new Date(b.start_datetime || 0).getTime();
+ }
+ if (orderBy === 'priority_desc') {
+ return priorityWeight(b.priority) - priorityWeight(a.priority);
+ }
+ if (orderBy === 'priority_asc') {
+ return priorityWeight(a.priority) - priorityWeight(b.priority);
+ }
+ return 0;
+ });
+
+ if (isLoadingGoals && goals.length === 0) {
+ return <GoalListSkeleton count={3} />;
+ }
+
+ if (goalsError) {
+ return (
+ <div className="bg-red-50 text-red-800 p-4 rounded-lg">
+ <p className="font-medium">Error loading goals</p>
+ <p className="text-sm mt-1">{goalsError}</p>
+ <button
+ onClick={() => fetchGoals({ force: true })}
+ className="mt-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+ >
+ Try Again
+ </button>
+ </div>
+ );
+ }
+
+ return (
+ <div>
+ <div className="flex justify-between items-center mb-6">
+ <h2 className="text-xl font-semibold text-foreground">Dashboard Overview</h2>
+ <div className="flex items-center space-x-2">
+ <button
+ onClick={() => setIsPickingTemplate(true)}
+ className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 border border-border dark:border-border text-foreground dark:text-muted-foreground/60 hover:bg-muted dark:hover:bg-card flex items-center space-x-1.5"
+ >
+ <Sparkles className="w-4 h-4" />
+ <span>Templates</span>
+ </button>
+ <button
+ onClick={onCreateGoal}
+ className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-card dark:bg-card text-white hover:bg-card dark:hover:bg-muted"
+ >
+ Create New Goal
+ </button>
+ </div>
+ </div>
+
+ <GoalTemplatePicker open={isPickingTemplate} onClose={() => setIsPickingTemplate(false)} />
+
+ <TodayWidget />
+ <div className="mb-6">
+ <ActivityHeatmap weeks={20} />
+ </div>
+ <InboxWidget />
+ <RecentActivity />
+
+ <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-6">
+ {/* Overall Progress Card */}
+ <div className="card">
+ <h3 className="text-lg font-medium text-foreground mb-3">Overall Goal Progress</h3>
+ <div className="flex items-center justify-between mb-2">
+ <span className="text-foreground dark:text-muted-foreground/60">Total Goals Completed:</span>
+ <span className="font-semibold text-foreground">
+ {completedGoals} / {totalGoals}
+ </span>
+ </div>
+ <div className="bg-muted dark:bg-card rounded-full h-2.5 overflow-hidden">
+ <div
+ className="bg-card h-full rounded-full transition-all duration-300 ease-in-out"
+ style={{ width: `${overallProgress}%` }}
+ ></div>
+ </div>
+ </div>
  
-  const { goals, isLoadingGoals, goalsError, fetchGoals } = useStore();
+ {/* Calendar Widget */}
+ </div>
 
-  const totalGoals = goals.length;
-  const completedGoals = goals.filter((g: Goal) => g.status === StatusType.FINISHED).length;
-  const overallProgress = totalGoals > 0 ? (completedGoals / totalGoals) * 100 : 0;
-
-  // Get active goals (not completed or cancelled)
-
-  const activeGoals = goals.filter(
-    (goal: Goal) => goal.status !== StatusType.FINISHED && goal.status !== StatusType.CANCELLED
-  );
-
-  // Sort active goals based on orderBy
-  const sortedActiveGoals = [...activeGoals].sort((a, b) => {
-    if (orderBy === 'title') {
-      return (a.title || '').localeCompare(b.title || '');
-    }
-    if (orderBy === 'start_desc') {
-      return new Date(b.start_datetime || 0).getTime() - new Date(a.start_datetime || 0).getTime();
-    }
-    if (orderBy === 'start_asc') {
-      return new Date(a.start_datetime || 0).getTime() - new Date(b.start_datetime || 0).getTime();
-    }
-    if (orderBy === 'priority_desc') {
-      return (b.priority || '').localeCompare(a.priority || '');
-    }
-    if (orderBy === 'priority_asc') {
-      return (a.priority || '').localeCompare(b.priority || '');
-    }
-    return 0;
-  });
-
-  if (isLoadingGoals) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800"></div>
-      </div>
-    );
-  }
-
-  if (goalsError) {
-    return (
-      <div className="bg-red-50 text-red-800 p-4 rounded-lg">
-        <p className="font-medium">Error loading goals</p>
-        <p className="text-sm mt-1">{goalsError}</p>
-        <button
-          onClick={fetchGoals}
-          className="mt-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
-        >
-          Try Again
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Dashboard Overview</h2>
-        <button
-          onClick={onCreateGoal}
-          className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-gray-800 dark:bg-gray-700 text-white hover:bg-gray-900 dark:hover:bg-gray-600"
-        >
-          Create New Goal
-        </button>
-      </div>
-
-      {/* Daily Check-in Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6 flex flex-col sm:flex-row items-center justify-between">
-        <div className="flex items-center space-x-4 mb-4 sm:mb-0">
-          <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-full">
-            <svg
-              className="w-6 h-6 text-gray-800 dark:text-gray-200"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 3v1m0 16v1m9-9h1M3 12H2m8.003-9.997l-.707.707M19.003 19.003l.707.707M3.707 3.707l-.707-.707m15.656 15.656l.707.707M12 7a5 5 0 110 10 5 5 0 010-10z"
-              ></path>
-            </svg>
-          </div>
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Daily Check-in</h3>
-            <p className="text-gray-600 dark:text-gray-400 text-sm">Start your day right!</p>
-          </div>
-        </div>
-        <button className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-gray-800 dark:bg-gray-700 text-white hover:bg-gray-900 dark:hover:bg-gray-600">
-          Complete Today's Tasks
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-6">
-        {/* Overall Progress Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Overall Goal Progress</h3>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-gray-700 dark:text-gray-300">Total Goals Completed:</span>
-            <span className="font-semibold text-gray-800 dark:text-white">
-              {completedGoals} / {totalGoals}
-            </span>
-          </div>
-          <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
-            <div
-              className="bg-gray-800 dark:bg-gray-300 h-full rounded-full transition-all duration-300 ease-in-out"
-              style={{ width: `${overallProgress}%` }}
-            ></div>
-          </div>
-        </div>
-        
-        {/* Calendar Widget */}
-      </div>
-
-      {/* Goals List */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Active Goals</h3>
-          <div>
-            <label htmlFor="order-goals" className="mr-2 text-sm text-gray-700 dark:text-gray-300">Order by:</label>
-            <select
-              id="order-goals"
-              value={orderBy}
-              onChange={e => setOrderBy(e.target.value as any)}
-              className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-            >
-              <option value="title">Title (A-Z)</option>
-              <option value="start_desc">Start Date (Newest)</option>
-              <option value="start_asc">Start Date (Oldest)</option>
-              <option value="priority_desc">Priority (High-Low)</option>
-              <option value="priority_asc">Priority (Low-High)</option>
-            </select>
-          </div>
-        </div>
-        {sortedActiveGoals.length > 0 ? (
-          sortedActiveGoals.map((goal: Goal) => (
-            <GoalCard
-              key={goal.id}
-              goal={goal}
-              onClick={() => onSelectGoal(goal.id)}
-            />
-          ))
-        ) : (
-          <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
-            <p className="text-gray-500 dark:text-gray-400">No active goals. Create a new goal to get started!</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+ {/* Goals List */}
+ <div className="space-y-6">
+ <div className="flex items-center justify-between mb-2">
+ <h3 className="text-xl font-semibold text-foreground">Active Goals</h3>
+ <div>
+ <label htmlFor="order-goals" className="mr-2 text-sm text-foreground dark:text-muted-foreground/60">Order by:</label>
+ <select
+ id="order-goals"
+ value={orderBy}
+ onChange={e => setOrderBy(e.target.value as any)}
+ className="px-2 py-1 rounded border border-border dark:border-border bg-card dark:bg-card text-foreground text-sm"
+ >
+ <option value="title">Title (A-Z)</option>
+ <option value="start_desc">Start Date (Newest)</option>
+ <option value="start_asc">Start Date (Oldest)</option>
+ <option value="priority_desc">Priority (High-Low)</option>
+ <option value="priority_asc">Priority (Low-High)</option>
+ </select>
+ </div>
+ </div>
+ {sortedActiveGoals.length > 0 ? (
+ (() => {
+ const pinnedSet = new Set(pinnedIds);
+ const pinned = sortedActiveGoals.filter((g) => pinnedSet.has(g.id));
+ const others = sortedActiveGoals.filter((g) => !pinnedSet.has(g.id));
+ return (
+ <>
+ {pinned.length > 0 && (
+ <>
+ <div className="flex items-center space-x-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:text-muted-foreground">
+ <Pin className="w-3 h-3" />
+ <span>Pinned</span>
+ </div>
+ {pinned.map((goal: Goal) => (
+ <PinnableGoalRow
+ key={goal.id}
+ goal={goal}
+ pinned
+ onClick={() => onSelectGoal(goal.id)}
+ onTogglePin={() => togglePin(goal.id)}
+ />
+ ))}
+ {others.length > 0 && (
+ <div className="flex items-center space-x-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:text-muted-foreground pt-3">
+ <span>All</span>
+ </div>
+ )}
+ </>
+ )}
+ {others.map((goal: Goal) => (
+ <PinnableGoalRow
+ key={goal.id}
+ goal={goal}
+ pinned={false}
+ onClick={() => onSelectGoal(goal.id)}
+ onTogglePin={() => togglePin(goal.id)}
+ />
+ ))}
+ </>
+ );
+ })()
+ ) : (
+ <div className="text-center py-8 bg-card dark:bg-card rounded-xl shadow-sm">
+ <p className="text-muted-foreground dark:text-muted-foreground">No active goals. Create a new goal to get started!</p>
+ </div>
+ )}
+ </div>
+ </div>
+ );
 };
+
+const PinnableGoalRow: React.FC<{
+ goal: Goal;
+ pinned: boolean;
+ onClick: () => void;
+ onTogglePin: () => void;
+}> = ({ goal, pinned, onClick, onTogglePin }) => (
+ <div className="relative group">
+ <button
+ onClick={(e) => {
+ e.stopPropagation();
+ onTogglePin();
+ }}
+ title={pinned ? 'Unpin' : 'Pin to top'}
+ aria-label={pinned ? 'Unpin goal' : 'Pin goal'}
+ className={`absolute top-3 right-3 z-10 p-1.5 rounded-lg transition-opacity ${
+ pinned
+ ? 'opacity-100 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30'
+ : 'opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground dark:hover:text-muted-foreground/60 hover:bg-muted dark:hover:bg-card'
+ }`}
+ >
+ <Pin className={`w-4 h-4 ${pinned ? 'fill-current' : ''}`} />
+ </button>
+ <GoalCard goal={goal} onClick={onClick} />
+ </div>
+);

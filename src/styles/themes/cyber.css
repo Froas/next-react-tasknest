@@ -1,0 +1,116 @@
+/* TaskNest theme: cyber
+ * Auto-scoped to [data-theme="cyber"] so all themes can
+ * coexist; ThemeProvider toggles the attribute on <html>.
+ * Source: tasknest-design-system/project/app/themes/cyber.css
+ */
+
+
+/* TaskNest theme — Cyberpunk Neon · ship at 3am */
+
+
+[data-theme="cyber"] {
+  --tn-font-sans:    "Space Grotesk", system-ui, sans-serif;
+  --tn-font-display: "Space Grotesk", sans-serif;
+  --tn-font-mono:    "JetBrains Mono", monospace;
+
+  --tn-bg:         #0a0014;
+  --tn-surface:    rgba(255,0,180,.04);
+  --tn-surface-2:  rgba(0,255,200,.04);
+  --tn-card:       rgba(255,255,255,.04);
+  --tn-sidebar-bg: rgba(0,0,0,.5);
+  --tn-hover:      rgba(255,0,180,.10);
+  --tn-active:     rgba(255,0,180,.20);
+  --tn-chip:       rgba(255,255,255,.06);
+  --tn-bar-bg:     rgba(255,0,180,.15);
+  --tn-icon-bg:    rgba(255,0,180,.15);
+
+  --tn-fg:        #ffffff;
+  --tn-fg-muted:  rgba(255,255,255,.6);
+  --tn-fg-dim:    rgba(255,255,255,.35);
+
+  --tn-line:        1px solid rgba(255,0,180,.25);
+  --tn-card-border: 1px solid rgba(255,0,180,.3);
+  --tn-shadow:      0 0 24px rgba(255,0,180,.15);
+
+  --tn-accent:    #ff00b4;
+  --tn-on-accent: #0a0014;
+  --tn-accent-2:  #00ffc8;
+
+  --tn-warm: #ff00b4; --tn-moss: #00ffc8; --tn-slate: #00d4ff; --tn-plum: #b400ff;
+  --tn-good: #00ffc8; --tn-bad: #ff3366;
+
+  --tn-r-sm: 2px; --tn-r-md: 4px; --tn-r-lg: 4px; --tn-r-xl: 8px;
+  --tn-sidebar-w: 240px;
+  --tn-h1-size: 36px; --tn-h1-weight: 600;
+
+  --tn-st-prog-bg: rgba(0,212,255,.18); --tn-st-prog-fg: #00d4ff;
+  --tn-st-start-bg: rgba(255,215,0,.18); --tn-st-start-fg: #ffd700;
+  --tn-st-fin-bg: rgba(0,255,200,.18); --tn-st-fin-fg: #00ffc8;
+  --tn-st-out-bg: rgba(255,255,255,.08); --tn-st-out-fg: rgba(255,255,255,.6);
+  --tn-pr-high-bg: rgba(255,51,102,.20); --tn-pr-high-fg: #ff3366;
+  --tn-pr-med-bg: rgba(255,215,0,.18); --tn-pr-med-fg: #ffd700;
+  --tn-pr-low-bg: rgba(255,255,255,.08); --tn-pr-low-fg: rgba(255,255,255,.6);
+  --tn-tag-brand-bg: rgba(255,0,180,.20); --tn-tag-brand-fg: #ff00b4;
+  --tn-tag-run-bg: rgba(255,51,102,.20); --tn-tag-run-fg: #ff3366;
+  --tn-tag-read-bg: rgba(0,255,200,.18); --tn-tag-read-fg: #00ffc8;
+  --tn-tag-life-bg: rgba(180,0,255,.22); --tn-tag-life-fg: #d066ff;
+  --tn-tag-work-bg: rgba(255,215,0,.18); --tn-tag-work-fg: #ffd700;
+}
+
+[data-theme="cyber"] body {
+  background: #0a0014;
+  background-image:
+    linear-gradient(rgba(255,0,180,.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,200,.06) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+[data-theme="cyber"] body::before {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255,0,180,.30) 0, transparent 40%),
+    radial-gradient(circle at 85% 80%, rgba(0,255,200,.25) 0, transparent 40%);
+  filter: blur(80px);
+}
+[data-theme="cyber"] .app { position: relative; z-index: 1; }
+
+[data-theme="cyber"] .page-title { text-shadow: 0 0 20px rgba(255,0,180,.5); letter-spacing: -0.02em; }
+[data-theme="cyber"] .sidebar-brand .logo { background: linear-gradient(135deg, #ff00b4, #00ffc8); color: #0a0014; box-shadow: 0 0 16px rgba(255,0,180,.5); }
+[data-theme="cyber"] .sidebar { background: rgba(0,0,0,.6); backdrop-filter: blur(20px); border-right: 1px solid rgba(255,0,180,.2); }
+[data-theme="cyber"] .sidebar a.active { background: rgba(255,0,180,.18); color: #ff00b4; border-left: 2px solid #ff00b4; padding-left: 12px; }
+[data-theme="cyber"] .sidebar a.active .ico { color: #ff00b4; text-shadow: 0 0 8px rgba(255,0,180,.6); }
+[data-theme="cyber"] .card, [data-theme="cyber"] .stat, [data-theme="cyber"] .goal-card { background: rgba(255,255,255,.04); border: 1px solid rgba(255,0,180,.25); backdrop-filter: blur(10px); border-radius: 4px; }
+[data-theme="cyber"] .card:hover, [data-theme="cyber"] .goal-card:hover { border-color: rgba(0,255,200,.5); box-shadow: 0 0 24px rgba(0,255,200,.15); }
+[data-theme="cyber"] .btn { border-radius: 4px; font-family: "JetBrains Mono", monospace; letter-spacing: 0.04em; text-transform: uppercase; font-size: 11px; font-weight: 600; }
+[data-theme="cyber"] .btn.btn-primary { background: linear-gradient(135deg, #ff00b4, #b400ff); color: #fff; box-shadow: 0 0 16px rgba(255,0,180,.4); }
+[data-theme="cyber"] .btn.btn-primary:hover { box-shadow: 0 0 28px rgba(255,0,180,.6); }
+[data-theme="cyber"] .gc-bar { border: 1px solid rgba(255,0,180,.3); border-radius: 0; background: rgba(0,0,0,.4); }
+[data-theme="cyber"] .gc-bar i { background: linear-gradient(90deg, #ff00b4, #00ffc8) !important; box-shadow: 0 0 12px rgba(255,0,180,.5); }
+[data-theme="cyber"] .gc-bar i.warm { background: #ff00b4 !important; box-shadow: 0 0 12px rgba(255,0,180,.6); }
+[data-theme="cyber"] .gc-bar i.moss { background: #00ffc8 !important; box-shadow: 0 0 12px rgba(0,255,200,.6); }
+[data-theme="cyber"] .gc-bar i.slate { background: #00d4ff !important; box-shadow: 0 0 12px rgba(0,212,255,.6); }
+[data-theme="cyber"] .gc-bar i.plum { background: #b400ff !important; box-shadow: 0 0 12px rgba(180,0,255,.6); }
+[data-theme="cyber"] .pill { font-family: "JetBrains Mono", monospace; letter-spacing: 0.04em; text-transform: uppercase; font-size: 10px; border-radius: 2px; }
+
+/* === shadcn bridge (auto-generated) === */
+[data-theme="cyber"] {
+  --background: 270 100% 3.9%; /* from --tn-bg */
+  --foreground: 0 0% 100%; /* from --tn-fg */
+  --card: 270 48.5% 7.8%; /* from --tn-card */
+  --card-foreground: 0 0% 100%; /* from --tn-fg */
+  --popover: 270 48.5% 7.8%; /* from --tn-card */
+  --popover-foreground: 0 0% 100%; /* from --tn-fg */
+  --primary: 318 100% 50%; /* from --tn-accent */
+  --primary-foreground: 270 100% 3.9%; /* from --tn-on-accent */
+  --secondary: 238 47.8% 7.2%; /* from --tn-surface-2 */
+  --secondary-foreground: 0 0% 100%; /* from --tn-fg */
+  --muted: 238 47.8% 7.2%; /* from --tn-surface-2 */
+  --muted-foreground: 270 4.1% 61.6%; /* from --tn-fg-muted */
+  --accent: 167 100% 50%; /* from --tn-accent-2 */
+  --accent-foreground: 270 100% 3.9%; /* from --tn-on-accent */
+  --destructive: 345 100% 60%; /* from --tn-bad */
+  --destructive-foreground: 270 100% 3.9%; /* from --tn-on-accent */
+  --border: 309 100% 14%; /* from --tn-line-color */
+  --input: 309 100% 14%; /* from --tn-line-color */
+  --ring: 318 100% 50%; /* from --tn-accent */
+  --radius: 0.25rem; /* from --tn-r-md */
+}

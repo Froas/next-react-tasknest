@@ -1,0 +1,33 @@
+/* TaskNest theme bundle.
+ *
+ * Each theme file scopes its rules under `[data-theme="<id>"]` so all
+ * themes coexist in the bundle and `<html data-theme="...">` selects one.
+ *
+ * Imported once from src/app/globals.css.
+ *
+ * _base.css is loaded globally because <AppShell> in
+ * src/components/design/AppShell.tsx uses the design's class names
+ * (`.app`, `.sidebar`, `.topbar`, `.page`, `.card`, `.goal-card`,
+ * `.task-row`, etc.) — _base.css is what styles those into the
+ * design's structural layout.
+ *
+ * Pages that DON'T opt into <AppShell> are unaffected: _base.css only
+ * targets its own class names, so existing shadcn-styled pages
+ * (Tailwind utility classes) are untouched.
+ */
+
+@import "./_base.css";
+
+@import "./notion.css";
+@import "./glass.css";
+@import "./bento.css";
+@import "./glass-dark.css";
+@import "./terminal.css";
+@import "./brutalist.css";
+@import "./pixel.css";
+@import "./memphis.css";
+@import "./sketchbook.css";
+@import "./adventure.css";
+@import "./solarpunk.css";
+@import "./cottagecore.css";
+@import "./cyber.css";

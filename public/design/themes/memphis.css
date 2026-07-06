@@ -1,0 +1,138 @@
+/* TaskNest theme — Memphis '85 · postmodern playground */
+@import url("https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;700&display=swap");
+
+:root {
+  --tn-font-sans:    "Space Grotesk", system-ui, sans-serif;
+  --tn-font-display: "Archivo Black", sans-serif;
+  --tn-font-mono:    "Space Grotesk", monospace;
+
+  --tn-bg:         #fef6e0;
+  --tn-surface:    #ffffff;
+  --tn-surface-2:  #fff8d9;
+  --tn-card:       #ffffff;
+  --tn-sidebar-bg: #ffd028;
+  --tn-hover:      rgba(0,0,0,.06);
+  --tn-active:     #0a0a0a;
+  --tn-chip:       #fef6e0;
+  --tn-bar-bg:     rgba(0,0,0,.12);
+  --tn-icon-bg:    #fef6e0;
+
+  --tn-fg:       #0a0a0a;
+  --tn-fg-muted: #4a4a4a;
+  --tn-fg-dim:   #888888;
+
+  --tn-line:        3px solid #0a0a0a;
+  --tn-card-border: 3px solid #0a0a0a;
+  --tn-shadow:      5px 5px 0 #0a0a0a;
+
+  --tn-accent:    #ff4fa3;
+  --tn-on-accent: #ffffff;
+  --tn-accent-2:  #2c4cff;
+
+  --tn-warm: #ff4fa3; --tn-moss: #00b8c4; --tn-slate: #2c4cff; --tn-plum: #8a4eff;
+  --tn-good: #00b8c4; --tn-bad: #ff3a26;
+
+  --tn-r-sm: 0; --tn-r-md: 0; --tn-r-lg: 0; --tn-r-xl: 0;
+  --tn-sidebar-w: 220px; --tn-pad-lg: 14px;
+  --tn-h1-size: 56px; --tn-h1-weight: 900;
+
+  --tn-st-prog-bg:  #ffd028; --tn-st-prog-fg:  #0a0a0a;
+  --tn-st-start-bg: #2c4cff; --tn-st-start-fg: #ffffff;
+  --tn-st-fin-bg:   #00b8c4; --tn-st-fin-fg:   #0a0a0a;
+  --tn-st-out-bg:   #ffffff; --tn-st-out-fg:   #0a0a0a;
+  --tn-pr-high-bg:  #ff3a26; --tn-pr-high-fg:  #ffffff;
+  --tn-pr-med-bg:   #ffd028; --tn-pr-med-fg:   #0a0a0a;
+  --tn-pr-low-bg:   #ffffff; --tn-pr-low-fg:   #0a0a0a;
+  --tn-tag-brand-bg: #2c4cff; --tn-tag-brand-fg: #ffffff;
+  --tn-tag-run-bg:   #ff3a26; --tn-tag-run-fg:   #ffffff;
+  --tn-tag-read-bg:  #00b8c4; --tn-tag-read-fg:  #0a0a0a;
+  --tn-tag-life-bg:  #ff4fa3; --tn-tag-life-fg:  #ffffff;
+  --tn-tag-work-bg:  #ffd028; --tn-tag-work-fg:  #0a0a0a;
+}
+
+body {
+  background:
+    radial-gradient(circle at 88% 7%, #ff4fa3 0, transparent 8px),
+    radial-gradient(circle at 5% 55%, #00b8c4 0, transparent 6px),
+    radial-gradient(circle at 95% 80%, #ffd028 0, transparent 7px),
+    radial-gradient(circle at 50% 95%, #2c4cff 0, transparent 5px),
+    #fef6e0;
+  background-size: 220px 220px, 260px 260px, 300px 300px, 340px 340px;
+  background-attachment: fixed;
+}
+
+/* Type */
+.page-title { font-family: "Archivo Black", sans-serif !important; letter-spacing: -0.03em; line-height: 0.95; }
+h2, h3 { font-family: "Archivo Black", sans-serif !important; letter-spacing: -0.02em; }
+.page-eyebrow { font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; font-size: 10px; }
+.s-label { font-family: "Archivo Black", sans-serif; letter-spacing: 0.06em !important; font-size: 10px !important; text-transform: uppercase; }
+.s-value { font-family: "Archivo Black", sans-serif !important; letter-spacing: -0.03em; }
+
+/* Shell */
+.sidebar { background: #ffd028; border-right: 3px solid #0a0a0a; }
+.sidebar-brand .logo { border: 3px solid #0a0a0a; border-radius: 0; background: #ff4fa3; color: #fff; font-family: "Archivo Black", sans-serif; box-shadow: 3px 3px 0 #0a0a0a; transform: rotate(-3deg); }
+.sidebar-brand b { font-family: "Archivo Black", sans-serif; }
+.sidebar h4 { font-family: "Archivo Black", sans-serif; letter-spacing: 0.1em; }
+.sidebar a { font-weight: 600; }
+.sidebar a:hover { background: rgba(255,255,255,.4); }
+.sidebar a.active { background: #0a0a0a; color: #ffd028; }
+.sidebar a.active .ico, .sidebar a.active .count { color: #ffd028; }
+.sidebar-foot { border-top: 3px solid #0a0a0a; background: #ffd028; }
+.sidebar-foot .av { border: 2px solid #0a0a0a; border-radius: 50%; box-shadow: 2px 2px 0 #0a0a0a; background: #ff4fa3; }
+
+.topbar { background: #fff; border-bottom: 3px solid #0a0a0a; }
+.topbar .crumbs { font-family: "Archivo Black", sans-serif; letter-spacing: 0.06em; text-transform: uppercase; font-size: 11px; }
+.topbar .btn-icon { border: 2px solid #0a0a0a; border-radius: 0; background: #fff; box-shadow: 2px 2px 0 #0a0a0a; }
+.topbar .btn-icon:hover { background: #ff4fa3; color: #fff; }
+
+/* Cards & stats — tilted, hard-shadow */
+.card, .stat { background: #fff; border: 3px solid #0a0a0a; border-radius: 0; box-shadow: 5px 5px 0 #0a0a0a; }
+.stat:nth-child(1) { background: #ffd028; transform: rotate(-0.8deg); }
+.stat:nth-child(2) { background: #ff4fa3; color: #fff; transform: rotate(0.6deg); }
+.stat:nth-child(2) .s-label, .stat:nth-child(2) .s-value, .stat:nth-child(2) .s-delta { color: #fff; }
+.stat:nth-child(3) { background: #00b8c4; transform: rotate(-0.4deg); }
+.stat:nth-child(4) { background: #2c4cff; color: #fff; transform: rotate(0.5deg); }
+.stat:nth-child(4) .s-label, .stat:nth-child(4) .s-value, .stat:nth-child(4) .s-delta { color: #fff; }
+
+.goal-card { background: #fff; border: 3px solid #0a0a0a; box-shadow: 5px 5px 0 #0a0a0a; }
+.goal-card:nth-child(odd)  { transform: rotate(-0.5deg); }
+.goal-card:nth-child(even) { transform: rotate(0.5deg); }
+.goal-card:hover { transform: rotate(0) translate(-2px,-2px); box-shadow: 7px 7px 0 #0a0a0a; }
+.goal-card .gc-ico { border: 3px solid #0a0a0a; border-radius: 0; box-shadow: 3px 3px 0 #0a0a0a; transform: rotate(-3deg); }
+.goal-card .gc-ico.warm  { background: #ff4fa3; color: #fff; }
+.goal-card .gc-ico.moss  { background: #00b8c4; color: #0a0a0a; }
+.goal-card .gc-ico.slate { background: #2c4cff; color: #fff; }
+.goal-card .gc-ico.plum  { background: #ffd028; color: #0a0a0a; }
+.goal-card h3 { font-family: "Archivo Black", sans-serif; }
+.gc-bar { border: 2px solid #0a0a0a; border-radius: 0; height: 12px; background: #fff; }
+.gc-bar i { background: repeating-linear-gradient(45deg, #0a0a0a 0 6px, #ffd028 6px 12px) !important; }
+.gc-bar i.warm  { background: repeating-linear-gradient(45deg, #0a0a0a 0 6px, #ff4fa3 6px 12px) !important; }
+.gc-bar i.moss  { background: repeating-linear-gradient(45deg, #0a0a0a 0 6px, #00b8c4 6px 12px) !important; }
+.gc-bar i.slate { background: repeating-linear-gradient(45deg, #0a0a0a 0 6px, #2c4cff 6px 12px) !important; }
+.gc-bar i.plum  { background: repeating-linear-gradient(45deg, #0a0a0a 0 6px, #8a4eff 6px 12px) !important; }
+
+/* Buttons */
+.btn { border: 3px solid #0a0a0a; border-radius: 0; padding: 7px 16px; font-family: "Archivo Black", sans-serif; letter-spacing: 0.04em; text-transform: uppercase; font-size: 12px; box-shadow: 4px 4px 0 #0a0a0a; }
+.btn:hover { transform: translate(-1px,-1px); box-shadow: 5px 5px 0 #0a0a0a; }
+.btn:active { transform: translate(2px,2px); box-shadow: 0 0 0 #0a0a0a; }
+.btn.btn-primary { background: #ff4fa3; color: #fff; }
+.btn.btn-secondary { background: #ffd028; color: #0a0a0a; }
+.btn.btn-ghost { border-color: transparent; box-shadow: none; }
+
+/* Pills */
+.pill { border: 2px solid #0a0a0a; border-radius: 0; padding: 2px 8px; font-family: "Archivo Black", sans-serif; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; }
+
+/* Task row */
+.task-row { border-bottom: 2px dashed #0a0a0a !important; padding: 14px 0; }
+.task-row .cb { border: 2px solid #0a0a0a; border-radius: 0; background: #fff; }
+.task-row.done .cb { background: #00b8c4; }
+
+/* Mobile tabbar */
+.mobile-tabbar { background: #ffd028; border-top: 3px solid #0a0a0a; }
+.mobile-tabbar a { font-family: "Archivo Black", sans-serif; letter-spacing: 0.04em; font-size: 9px; text-transform: uppercase; }
+.mobile-tabbar a.active { color: #ffd028; background: #0a0a0a; }
+
+/* Search */
+.search-overlay .panel { border: 3px solid #0a0a0a; border-radius: 0; box-shadow: 8px 8px 0 #ff4fa3; background: #fff; }
+.search-overlay input { font-family: "Archivo Black", sans-serif; letter-spacing: -0.02em; }
+.search-overlay .result .kind { background: #0a0a0a; color: #ffd028; border-radius: 0; font-family: "Archivo Black", sans-serif; }

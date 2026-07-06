@@ -1,0 +1,166 @@
+/* TaskNest theme: terminal
+ * Auto-scoped to [data-theme="terminal"] so all themes can
+ * coexist; ThemeProvider toggles the attribute on <html>.
+ * Source: tasknest-design-system/project/app/themes/terminal.css
+ */
+
+
+/* TaskNest theme — Terminal · CLI / IDE */
+
+
+[data-theme="terminal"] {
+  --tn-font-sans:    "JetBrains Mono", "Geist Mono", ui-monospace, monospace;
+  --tn-font-display: "JetBrains Mono", monospace;
+  --tn-font-mono:    "JetBrains Mono", monospace;
+
+  --tn-bg:         #0d1117;
+  --tn-surface:    #161b22;
+  --tn-surface-2:  #0a0d12;
+  --tn-card:       #161b22;
+  --tn-sidebar-bg: #0a0d12;
+  --tn-hover:      rgba(126,231,135,.06);
+  --tn-active:     rgba(126,231,135,.12);
+  --tn-chip:       rgba(126,231,135,.12);
+  --tn-bar-bg:     #21262d;
+  --tn-icon-bg:    rgba(126,231,135,.1);
+
+  --tn-fg:        #c9d1d9;
+  --tn-fg-muted:  #8b949e;
+  --tn-fg-dim:    #6e7681;
+
+  --tn-line:        1px solid #21262d;
+  --tn-card-border: 1px solid #30363d;
+  --tn-shadow:      none;
+
+  --tn-accent:    #7ee787;
+  --tn-on-accent: #0d1117;
+  --tn-accent-2:  #79c0ff;
+
+  --tn-warm: #ffa657; --tn-moss: #7ee787; --tn-slate: #79c0ff; --tn-plum: #d2a8ff;
+  --tn-good: #7ee787; --tn-bad: #ff7b72;
+
+  --tn-r-sm: 3px; --tn-r-md: 4px; --tn-r-lg: 4px; --tn-r-xl: 6px;
+  --tn-sidebar-w: 230px; --tn-pad-lg: 14px;
+  --tn-h1-size: 22px; --tn-h1-weight: 600;
+
+  --tn-st-prog-bg:  rgba(121,192,255,.16); --tn-st-prog-fg:  #79c0ff;
+  --tn-st-start-bg: rgba(242,204,96,.16);  --tn-st-start-fg: #f2cc60;
+  --tn-st-fin-bg:   rgba(126,231,135,.16); --tn-st-fin-fg:   #7ee787;
+  --tn-st-out-bg:   rgba(110,118,129,.16); --tn-st-out-fg:   #8b949e;
+  --tn-pr-high-bg:  rgba(255,123,114,.16); --tn-pr-high-fg:  #ff7b72;
+  --tn-pr-med-bg:   rgba(242,204,96,.16);  --tn-pr-med-fg:   #f2cc60;
+  --tn-pr-low-bg:   rgba(110,118,129,.16); --tn-pr-low-fg:   #8b949e;
+  --tn-tag-brand-bg: rgba(121,192,255,.14); --tn-tag-brand-fg: #79c0ff;
+  --tn-tag-run-bg:   rgba(255,166,87,.14);  --tn-tag-run-fg:   #ffa657;
+  --tn-tag-read-bg:  rgba(126,231,135,.14); --tn-tag-read-fg:  #7ee787;
+  --tn-tag-life-bg:  rgba(210,168,255,.14); --tn-tag-life-fg:  #d2a8ff;
+  --tn-tag-work-bg:  rgba(242,204,96,.14);  --tn-tag-work-fg:  #f2cc60;
+}
+
+[data-theme="terminal"] body { background: #0d1117; background-image:
+  linear-gradient(rgba(126,231,135,.025) 1px, transparent 1px),
+  linear-gradient(90deg, rgba(126,231,135,.015) 1px, transparent 1px);
+  background-size: 100% 24px, 8ch 100%;
+  font-size: 13px; line-height: 1.5;
+}
+
+/* Type */
+[data-theme="terminal"] .page-title { font-family: "JetBrains Mono", monospace !important; font-weight: 600; letter-spacing: -0.01em; }
+[data-theme="terminal"] .page-title::before { content: "$ "; color: #7ee787; }
+[data-theme="terminal"] h2, [data-theme="terminal"] h3 { font-family: "JetBrains Mono", monospace !important; font-weight: 600; letter-spacing: -0.01em; }
+[data-theme="terminal"] .section-head h2::before { content: "## "; color: #7ee787; opacity: 0.7; }
+[data-theme="terminal"] .page-eyebrow { color: #6e7681; }
+[data-theme="terminal"] .page-eyebrow::before { content: "# "; color: #6e7681; }
+[data-theme="terminal"] .s-label { color: #6e7681; letter-spacing: 0.04em; }
+[data-theme="terminal"] .s-value { font-family: "JetBrains Mono", monospace !important; font-weight: 600; color: #7ee787; }
+[data-theme="terminal"] .s-value small { color: #6e7681; }
+
+/* Shell */
+[data-theme="terminal"] .sidebar { background: #0a0d12; border-right: 1px solid #21262d; }
+[data-theme="terminal"] .sidebar-brand .logo { border-radius: 4px; background: #7ee787; color: #0d1117; font-weight: 700; }
+[data-theme="terminal"] .sidebar-brand b { color: #c9d1d9; }
+[data-theme="terminal"] .sidebar h4 { font-family: "JetBrains Mono", monospace; color: #6e7681; }
+[data-theme="terminal"] .sidebar a { font-family: "JetBrains Mono", monospace; padding-left: 18px; position: relative; color: #8b949e; }
+[data-theme="terminal"] .sidebar a::before { content: "›"; position: absolute; left: 6px; color: #6e7681; }
+[data-theme="terminal"] .sidebar a:hover { background: rgba(126,231,135,.05); color: #c9d1d9; }
+[data-theme="terminal"] .sidebar a.active { background: rgba(126,231,135,.08); color: #7ee787; border-left: 2px solid #7ee787; padding-left: 16px; }
+[data-theme="terminal"] .sidebar a.active::before { content: "$"; color: #7ee787; }
+[data-theme="terminal"] .sidebar a.active .ico, [data-theme="terminal"] .sidebar a.active .count { color: #7ee787; }
+[data-theme="terminal"] .sidebar-search { color: #6e7681; }
+[data-theme="terminal"] .sidebar-search kbd { background: #21262d; color: #c9d1d9; padding: 2px 6px; border-radius: 3px; }
+
+[data-theme="terminal"] .topbar { background: #0d1117; border-bottom: 1px solid #21262d; }
+[data-theme="terminal"] .topbar .crumbs { font-family: "JetBrains Mono", monospace; color: #8b949e; }
+[data-theme="terminal"] .topbar .crumbs::before { content: "~/"; color: #7ee787; margin-right: 4px; }
+[data-theme="terminal"] .topbar .crumbs .current { color: #7ee787; }
+[data-theme="terminal"] .topbar .btn-icon { color: #8b949e; }
+[data-theme="terminal"] .topbar .btn-icon:hover { background: rgba(126,231,135,.08); color: #7ee787; }
+
+/* Cards */
+[data-theme="terminal"] .card, [data-theme="terminal"] .stat { background: #161b22; border: 1px solid #30363d; border-radius: 4px; }
+[data-theme="terminal"] .goal-card { background: #161b22; border: 1px solid #30363d; }
+[data-theme="terminal"] .goal-card:hover { border-color: #7ee787; }
+[data-theme="terminal"] .goal-card .gc-ico { border-radius: 4px; background: rgba(126,231,135,.1) !important; color: #7ee787 !important; font-family: "JetBrains Mono", monospace; }
+[data-theme="terminal"] .goal-card h3 { font-family: "JetBrains Mono", monospace; font-weight: 600; }
+[data-theme="terminal"] .gc-pct { font-family: "JetBrains Mono", monospace; color: #7ee787; }
+[data-theme="terminal"] .gc-bar { background: #21262d; border-radius: 1px; height: 4px; }
+[data-theme="terminal"] .gc-bar i { background: #7ee787 !important; }
+
+/* Buttons */
+[data-theme="terminal"] .btn { border-radius: 4px; font-family: "JetBrains Mono", monospace; font-weight: 500; padding: 6px 14px; }
+[data-theme="terminal"] .btn.btn-primary { background: #7ee787; color: #0d1117; }
+[data-theme="terminal"] .btn.btn-primary:hover { background: #98f0a0; }
+[data-theme="terminal"] .btn.btn-secondary { background: #161b22; color: #c9d1d9; border: 1px solid #30363d; }
+[data-theme="terminal"] .btn.btn-secondary:hover { background: #21262d; border-color: #7ee787; }
+[data-theme="terminal"] .btn.btn-ghost:hover { background: rgba(126,231,135,.08); color: #7ee787; }
+
+/* Pills */
+[data-theme="terminal"] .pill { border-radius: 3px; padding: 1px 8px; font-family: "JetBrains Mono", monospace; font-weight: 500; font-size: 10px; letter-spacing: 0.04em; line-height: 1.7; }
+
+/* Task row */
+[data-theme="terminal"] .task-row { border-bottom: 1px solid #21262d !important; padding: 10px 0; }
+[data-theme="terminal"] .task-row .cb { border-color: #30363d; border-radius: 3px; }
+[data-theme="terminal"] .task-row.done .cb { background: #7ee787; border-color: #7ee787; }
+[data-theme="terminal"] .task-row.done .cb::after { color: #0d1117; }
+[data-theme="terminal"] .task-row .t-title { font-family: "JetBrains Mono", monospace; font-weight: 500; color: #c9d1d9; }
+[data-theme="terminal"] .task-row .t-meta { color: #6e7681; }
+[data-theme="terminal"] .task-row .t-time { color: #79c0ff; font-weight: 500; }
+
+/* Input */
+[data-theme="terminal"] input, [data-theme="terminal"] select, [data-theme="terminal"] textarea { background: #0a0d12 !important; color: #c9d1d9 !important; border-color: #30363d !important; font-family: "JetBrains Mono", monospace !important; }
+[data-theme="terminal"] input:focus { border-color: #7ee787 !important; }
+
+/* Mobile tabbar */
+[data-theme="terminal"] .mobile-tabbar { background: #0a0d12; border-top: 1px solid #21262d; }
+[data-theme="terminal"] .mobile-tabbar a { color: #8b949e; }
+[data-theme="terminal"] .mobile-tabbar a.active { color: #7ee787; background: rgba(126,231,135,.08); }
+
+/* Search */
+[data-theme="terminal"] .search-overlay .panel { background: #161b22; border: 1px solid #30363d; border-radius: 6px; }
+[data-theme="terminal"] .search-overlay input { background: #161b22 !important; color: #c9d1d9 !important; }
+[data-theme="terminal"] .search-overlay .result:hover { background: rgba(126,231,135,.08); color: #7ee787; }
+[data-theme="terminal"] .search-overlay .result .kind { background: rgba(121,192,255,.15); color: #79c0ff; border-radius: 3px; font-family: "JetBrains Mono", monospace; }
+
+/* === shadcn bridge (auto-generated) === */
+[data-theme="terminal"] {
+  --background: 216 27.8% 7.1%; /* from --tn-bg */
+  --foreground: 210 17.4% 82%; /* from --tn-fg */
+  --card: 215 21.4% 11%; /* from --tn-card */
+  --card-foreground: 210 17.4% 82%; /* from --tn-fg */
+  --popover: 215 21.4% 11%; /* from --tn-card */
+  --popover-foreground: 210 17.4% 82%; /* from --tn-fg */
+  --primary: 125 68.6% 70%; /* from --tn-accent */
+  --primary-foreground: 216 27.8% 7.1%; /* from --tn-on-accent */
+  --secondary: 218 28.6% 5.5%; /* from --tn-surface-2 */
+  --secondary-foreground: 210 17.4% 82%; /* from --tn-fg */
+  --muted: 218 28.6% 5.5%; /* from --tn-surface-2 */
+  --muted-foreground: 212 8.9% 58.2%; /* from --tn-fg-muted */
+  --accent: 208 100% 73.7%; /* from --tn-accent-2 */
+  --accent-foreground: 216 27.8% 7.1%; /* from --tn-on-accent */
+  --destructive: 4 100% 72.4%; /* from --tn-bad */
+  --destructive-foreground: 216 27.8% 7.1%; /* from --tn-on-accent */
+  --border: 215 15.4% 15.3%; /* from --tn-line-color */
+  --input: 215 15.4% 15.3%; /* from --tn-line-color */
+  --ring: 125 68.6% 70%; /* from --tn-accent */
+  --radius: 0.25rem; /* from --tn-r-md */
+}

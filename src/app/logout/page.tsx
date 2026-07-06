@@ -2,24 +2,18 @@
 
 import { signOut } from "next-auth/react";
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 
 const LogoutPage = () => {
-  const router = useRouter();
+ useEffect(() => {
+ localStorage.removeItem('access_token');
+ signOut({ callbackUrl: '/login' });
+ }, []);
 
-  useEffect(() => {
-    signOut({
-      redirect: false, 
-    }).then(() => {
-      router.push("/");
-    });
-  }, [router]);
-
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <p>Log out from system..</p>
-    </div>
-  );
+ return (
+ <div className="flex items-center justify-center min-h-screen">
+ <p>Log out from system..</p>
+ </div>
+ );
 };
 
 export default LogoutPage;
