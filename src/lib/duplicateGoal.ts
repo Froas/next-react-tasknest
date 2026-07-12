@@ -34,7 +34,7 @@ export const duplicateGoal = async (source: Goal): Promise<DuplicationResult> =>
  status: StatusType.OUTSTANDING,
  priority: sm.priority,
  goal_id: newGoal.id,
- position: i,
+ position: i + 1,
  due_date: sm.due_date,
  end_datetime: sm.end_datetime,
  });

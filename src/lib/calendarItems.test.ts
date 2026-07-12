@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildCalendarItems, filterItemsByDate, groupItemsByDate } from './calendarItems';
+import { buildCalendarItems, calendarDateKey, filterItemsByDate, groupItemsByDate, parseCalendarDate } from './calendarItems';
 import { StatusType, PriorityType, GoalItem } from './types';
 
 const goalWithEverything: GoalItem = {
@@ -27,7 +27,17 @@ const goalWithEverything: GoalItem = {
  priority: PriorityType.LOW,
  due_date: '2026-05-10T00:00:00Z',
  milestone_id: 'm1',
- subtasks: [],
+ subtasks: [
+ {
+ id: 's1',
+ title: 'subtask',
+ description: '',
+ status: StatusType.OUTSTANDING,
+ priority: PriorityType.LOW,
+ due_date: '2026-05-06T00:00:00Z',
+ task_id: 't1',
+ },
+ ],
  todos: [
  {
  id: 'td1',
@@ -48,15 +58,19 @@ const goalWithEverything: GoalItem = {
 describe('buildCalendarItems', () => {
  it('extracts all dated entities from a goal tree', () => {
  const items = buildCalendarItems([goalWithEverything], [], [], []);
- expect(items.map((i) => i.itemType).sort()).toEqual(['Goal', 'Milestone', 'Task', 'Todo'].sort());
+ expect(items.map((i) => i.itemType).sort()).toEqual(['Goal', 'Milestone', 'Task', 'Subtask', 'Todo'].sort());
  });
 
  it('preserves breadcrumb context', () => {
  const items = buildCalendarItems([goalWithEverything], [], [], []);
  const todo = items.find((i) => i.itemType === 'Todo')!;
+ const subtask = items.find((i) => i.itemType === 'Subtask')!;
  expect(todo.goalTitle).toBe('goal');
  expect(todo.milestoneTitle).toBe('milestone');
  expect(todo.taskTitle).toBe('task');
+ expect(subtask.goalTitle).toBe('goal');
+ expect(subtask.milestoneTitle).toBe('milestone');
+ expect(subtask.taskTitle).toBe('task');
  });
 
  it('skips entities without due dates', () => {
@@ -79,6 +93,24 @@ describe('filterItemsByDate', () => {
  const target = new Date('2026-05-10T00:00:00Z');
  const same = filterItemsByDate(items, target);
  expect(same.length).toBeGreaterThan(0);
+ });
+
+ it('treats YYYY-MM-DD as a local calendar day', () => {
+ const date = parseCalendarDate('2026-07-11');
+ expect(calendarDateKey(date)).toBe('2026-07-11');
+ const same = filterItemsByDate(
+ [
+ {
+ id: 'date-only',
+ title: 'Date only',
+ due_date: '2026-07-11',
+ status: StatusType.OUTSTANDING,
+ itemType: 'Task',
+ },
+ ],
+ date,
+ );
+ expect(same).toHaveLength(1);
  });
 });
 

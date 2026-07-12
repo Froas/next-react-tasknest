@@ -64,7 +64,6 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({
  due_date: formData.due_date,
  end_datetime: formData.end_datetime || `${formData.due_date}T18:00:00`,
  goal_id: goalId,
- position: 0
  };
 
  onSuccess(milestoneData);
@@ -85,7 +84,13 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({
  return (
  <form onSubmit={handleSubmit} className="space-y-4">
  {error && (
- <div className="bg-red-50 text-red-800 p-3 rounded-lg text-sm">
+ <div
+ className="p-3 rounded-lg text-sm"
+ style={{
+ background: 'color-mix(in srgb, var(--tn-bad, #c25d63) 12%, var(--tn-card))',
+ color: 'var(--tn-bad, #c25d63)',
+ }}
+ >
  {error}
  </div>
  )}
@@ -136,7 +141,7 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({
  ))}
  </select>
  </div>
- <div className="grid grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
  
 
  <div>
@@ -172,18 +177,18 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({
  <button
  type="button"
  onClick={onCancel}
- className="px-4 py-2 text-sm font-medium text-foreground bg-muted rounded-lg hover:bg-muted focus:outline-none focus:ring-2 focus:ring-gray-400"
+ className="btn btn-secondary"
  >
  Cancel
  </button>
  <button
  type="submit"
  disabled={isSubmitting}
- className="px-4 py-2 text-sm font-medium text-white bg-card rounded-lg hover:bg-card focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50"
+ className="btn btn-primary disabled:opacity-50"
  >
  {isSubmitting ? 'Saving...' : initialData?.id ? 'Update Milestone' : 'Create Milestone'}
  </button>
  </div>
  </form>
  );
-}; 
+};

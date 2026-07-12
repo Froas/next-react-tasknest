@@ -4,12 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { withAuth } from '@/hoc/withAuth';
 import dynamic from 'next/dynamic';
 import { GoalItem as Goal, MilestoneItem as Milestone, TaskItem as Task, TodoItem as Todo, SubtaskItem as Subtask } from '@/lib/types';
-import { goalsApi, milestonesApi, tasksApi, todosApi } from '@/lib/api';
+import { goalsApi, milestonesApi } from '@/lib/api';
 import { useStore } from '@/store/useStore';
 import { useShallow } from 'zustand/react/shallow';
 import { toast } from '@/store/useToast';
+import { Modal } from '@/components/ui/Modal';
 import { usePersistentState } from '@/lib/usePersistentState';
-import { useRouter } from 'next/navigation';
 import { StatusType, PriorityType } from '@/lib/types';
 import { priorityWeight } from '@/lib/sort';
 import { useSession } from 'next-auth/react';
@@ -22,12 +22,9 @@ const GoalForm = dynamic(() => import('@/components/dashboard/GoalForm').then(m 
 const MilestoneForm = dynamic(() => import('@/components/dashboard/MilestoneForm').then(m => m.MilestoneForm));
 const TaskForm = dynamic(() => import('@/components/dashboard/TaskForm').then(m => m.TaskForm));
 const ActionForm = dynamic(() => import('@/components/dashboard/ActionForm').then(m => m.ActionForm));
-const QuickGoalForm = dynamic(() => import('@/components/dashboard/QuickGoalForm').then(m => m.QuickGoalForm), { ssr: false });
-const EventForm = dynamic(() => import('@/components/dashboard/EventForm').then(m => m.EventForm), { ssr: false });
 
 const Home = () => {
- const { data: session, status } = useSession();
- const router = useRouter();
+ const { status } = useSession();
  
  // View States
  const [currentView, setCurrentView] = useState<'dashboard' | 'goal-detail' | 'form' | 'visualization'>('dashboard');
@@ -37,16 +34,13 @@ const Home = () => {
  const [isFormOpen, setIsFormOpen] = useState(false);
  const [isEditMode, setIsEditMode] = useState(false);
  const [isCreatingGoal, setIsCreatingGoal] = useState(false);
- const [isCreatingQuickGoal, setIsCreatingQuickGoal] = useState(false);
  const [isCreatingMilestone, setIsCreatingMilestone] = useState(false);
- const [isCreatingTask, setIsCreatingTask] = useState(false);
- const [isCreatingTodo, setIsCreatingTodo] = useState(false);
  
  // Selection States
  const [isSelectingGoal, setIsSelectingGoal] = useState(false);
  const [isSelectingMilestone, setIsSelectingMilestone] = useState(false);
  const [isSelectingTask, setIsSelectingTask] = useState(false);
- const [pendingAction, setPendingAction] = useState<'milestone' | 'task' | 'todo' | 'subtask' | null>(null);
+ const [pendingAction, setPendingAction] = useState<'milestone' | 'task' | 'routine' | 'todo' | 'subtask' | null>(null);
  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
  
@@ -57,7 +51,6 @@ const Home = () => {
  
  // Selected Item States
  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
- const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null);
 
  // Delete States
  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -77,8 +70,9 @@ const Home = () => {
  addMilestone,
  addMilestoneToGoal,
  addTaskToMilestoneInGoal,
- addTodoToTaskInMilestoneInGoal,
- addSubtaskToTaskInMilestoneInGoal,
+ updateTaskInGoals,
+ updateTodoInGoals,
+ updateSubtaskInGoals,
  } = useStore(
  useShallow((s) => ({
  fetchGoals: s.fetchGoals,
@@ -89,8 +83,9 @@ const Home = () => {
  addMilestone: s.addMilestone,
  addMilestoneToGoal: s.addMilestoneToGoal,
  addTaskToMilestoneInGoal: s.addTaskToMilestoneInGoal,
- addTodoToTaskInMilestoneInGoal: s.addTodoToTaskInMilestoneInGoal,
- addSubtaskToTaskInMilestoneInGoal: s.addSubtaskToTaskInMilestoneInGoal,
+ updateTaskInGoals: s.updateTaskInGoals,
+ updateTodoInGoals: s.updateTodoInGoals,
+ updateSubtaskInGoals: s.updateSubtaskInGoals,
  }))
  );
 
@@ -107,24 +102,24 @@ const Home = () => {
 
  if (status === 'loading' || isLoadingGoals) {
  return (
- <div className="min-h-screen bg-muted dark:bg-card flex items-center justify-center">
- <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+ <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--tn-bg)', color: 'var(--tn-fg)' }}>
+ <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: 'var(--tn-accent)' }}></div>
  </div>
  );
  }
 
  if (status === 'unauthenticated') {
  return (
- <div className="min-h-screen bg-muted flex items-center justify-center">
- <div className="text-muted-foreground">You are not authenticated.</div>
+ <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--tn-bg)', color: 'var(--tn-fg-muted)' }}>
+ <div>You are not authenticated.</div>
  </div>
  );
  }
 
  if (goalsError) {
  return (
- <div className="min-h-screen bg-muted flex items-center justify-center">
- <div className="text-red-500">Error: {goalsError}</div>
+ <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--tn-bg)' }}>
+ <div style={{ color: 'var(--tn-bad, #c25d63)' }}>Error: {goalsError}</div>
  </div>
  );
  }
@@ -146,6 +141,7 @@ const Home = () => {
  };
 
  const handleAddGoal = () => {
+ setIsEditMode(false);
  setIsCreatingGoal(true);
  };
 
@@ -157,11 +153,28 @@ const Home = () => {
 
  const handleFormClose = () => {
  setIsFormOpen(false);
+ setIsEditMode(false);
  setCurrentView('dashboard');
  };
 
  const handleGoalSubmit = async (goalData: Partial<Goal>) => {
  try {
+ if (isEditMode && selectedGoal) {
+ const updatedGoal = await goalsApi.update({
+ id: selectedGoal.id,
+ title: goalData.title,
+ description: goalData.description,
+ status: goalData.status,
+ priority: goalData.priority,
+ start_datetime: goalData.start_datetime,
+ end_datetime: goalData.end_datetime,
+ });
+ updateGoal({ ...selectedGoal, ...updatedGoal });
+ setIsEditMode(false);
+ setIsFormOpen(false);
+ setCurrentView('goal-detail');
+ return;
+ }
  const newGoal = await goalsApi.create({
  title: goalData.title!,
  description: goalData.description!,
@@ -200,43 +213,55 @@ const Home = () => {
  }
  };
 
- // Updated to use optimistic store action
- const handleCreateTask = (newTask: Task, goalId: string, milestoneId: string) => {
- if (!milestoneId || !goalId) {
- console.error("Milestone ID or Goal ID is missing for task creation through QuickActions.");
+ const handleCreateTask = (newTask: Task, goalId: string, milestoneId?: string) => {
+ if (!goalId) {
+ console.error("Goal ID is missing for task creation through QuickActions.");
  return;
  }
  try {
- addTaskToMilestoneInGoal(newTask, milestoneId, goalId);
+ const normalizedTask = {
+ ...newTask,
+ goal_id: newTask.goal_id ?? goalId,
+ todos: newTask.todos ?? [],
+ subtasks: newTask.subtasks ?? [],
+ };
+
+ if (!milestoneId || normalizedTask.scope === 'goal') {
+ updateTaskInGoals({ ...normalizedTask, milestone_id: undefined, scope: 'goal' });
+ } else {
+ addTaskToMilestoneInGoal({ ...normalizedTask, milestone_id: milestoneId, scope: 'milestone' }, milestoneId, goalId);
+ }
  setShowTaskForm(false);
- setSelectedMilestoneId(null); // Reset selectedMilestoneId
- setPendingAction(null); // Reset pending action
- // setSelectedMilestone(null); // This state was also used, ensure consistency if needed
+ setSelectedMilestoneId(null);
+ setPendingAction(null);
+ toast.success(normalizedTask.kind === 'routine' ? 'Routine created' : 'Task created');
  } catch (error) {
  console.error('Failed to optimistically create task via QuickActions:', error);
- // Potentially set an error state for UI feedback
+ toast.error('Failed to create task');
  }
  };
 
  const handleCreateAction = (
  item: Todo | Subtask,
  kind: 'subtask' | 'todo',
- actionGoalId: string,
- actionMilestoneId: string,
- actionTaskId: string,
+ _actionGoalId: string,
+ _actionMilestoneId: string,
+ _actionTaskId: string,
  ) => {
  try {
  if (kind === 'todo') {
- addTodoToTaskInMilestoneInGoal(item as Todo, actionTaskId, actionMilestoneId, actionGoalId);
+ updateTodoInGoals(item as Todo);
  } else {
- addSubtaskToTaskInMilestoneInGoal(item as Subtask, actionTaskId, actionMilestoneId, actionGoalId);
+ updateSubtaskInGoals(item as Subtask);
  }
  setShowActionForm(false);
  setSelectedTaskId(null);
  setSelectedTask(null);
  setPendingAction(null);
+ toast.success(kind === 'todo' ? 'Todo added' : 'Subtask added');
  } catch (error) {
  console.error('Failed to record action via QuickActions:', error);
+ toast.error(`Failed to add ${kind}`);
  }
  };
 
@@ -251,8 +276,83 @@ const Home = () => {
  }
  };
 
- // Improved quick action for 'todo': if only one goal, milestone, and task, open TodoForm directly
- const handleQuickAction = (action: 'milestone' | 'task' | 'todo' | 'subtask') => {
+ const loadGoalForAction = async (goalId: string) => {
+ const fullGoal = await goalsApi.getById(goalId, {
+ include_milestones: true,
+ include_tasks: true,
+ include_subtasks: true,
+ include_todos: true
+ });
+ updateGoal(fullGoal);
+ setSelectedGoalId(goalId);
+ return fullGoal;
+ };
+
+ const getSelectableActionTasks = (goal?: Goal | null) => {
+ if (!goal) return [];
+ const goalTasks = (goal.tasks ?? []).map((task) => ({
+ task: { ...task, goal_id: task.goal_id ?? goal.id, scope: task.scope ?? 'goal' } as Task,
+ context: task.kind === 'routine' ? 'Goal routine' : 'Goal task',
+ }));
+ const milestoneTasks = (goal.milestones ?? []).flatMap((milestone) =>
+ (milestone.tasks ?? []).map((task) => ({
+ task: {
+ ...task,
+ goal_id: task.goal_id ?? goal.id,
+ milestone_id: task.milestone_id ?? milestone.id,
+ scope: task.scope ?? 'milestone',
+ } as Task,
+ context: milestone.title,
+ }))
+ );
+ return [...goalTasks, ...milestoneTasks];
+ };
+
+ const openActionFormForTask = (task: Task, action: 'todo' | 'subtask') => {
+ setSelectedTaskId(task.id);
+ setSelectedTask(task);
+ setActionFormKind(action);
+ setShowActionForm(true);
+ setIsSelectingTask(false);
+ setPendingAction(null);
+ };
+
+ const continueQuickActionWithGoal = (goal: Goal, action: 'milestone' | 'task' | 'routine' | 'todo' | 'subtask') => {
+ setSelectedGoalId(goal.id);
+ setSelectedMilestoneId(null);
+ setSelectedTask(null);
+ setSelectedTaskId(null);
+
+ if (action === 'milestone') {
+ setIsCreatingMilestone(true);
+ return;
+ }
+
+ if (action === 'routine') {
+ setShowTaskForm(true);
+ return;
+ }
+
+ if (action === 'task') {
+ const milestones = goal.milestones ?? [];
+ if (milestones.length === 1) {
+ setSelectedMilestoneId(milestones[0].id);
+ setShowTaskForm(true);
+ } else {
+ setIsSelectingMilestone(true);
+ }
+ return;
+ }
+
+ const selectableTasks = getSelectableActionTasks(goal);
+ if (selectableTasks.length === 1) {
+ openActionFormForTask(selectableTasks[0].task, action);
+ } else {
+ setIsSelectingTask(true);
+ }
+ };
+
+ const handleQuickAction = async (action: 'milestone' | 'task' | 'routine' | 'todo' | 'subtask') => {
  if (goals.length === 0) {
  alert('Please create a goal first');
  return;
@@ -260,78 +360,32 @@ const Home = () => {
 
  setPendingAction(action);
 
- if (action === 'milestone') {
  if (goals.length === 1) {
- setSelectedGoalId(goals[0].id);
- setIsCreatingMilestone(true);
- } else {
- setIsSelectingGoal(true);
- }
- } else if (action === 'task') {
- if (goals.length === 1) {
- setSelectedGoalId(goals[0].id);
- setIsSelectingMilestone(true);
- } else {
- setIsSelectingGoal(true);
- }
- } else if (action === 'todo') {
- // Quick add todo: if only one goal, one milestone, one task, open TodoForm directly
- if (goals.length === 1) {
- const goal = goals[0];
- setSelectedGoalId(goal.id);
- if (goal.milestones && goal.milestones.length === 1) {
- const milestone = goal.milestones[0];
- setSelectedMilestoneId(milestone.id);
- if (milestone.tasks && milestone.tasks.length === 1) {
- const task = milestone.tasks[0];
- setSelectedTask(task);
- setActionFormKind('todo');
- setShowActionForm(true);
+ try {
+ const fullGoal = await loadGoalForAction(goals[0].id);
+ continueQuickActionWithGoal(fullGoal, action);
+ } catch (error) {
+ console.error('Failed to prepare quick action:', error);
+ toast.error('Failed to load goal details');
  setPendingAction(null);
- return;
- } else {
- setIsSelectingTask(true);
+ }
  return;
  }
- } else {
- setIsSelectingMilestone(true);
- return;
- }
- } else {
+
  setIsSelectingGoal(true);
- return;
- }
- } else if (action === 'subtask') {
- if (goals.length === 1) {
- setSelectedGoalId(goals[0].id);
- setIsSelectingMilestone(true);
- } else {
- setIsSelectingGoal(true);
- }
- }
  };
 
  const handleGoalSelect = async (goalId: string) => {
  try {
- const fullGoal = await goalsApi.getById(goalId, {
- include_milestones: true,
- include_tasks: true,
- include_todos: true
- });
- 
- setSelectedGoalId(goalId);
+ const fullGoal = await loadGoalForAction(goalId);
  setIsSelectingGoal(false);
- updateGoal(fullGoal);
  
- if (pendingAction === 'milestone') {
- setIsCreatingMilestone(true);
- } else if (pendingAction === 'task') {
- setIsSelectingMilestone(true);
- } else if (pendingAction === 'todo' || pendingAction === 'subtask') {
- setIsSelectingMilestone(true);
+ if (pendingAction) {
+ continueQuickActionWithGoal(fullGoal, pendingAction);
  }
  } catch (error) {
  console.error('Failed to fetch goal details:', error);
+ toast.error('Failed to load goal details');
  }
  };
 
@@ -347,12 +401,14 @@ const Home = () => {
  };
 
  const handleTaskSelect = (taskId: string) => {
- setSelectedTaskId(taskId);
- setIsSelectingTask(false);
+ const task = getSelectableActionTasks(selectedGoal).find((item) => item.task.id === taskId)?.task;
+ if (!task) {
+ toast.error('Task not found. Refresh and try again.');
+ return;
+ }
  
  if (pendingAction === 'todo' || pendingAction === 'subtask') {
- setActionFormKind(pendingAction);
- setShowActionForm(true);
+ openActionFormForTask(task, pendingAction);
  }
  };
 
@@ -366,24 +422,24 @@ const Home = () => {
 
  if (isLoadingGoals) {
  return (
- <div className="min-h-screen bg-muted flex items-center justify-center">
- <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+ <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--tn-bg)' }}>
+ <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: 'var(--tn-accent)' }}></div>
  </div>
  );
  }
 
  if (goalsError) {
  return (
- <div className="min-h-screen bg-muted flex items-center justify-center">
- <div className="text-red-500">Error: {goalsError}</div>
+ <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--tn-bg)' }}>
+ <div style={{ color: 'var(--tn-bad, #c25d63)' }}>Error: {goalsError}</div>
  </div>
  );
  }
 
  return (
- <div className="min-h-screen flex flex-col bg-muted dark:bg-card font-sans text-foreground">
- <main className="flex-grow container mx-auto p-6 md:p-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
- <section className="lg:col-span-2">
+ <div className="min-h-screen flex flex-col font-sans" style={{ background: 'var(--tn-bg)', color: 'var(--tn-fg)' }}>
+ <main className="flex-grow mx-auto w-full max-w-[1600px] px-4 py-5 sm:px-6 md:px-10 md:py-8 grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(320px,0.85fr)] gap-6">
+ <section className="min-w-0">
  {currentView === 'dashboard' ? (
  <DashboardView
  onSelectGoal={(goalId: string) => {
@@ -418,13 +474,15 @@ const Home = () => {
  )}
  </section>
 
- <aside className="lg:col-span-1 space-y-6">
+ <aside className="min-w-0 space-y-6">
  <CalendarWidget />
  <QuickActions
  onAddGoal={handleAddGoal}
  onAddMilestone={() => handleQuickAction('milestone')}
  onAddTask={() => handleQuickAction('task')}
+ onAddRoutine={() => handleQuickAction('routine')}
  onAddTodo={() => handleQuickAction('todo')}
+ onAddSubtask={() => handleQuickAction('subtask')}
  />
  </aside>
 
@@ -500,23 +558,26 @@ const Home = () => {
  </div>
  )}
 
- {isSelectingTask && selectedMilestoneId && selectedGoal && (
+ {isSelectingTask && selectedGoal && (
  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
  <div className="bg-card rounded-xl p-6 max-w-md w-full">
  <h3 className="text-lg font-semibold mb-4">Select Task</h3>
  <div className="space-y-2">
- {selectedGoal.milestones
- .find((m: Milestone) => m.id === selectedMilestoneId)
- ?.tasks.map((t: Task) => (
+ {getSelectableActionTasks(selectedGoal).map(({ task, context }) => (
  <button
- key={t.id}
- onClick={() => handleTaskSelect(t.id)}
+ key={task.id}
+ onClick={() => handleTaskSelect(task.id)}
  className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors"
  >
- <div className="font-medium text-foreground">{t.title}</div>
- <div className="text-sm text-foreground">{t.description}</div>
+ <div className="font-medium text-foreground">{task.title}</div>
+ <div className="text-sm text-muted-foreground">{context} · {task.description || 'No description'}</div>
  </button>
  ))}
+ {getSelectableActionTasks(selectedGoal).length === 0 && (
+ <div className="text-center py-4 text-muted-foreground">
+ No routines or tasks available. Create a routine or task first.
+ </div>
+ )}
  </div>
  <button
  onClick={() => {
@@ -532,17 +593,17 @@ const Home = () => {
  )}
 
  {/* Creation Modals */}
- {isCreatingGoal && (
- <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
- <div className="bg-card rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
- <h3 className="text-lg font-semibold mb-4">Create New Goal</h3>
+ <Modal
+ open={isCreatingGoal}
+ title="Create New Goal"
+ onClose={() => setIsCreatingGoal(false)}
+ maxWidth="2xl"
+ >
  <GoalForm
  onSuccess={handleGoalSubmit}
  onCancel={() => setIsCreatingGoal(false)}
  />
- </div>
- </div>
- )}
+ </Modal>
 
  {isCreatingMilestone && selectedGoalId && (
  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -557,17 +618,21 @@ const Home = () => {
  </div>
  )}
 
- {showTaskForm && selectedMilestoneId && selectedGoal && (
+ {showTaskForm && selectedGoal && (pendingAction !== 'task' || selectedMilestoneId) && (
  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
  <div className="bg-card rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
- <h3 className="text-lg font-semibold mb-4">Create New Task</h3>
+ <h3 className="text-lg font-semibold mb-4">{pendingAction === 'routine' ? 'Create Goal Routine' : 'Create Milestone Task'}</h3>
  <TaskForm
  goalId={selectedGoal.id}
- milestoneId={selectedMilestoneId}
+ milestoneId={pendingAction === 'task' ? selectedMilestoneId ?? undefined : undefined}
+ initialData={pendingAction === 'routine'
+ ? { kind: 'routine', scope: 'goal', status: StatusType.STARTED, priority: PriorityType.MEDIUM }
+ : { kind: 'project', scope: 'milestone', status: StatusType.OUTSTANDING, priority: PriorityType.MEDIUM }}
  onSuccess={handleCreateTask}
  onCancel={() => {
  setShowTaskForm(false);
  setSelectedMilestoneId(null);
+ setPendingAction(null);
  }}
  />
  </div>
@@ -580,7 +645,7 @@ const Home = () => {
  <h3 className="text-lg font-semibold mb-4">Add Action</h3>
  <ActionForm
  goalId={selectedGoal.id}
- milestoneId={selectedTask.milestone_id!}
+ milestoneId={selectedTask.milestone_id ?? ''}
  taskId={selectedTask.id}
  defaultKind={actionFormKind}
  onSuccess={handleCreateAction}

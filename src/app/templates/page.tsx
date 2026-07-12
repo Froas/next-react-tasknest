@@ -4,8 +4,19 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { withAuth } from '@/hoc/withAuth';
 import { templatesApi, type TemplateItem } from '@/lib/api';
+import {
+ GOAL_TEMPLATES,
+ countTemplateMetrics,
+ countTemplateSubtasks,
+ countTemplateTasks,
+ countTemplateTodos,
+ type GoalTemplate,
+} from '@/lib/goalTemplates';
+import { useStore } from '@/store/useStore';
+import { useShallow } from 'zustand/react/shallow';
+import { toast } from '@/store/useToast';
 
-const TAG_PILL_KNOWN = ['brand', 'run', 'read', 'work', 'life'];
+const TAG_PILL_KNOWN = ['brand', 'run', 'read', 'work', 'life', 'health', 'daily', 'metrics', 'sleep', 'product', 'radar', 'notes'];
 
 const TemplatesPage: React.FC = () => {
  const router = useRouter();
@@ -13,6 +24,9 @@ const TemplatesPage: React.FC = () => {
  const [loading, setLoading] = useState(true);
  const [instantiatingId, setInstantiatingId] = useState<string | null>(null);
  const [error, setError] = useState<string | null>(null);
+ const { addGoal } = useStore(
+ useShallow((s) => ({ addGoal: s.addGoal }))
+ );
 
  useEffect(() => {
  let cancelled = false;
@@ -31,7 +45,7 @@ const TemplatesPage: React.FC = () => {
  };
  }, []);
 
- async function handleUse(id: string) {
+ async function handleUseBackend(id: string) {
  setInstantiatingId(id);
  setError(null);
  try {
@@ -44,6 +58,31 @@ const TemplatesPage: React.FC = () => {
  }
  }
 
+ async function handleUseStarter(template: GoalTemplate) {
+ const busyKey = `starter:${template.id}`;
+ setInstantiatingId(busyKey);
+ setError(null);
+ try {
+ const goal = await templatesApi.instantiateBlueprint({
+ title: template.title,
+ description: template.description,
+ emoji: template.emoji,
+ tags: template.tags,
+ blueprint: template.blueprint,
+ });
+ addGoal({ ...goal, milestones: [] });
+ toast.success(`"${template.title}" added to your goals`);
+ router.push(`/goal/${goal.id}`);
+ } catch (e) {
+ console.error('Failed to use starter template:', e);
+ setError(e instanceof Error ? e.message : 'Failed to use starter template');
+ } finally {
+ setInstantiatingId(null);
+ }
+ }
+
+ const totalTemplates = GOAL_TEMPLATES.length + templates.length;
+
  return (
  <div className="page">
  <div className="page-head">
@@ -51,7 +90,7 @@ const TemplatesPage: React.FC = () => {
  Templates ·{' '}
  {loading
  ? 'loading…'
- : `${templates.length} starter plan${templates.length === 1 ? '' : 's'}`}
+ : `${totalTemplates} starter plan${totalTemplates === 1 ? '' : 's'}`}
  </div>
  <h1 className="page-title">Start from a template</h1>
  <p className="page-lede">
@@ -75,7 +114,7 @@ const TemplatesPage: React.FC = () => {
  </div>
  )}
 
- {!loading && templates.length === 0 && (
+ {!loading && totalTemplates === 0 && (
  <div
  className="card"
  style={{
@@ -102,13 +141,77 @@ const TemplatesPage: React.FC = () => {
  gap: 14,
  }}
  >
+ {GOAL_TEMPLATES.map((t) => {
+ const busyKey = `starter:${t.id}`;
+ return (
+ <div
+ key={`starter-${t.id}`}
+ className="card"
+ style={{
+ padding: 18,
+ display: 'flex',
+ flexDirection: 'column',
+ gap: 10,
+ minHeight: 250,
+ }}
+ >
+ <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+ <div className="gc-ico" style={{ width: 40, height: 40, fontSize: 20 }}>
+ {t.emoji}
+ </div>
+ <h3 style={{ fontSize: 15, fontWeight: 600 }}>{t.title}</h3>
+ </div>
+ <p
+ style={{
+ fontSize: 13,
+ color: 'var(--tn-fg-muted)',
+ lineHeight: 1.5,
+ flex: 1,
+ }}
+ >
+ {t.description}
+ </p>
+ <div style={{ fontSize: 12, color: 'var(--tn-fg-muted)' }}>
+ {t.blueprint.milestones.length} milestones · {countTemplateTasks(t)} tasks · {countTemplateTodos(t)} routines
+ </div>
+ <div style={{ fontSize: 12, color: 'var(--tn-fg-muted)' }}>
+ {countTemplateSubtasks(t)} subtasks · {countTemplateMetrics(t)} metrics · ~{Math.round(t.durationDays / 7)} weeks
+ </div>
+ <button
+ className="btn btn-primary"
+ style={{ marginTop: 'auto', justifyContent: 'center', width: '100%' }}
+ onClick={() => handleUseStarter(t)}
+ disabled={instantiatingId !== null}
+ >
+ {instantiatingId === busyKey ? 'Creating goal…' : 'Use this template'}
+ </button>
+ </div>
+ );
+ })}
  {templates.map((t) => {
  const blueprintMilestones = t.blueprint?.milestones?.length ?? 0;
- const blueprintTasks =
+ const blueprintGoalTasks = t.blueprint?.goal_tasks?.length ?? 0;
+ const blueprintTasks = blueprintGoalTasks + (
+ t.blueprint?.milestones?.reduce((a, m) => a + (m.tasks?.length ?? 0), 0) ?? 0
+ );
+ const blueprintTodos =
+ (t.blueprint?.goal_tasks?.reduce((a, task) => a + (task.todos?.length ?? 0), 0) ?? 0) +
+ (t.blueprint?.milestones?.reduce(
+ (a, milestone) => a + (milestone.tasks?.reduce((taskSum, task) => taskSum + (task.todos?.length ?? 0), 0) ?? 0),
+ 0,
+ ) ?? 0);
+ const blueprintSubtasks =
  t.blueprint?.milestones?.reduce(
- (a, m) => a + (m.tasks?.length ?? 0),
+ (a, milestone) => a + (milestone.tasks?.reduce((taskSum, task) => taskSum + (task.subtasks?.length ?? 0), 0) ?? 0),
  0,
  ) ?? 0;
+ const blueprintMetrics =
+ (t.blueprint?.metrics?.length ?? 0) +
+ (t.blueprint?.goal_tasks?.reduce((a, task) => a + (task.metrics?.length ?? 0), 0) ?? 0) +
+ (t.blueprint?.milestones?.reduce(
+ (a, milestone) => a + (milestone.tasks?.reduce((taskSum, task) => taskSum + (task.metrics?.length ?? 0), 0) ?? 0),
+ 0,
+ ) ?? 0);
  return (
  <div
  key={t.id}
@@ -118,6 +221,7 @@ const TemplatesPage: React.FC = () => {
  display: 'flex',
  flexDirection: 'column',
  gap: 10,
+ minHeight: 250,
  }}
  >
  <div
@@ -146,7 +250,12 @@ const TemplatesPage: React.FC = () => {
  <div
  style={{ fontSize: 12, color: 'var(--tn-fg-muted)' }}
  >
- {blueprintMilestones} milestones · {blueprintTasks} tasks
+ {blueprintMilestones} milestones · {blueprintTasks} tasks · {blueprintTodos} routines
+ </div>
+ <div
+ style={{ fontSize: 12, color: 'var(--tn-fg-muted)' }}
+ >
+ {blueprintSubtasks} subtasks · {blueprintMetrics} metrics
  </div>
  {t.tags && t.tags.length > 0 && (
  <div
@@ -168,9 +277,9 @@ const TemplatesPage: React.FC = () => {
  )}
  <button
  className="btn btn-primary"
- style={{ marginTop: 4 }}
- onClick={() => handleUse(t.id)}
- disabled={instantiatingId === t.id}
+ style={{ marginTop: 'auto', justifyContent: 'center', width: '100%' }}
+ onClick={() => handleUseBackend(t.id)}
+ disabled={instantiatingId !== null}
  >
  {instantiatingId === t.id
  ? 'Creating goal…'

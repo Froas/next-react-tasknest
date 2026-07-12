@@ -31,7 +31,7 @@ export const useBroadcastSync = () => {
  });
  // Also re-fetch goals immediately so the active tab updates without
  // user interaction.
- void useStore.getState().fetchGoals({ force: true });
+ void useStore.getState().fetchGoals({ force: true, silent: true });
  };
 
  channel.onmessage = (event: MessageEvent<SyncMessage>) => {

@@ -8,6 +8,176 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+.auth-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--tn-bg, hsl(var(--background)));
+  color: var(--tn-fg, hsl(var(--foreground)));
+  font-family: var(--font-geist-sans), Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.auth-shell,
+.auth-shell * {
+  font-family: var(--font-geist-sans), Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.auth-card {
+  width: min(100%, 480px);
+  padding: 32px;
+  background: var(--tn-card, hsl(var(--card)));
+  color: var(--tn-fg, hsl(var(--card-foreground)));
+  border: var(--tn-card-border, var(--tn-line, 1px solid hsl(var(--border))));
+  border-radius: var(--tn-r-lg, 16px);
+  box-shadow: var(--tn-shadow, 0 10px 30px rgba(15, 23, 42, 0.08));
+}
+
+.auth-title {
+  margin: 0 0 20px;
+  color: var(--tn-fg, hsl(var(--foreground)));
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.auth-notice {
+  margin-bottom: 24px;
+  padding: 16px 18px;
+  border: 1px solid color-mix(in srgb, var(--tn-accent, #2563eb) 42%, transparent);
+  border-radius: var(--tn-r-md, 12px);
+  background: color-mix(in srgb, var(--tn-accent, #2563eb) 12%, var(--tn-card, #ffffff));
+  color: var(--tn-fg, hsl(var(--foreground)));
+}
+
+.auth-notice-title {
+  margin: 0 0 6px;
+  color: var(--tn-fg, hsl(var(--foreground)));
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.auth-notice-body {
+  margin: 0;
+  color: var(--tn-fg-muted, hsl(var(--muted-foreground)));
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.auth-form {
+  display: grid;
+  gap: 18px;
+}
+
+.auth-field {
+  display: grid;
+  gap: 8px;
+}
+
+.auth-label {
+  color: var(--tn-fg, hsl(var(--foreground)));
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.auth-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  background: var(--tn-surface, hsl(var(--background)));
+  color: var(--tn-fg, hsl(var(--foreground)));
+  border: var(--tn-line, 1px solid hsl(var(--input)));
+  border-radius: var(--tn-r-md, 10px);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  outline: none;
+  font-size: 15px;
+}
+
+.auth-input::placeholder {
+  color: var(--tn-fg-dim, var(--tn-fg-muted, hsl(var(--muted-foreground))));
+}
+
+.auth-input:focus {
+  border-color: var(--tn-accent, hsl(var(--ring)));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tn-accent, #2563eb) 18%, transparent);
+}
+
+.auth-button {
+  width: 100%;
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: var(--tn-r-md, 10px);
+  background: var(--tn-accent, hsl(var(--primary)));
+  color: var(--tn-on-accent, hsl(var(--primary-foreground)));
+  box-shadow: var(--tn-shadow, 0 8px 18px rgba(15, 23, 42, 0.12));
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  transition: filter 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
+}
+
+.auth-button:hover:not(:disabled) {
+  filter: brightness(0.96);
+}
+
+.auth-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.auth-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.auth-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+  color: var(--tn-fg, hsl(var(--foreground)));
+  font-size: 14px;
+}
+
+.auth-link {
+  color: var(--tn-accent, hsl(var(--primary)));
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+}
+
+.auth-error,
+.auth-success {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.auth-error { color: var(--tn-bad, #dc2626); }
+.auth-success { color: var(--tn-good, #16a34a); }
+
+@media (max-width: 520px) {
+  .auth-shell {
+    align-items: stretch;
+    padding: 16px;
+  }
+
+  .auth-card {
+    align-self: center;
+    padding: 24px;
+  }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
@@ -97,6 +267,16 @@ body {
 .density-compact .space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.75rem !important; }
 .density-compact .gap-6 { gap: 0.75rem !important; }
 .density-compact .h-16 { height: 3rem !important; }
+
+.notes-page {
+  grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
+}
+
+@media (max-width: 760px) {
+  .notes-page {
+    grid-template-columns: 1fr;
+  }
+}
 
 /* Print styles — make goal/milestone/task pages print as a clean document.
    Hides chrome (header, sidebar, action buttons), forces light colours,

@@ -3,14 +3,9 @@
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import axios from "axios";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
-import { Input } from "@/components/ui/input"; 
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import Link from 'next/link';
 
 
@@ -20,7 +15,7 @@ interface SignInFormInputs {
 }
 
 const signInSchema = yup.object().shape({
- username: yup.string().min(4,"Incorrect format email").required("Email is required"),
+ username: yup.string().min(4,"Username must contain at least 4 characters").required("Username is required"),
  password: yup.string().min(6,"Password should be longer than 6 symbols").required("Password is required"),
 });
 
@@ -52,7 +47,7 @@ const SignIn = () => {
  });
 
  if (result?.error) {
- setErrorMessage("Something went wrong.");
+ setErrorMessage("Incorrect username or password. Create an account first if you have not signed up yet.");
  } else {
  // Only follow same-origin paths from ?redirect= to avoid open-redirect.
  const safeRedirect = redirect && redirect.startsWith('/') && !redirect.startsWith('//')
@@ -63,58 +58,54 @@ const SignIn = () => {
  };
 
  return (
- <div className="flex items-center justify-center min-h-screen">
- <Card className="w-full max-w-md p-4">
- <CardHeader>
- <CardTitle>Log In</CardTitle>
+ <main className="auth-shell">
+ <section className="auth-card" aria-labelledby="login-title">
+ <div>
+ <div id="login-title" className="auth-title" role="heading" aria-level={1}>
+ Log In
+ </div>
  {expired && (
- <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-md p-4">
- <div className="flex">
- <div className="ml-3">
- <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+ <div className="auth-notice" role="status" aria-live="polite">
+ <p className="auth-notice-title">
  Session Expired
- </h3>
- <p className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
+ </p>
+ <p className="auth-notice-body">
  Your session has expired. Please sign in again to continue.
  </p>
  </div>
- </div>
- </div>
  )}
- </CardHeader>
- <CardContent>
- <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
- <div>
- <Label htmlFor="username">Username</Label>
- <Input id="username" type="email" {...register("username")} placeholder="Enter your username" />
- {errors.username && <p className="text-red-500">{errors.username.message}</p>}
  </div>
- <div>
- <Label htmlFor="password">Password</Label>
- <Input id="password" type="password" {...register("password")} placeholder="Enter your password" onKeyDown={handleKeyDown}/>
- {errors.password && <p className="text-red-500">{errors.password.message}</p>}
+ <form onSubmit={handleSubmit(onSubmit)} className="auth-form">
+ <div className="auth-field">
+ <label className="auth-label" htmlFor="username">Username</label>
+ <input className="auth-input" id="username" type="text" autoComplete="username" {...register("username")} placeholder="Enter your username" />
+ {errors.username && <p className="auth-error">{errors.username.message}</p>}
  </div>
- {errorMessage && <p className="text-red-500">{errorMessage}</p>}
+ <div className="auth-field">
+ <label className="auth-label" htmlFor="password">Password</label>
+ <input className="auth-input" id="password" type="password" autoComplete="current-password" {...register("password")} placeholder="Enter your password" onKeyDown={handleKeyDown}/>
+ {errors.password && <p className="auth-error">{errors.password.message}</p>}
+ </div>
+ {errorMessage && <p className="auth-error">{errorMessage}</p>}
+ <button type="submit" className="auth-button">
+ Sign In
+ </button>
  </form>
- </CardContent>
- <CardFooter className="flex justify-between">
- <Button type="submit" onClick={handleSubmit(onSubmit)} className="w-full">Sign In</Button>
- </CardFooter>
- <div className="flex justify-center items-center space-x-2">
- <Label>Don't have an account?</Label>
- <Link href={'/signup'}>
- <Label className="text-blue-800"> Sign up</Label>
+ <div className="auth-footer">
+ <span>Don't have an account?</span>
+ <Link className="auth-link" href={'/signup'}>
+ Sign up
  </Link>
  </div>
- </Card>
- </div>
+ </section>
+ </main>
  );
 };
 
 // useSearchParams forces dynamic rendering; wrap in Suspense so the page
 // can still be statically prerendered for the loading shell.
 const LoginPage = () => (
- <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+ <Suspense fallback={<div className="auth-shell">Loading...</div>}>
  <SignIn />
  </Suspense>
 );

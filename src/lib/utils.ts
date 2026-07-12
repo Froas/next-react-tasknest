@@ -26,12 +26,42 @@ export const toDateInput = (iso?: string): string => {
  return new Date().toISOString().split('T')[0];
 };
 
+const padDatePart = (value: number): string => String(value).padStart(2, '0');
+
+const formatLocalDate = (date: Date): string =>
+ `${date.getFullYear()}-${padDatePart(date.getMonth() + 1)}-${padDatePart(date.getDate())}`;
+
+const formatLocalDateTime = (date: Date): string =>
+ `${formatLocalDate(date)}T${padDatePart(date.getHours())}:${padDatePart(date.getMinutes())}`;
+
+const parseDateInputValue = (value: string): Date => {
+ if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+ const [year, month, day] = value.split('-').map(Number);
+ return new Date(year, month - 1, day);
+ }
+ return new Date(value);
+};
+
+export const toOptionalDateInput = (iso?: string | null): string => {
+ if (!iso) return '';
+ const date = parseDateInputValue(iso);
+ if (Number.isNaN(date.getTime())) return '';
+ return formatLocalDate(date);
+};
+
 // Format an ISO datetime string for an <input type="datetime-local"> (YYYY-MM-DDTHH:mm).
 // Returns"now" (rounded to current minute) when the input is missing/unparseable.
 export const toDateTimeInput = (iso?: string): string => {
- const date = iso ? new Date(iso) : new Date();
+ const date = iso ? parseDateInputValue(iso) : new Date();
  const safe = Number.isNaN(date.getTime()) ? new Date() : date;
- return safe.toISOString().slice(0, 16);
+ return formatLocalDateTime(safe);
+};
+
+export const toOptionalDateTimeInput = (iso?: string | null): string => {
+ if (!iso) return '';
+ const date = parseDateInputValue(iso);
+ if (Number.isNaN(date.getTime())) return '';
+ return formatLocalDateTime(date);
 };
 
 // Strip markdown decoration so card previews show readable plain text. Not

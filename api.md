@@ -1,496 +1,377 @@
-# Project API Reference
+# TaskNest API contracts
 
-## Project Overview
+Verified against the FastAPI OpenAPI schema on 2026-07-10.
 
-This backend REST API provides tracking and management for goals, tasks, subtasks, todos, events, and Google Calendar integration. Built with FastAPI (Python 3.11+), it features user authentication, complete CRUD operations for each entity, and supports advanced integrations and nested entity retrieval.
+Base URL in the frontend: `NEXT_PUBLIC_API_URL`, defaulting to
+`http://localhost:8000`.
 
----
+Except for registration and token creation, requests use:
 
-## Technology Stack
-
-* **Programming Language:** Python 3.11+
-* **Backend Framework:** FastAPI
-* **Documentation:** OpenAPI/Swagger UI (`/docs`)
-* **JWT Authentication:** OAuth2 (Password Flow)
-* **ORM (optional):** SQLAlchemy
-* **Integrations:** Google Calendar
-* **Data Validation:** Pydantic
-
----
-
-## Core Entities
-
-* **User**
-* **Goal**
-* **Milestone**
-* **Task**
-* **Subtask**
-* **Todo**
-* **Tag**
-* **Event**
-* **Calendar Integrations (Google Calendar)**
-
----
-
-## API Endpoints Overview
-
-### Authentication & Users
-
-| Method | Endpoint                  | Description                         |
-| ------ | ------------------------- | ----------------------------------- |
-| POST   | `/users/token`            | Authenticate (receive access token) |
-| GET    | `/users/me`               | Get current user profile            |
-| GET    | `/users/`                 | List all users                      |
-| POST   | `/users/`                 | Create a new user                   |
-| GET    | `/users/{user_id}`        | Get user by ID                      |
-| PATCH  | `/users/update`           | Update user                         |
-| DELETE | `/users/{user_id}/delete` | Delete user                         |
-
----
-
-### Goals
-
-| Method | Endpoint                       | Description                       |
-| ------ | ------------------------------ | --------------------------------- |
-| GET    | `/user/goals`                  | Get all goals                     |
-| POST   | `/user/goals`                  | Create a new goal                 |
-| PATCH  | `/user/goals/update`           | Update a goal                     |
-| GET    | `/user/goals/{goal_id}`        | Get goal by ID (with nested data) |
-| DELETE | `/user/goals/{goal_id}/delete` | Delete goal                       |
-
----
-
-### Milestones
-
-| Method | Endpoint                                 | Description                            |
-| ------ | ---------------------------------------- | -------------------------------------- |
-| GET    | `/user/milestones`                       | Get all milestones                     |
-| POST   | `/user/milestones`                       | Create a milestone                     |
-| PATCH  | `/user/milestones/update`                | Update a milestone                     |
-| PUT    | `/user/milestones/reorder`               | Reorder milestones                     |
-| GET    | `/user/milestones/{milestone_id}`        | Get milestone by ID (with nested data) |
-| DELETE | `/user/milestones/{milestone_id}/delete` | Delete milestone                       |
-
----
-
-### Tasks
-
-| Method | Endpoint                       | Description                       |
-| ------ | ------------------------------ | --------------------------------- |
-| GET    | `/user/tasks`                  | Get all tasks                     |
-| POST   | `/user/tasks`                  | Create a task                     |
-| PATCH  | `/user/tasks/update`           | Update a task                     |
-| GET    | `/user/tasks/{task_id}`        | Get task by ID (with nested data) |
-| DELETE | `/user/tasks/{task_id}/delete` | Delete task                       |
-
----
-
-### Subtasks
-
-| Method | Endpoint                               | Description       |
-| ------ | -------------------------------------- | ----------------- |
-| GET    | `/user/task/subtasks`                  | Get all subtasks  |
-| POST   | `/user/task/subtasks`                  | Create a subtask  |
-| PATCH  | `/user/task/subtasks/update`           | Update a subtask  |
-| GET    | `/user/task/subtasks/{task_id}`        | Get subtask by ID |
-| DELETE | `/user/task/subtasks/{task_id}/delete` | Delete subtask    |
-
----
-
-### Todos
-
-| Method | Endpoint                       | Description    |
-| ------ | ------------------------------ | -------------- |
-| GET    | `/user/todos`                  | Get all todos  |
-| POST   | `/user/todos`                  | Create a todo  |
-| PATCH  | `/user/todos/update`           | Update a todo  |
-| GET    | `/user/todos/{todo_id}`        | Get todo by ID |
-| DELETE | `/user/todos/{todo_id}/delete` | Delete todo    |
-
----
-
-### Events
-
-| Method | Endpoint                         | Description     |
-| ------ | -------------------------------- | --------------- |
-| GET    | `/user/events`                   | Get all events  |
-| POST   | `/user/events`                   | Create an event |
-| PATCH  | `/user/events/update`            | Update an event |
-| GET    | `/user/events/{event_id}`        | Get event by ID |
-| DELETE | `/user/events/{event_id}/delete` | Delete event    |
-
----
-
-### Tags
-
-| Method | Endpoint                | Description   |
-| ------ | ----------------------- | ------------- |
-| GET    | `/tags`                 | Get all tags  |
-| POST   | `/tags`                 | Create a tag  |
-| PATCH  | `/tags/update`          | Update a tag  |
-| GET    | `/tags/{tag_id}`        | Get tag by ID |
-| DELETE | `/tags/delete/{tag_id}` | Delete tag    |
-
----
-
-### Calendar Integrations (Google Calendar)
-
-| Method | Endpoint                             | Description                            |
-| ------ | ------------------------------------ | -------------------------------------- |
-| POST   | `/calendars/google-calendar/token`   | Obtain or update Google Calendar token |
-| GET    | `/calendars/google-calendar/token/2` | Save Google Calendar token             |
-
----
-
-## Data Formats
-
-* All request and response bodies are defined by Pydantic schemas (e.g., `GoalCreate`, `TaskUpdate`, `EventBase`, etc.).
-* Refer to OpenAPI docs at `/docs` for detailed schema definitions and example payloads.
-
----
-
-## Authentication
-
-* Most endpoints require JWT-based authentication (OAuth2 password flow).
-* Obtain an access token via `/users/token`.
-* Pass the token as a Bearer token in the `Authorization` header for protected routes.
-
-# Data Validation Reference
-
-This section describes **data validation rules** for all core entities in the API, based on your SQLModel and Pydantic schemas. This information helps AI clients (or any API integrator) to generate, validate, and submit correct payloads.
-
----
-
-## Global Types
-
-### StatusType (enum)
-
-* `outstanding`
-* `started`
-* `in progress`
-* `finished`
-* `closed`
-* `aborted`
-* `cancelled`
-
-### PriorityType (enum)
-
-* `low`
-* `medium`
-* `high`
-
----
-
-## User
-
-### UserBase
-
-| Field          | Type     | Required | Description     |
-| -------------- | -------- | -------- | --------------- |
-| username       | string   | yes      | Unique username |
-| email          | EmailStr | yes      | Valid email     |
-| password\_hash | string   | yes      | Hashed password |
-
-**Note:** Password is always hashed via bcrypt. Use `/users/token` for authentication (with username & password).
-
----
-
-## Goal
-
-### GoalBase
-
-| Field           | Type     | Required | Default  |
-| --------------- | -------- | -------- | -------- |
-| title           | string   | yes      |          |
-| description     | string   | no       |          |
-| start\_datetime | datetime | no       | now(JST) |
-| end\_datetime   | datetime | yes      |          |
-
-### GoalCreate
-
-| Field           | Type         | Required | Default       |
-| --------------- | ------------ | -------- | ------------- |
-| title           | string       | yes      |               |
-| description     | string       | no       |               |
-| start\_datetime | datetime     | yes      |               |
-| end\_datetime   | datetime     | yes      |               |
-| status          | StatusType   | no       | 'outstanding' |
-| priority        | PriorityType | no       | 'high'        |
-
-### GoalUpdate
-
-| Field           | Type         | Required | Description     |
-| --------------- | ------------ | -------- | --------------- |
-| id              | UUID         | yes      | Goal identifier |
-| title           | string       | no       |                 |
-| description     | string       | no       |                 |
-| status          | StatusType   | no       |                 |
-| priority        | PriorityType | no       |                 |
-| start\_datetime | datetime     | no       |                 |
-| end\_datetime   | datetime     | no       |                 |
-
----
-
-## Milestone
-
-### MilestoneBase
-
-| Field           | Type         | Required | Default       |
-| --------------- | ------------ | -------- | ------------- |
-| title           | string       | yes      |               |
-| description     | string       | yes      |               |
-| due\_date       | datetime     | no       |               |
-| end\_datetime   | datetime     | no       |               |
-| start\_datetime | datetime     | no       | now(JST)      |
-| status          | StatusType   | no       | 'outstanding' |
-| priority        | PriorityType | no       | 'low'         |
-| goal\_id        | UUID         | no       |               |
-| position        | int          | no       | 0             |
-
-### MilestoneUpdate
-
-| Field           | Type         | Required | Description  |
-| --------------- | ------------ | -------- | ------------ |
-| id              | UUID         | yes      | Milestone ID |
-| title           | string       | no       |              |
-| description     | string       | no       |              |
-| status          | StatusType   | no       |              |
-| priority        | PriorityType | no       |              |
-| due\_date       | datetime     | no       |              |
-| start\_datetime | datetime     | no       |              |
-| end\_datetime   | datetime     | no       |              |
-| goal\_id        | UUID         | no       |              |
-| position        | int          | no       |              |
-
----
-
-## Task
-
-### TaskBase
-
-| Field           | Type         | Required | Default       |
-| --------------- | ------------ | -------- | ------------- |
-| title           | string       | yes      |               |
-| description     | string       | yes      |               |
-| due\_date       | datetime     | no       |               |
-| end\_datetime   | datetime     | no       |               |
-| start\_datetime | datetime     | no       | now(JST)      |
-| status          | StatusType   | no       | 'outstanding' |
-| priority        | PriorityType | no       | 'low'         |
-| milestone\_id   | UUID         | no       |               |
-
-### TaskUpdate
-
-| Field           | Type         | Required | Description |
-| --------------- | ------------ | -------- | ----------- |
-| id              | UUID         | yes      | Task ID     |
-| title           | string       | no       |             |
-| description     | string       | no       |             |
-| priority        | PriorityType | no       |             |
-| start\_datetime | datetime     | no       |             |
-| end\_datetime   | datetime     | no       |             |
-| status          | StatusType   | no       |             |
-| due\_date       | datetime     | no       |             |
-| milestone\_id   | UUID         | no       |             |
-
----
-
-## Subtask
-
-### SubtaskBase
-
-| Field           | Type         | Required | Default       |
-| --------------- | ------------ | -------- | ------------- |
-| title           | string       | yes      |               |
-| description     | string       | yes      |               |
-| due\_date       | datetime     | no       |               |
-| end\_datetime   | datetime     | no       |               |
-| start\_datetime | datetime     | no       | now(JST)      |
-| status          | StatusType   | no       | 'outstanding' |
-| priority        | PriorityType | no       | 'low'         |
-| task\_id        | UUID         | no       |               |
-
-### SubtaskUpdate
-
-| Field           | Type         | Required | Description |
-| --------------- | ------------ | -------- | ----------- |
-| id              | UUID         | yes      | Subtask ID  |
-| title           | string       | no       |             |
-| description     | string       | no       |             |
-| priority        | PriorityType | no       |             |
-| start\_datetime | datetime     | no       |             |
-| end\_datetime   | datetime     | no       |             |
-| status          | StatusType   | no       |             |
-| due\_date       | datetime     | no       |             |
-| task\_id        | UUID         | no       |             |
-
----
-
-## Todo
-
-### TodoBase
-
-| Field            | Type         | Required | Default       |
-| ---------------- | ------------ | -------- | ------------- |
-| title            | string       | yes      |               |
-| description      | string       | yes      |               |
-| repeat\_interval | string       | no       |               |
-| due\_date        | datetime     | no       |               |
-| next\_due\_date  | datetime     | no       |               |
-| end\_datetime    | datetime     | no       |               |
-| priority         | PriorityType | no       | 'low'         |
-| status           | StatusType   | no       | 'outstanding' |
-| start\_datetime  | datetime     | no       | now(JST)      |
-| task\_id         | UUID         | no       |               |
-
-### TodoUpdate
-
-| Field            | Type         | Required | Description |
-| ---------------- | ------------ | -------- | ----------- |
-| id               | UUID         | yes      | Todo ID     |
-| title            | string       | no       |             |
-| description      | string       | no       |             |
-| priority         | PriorityType | no       |             |
-| status           | StatusType   | no       |             |
-| repeat\_interval | string       | no       |             |
-| next\_due\_date  | datetime     | no       |             |
-| start\_datetime  | datetime     | no       |             |
-| end\_datetime    | datetime     | no       |             |
-| due\_date        | datetime     | no       |             |
-| task\_id         | UUID         | no       |             |
-
----
-
-## Event
-
-### EventBase
-
-| Field            | Type     | Required | Default |
-| ---------------- | -------- | -------- | ------- |
-| title            | string   | yes      |         |
-| description      | string   | no       |         |
-| start\_datetime  | datetime | no       |         |
-| end\_datetime    | datetime | no       |         |
-| event\_type      | string   | no       |         |
-| location         | string   | no       |         |
-| recurrence\_rule | string   | no       |         |
-
-### EventUpdate
-
-| Field            | Type     | Required | Description |
-| ---------------- | -------- | -------- | ----------- |
-| id               | UUID     | yes      | Event ID    |
-| title            | string   | no       |             |
-| description      | string   | no       |             |
-| start\_datetime  | datetime | no       |             |
-| end\_datetime    | datetime | no       |             |
-| event\_type      | string   | no       |             |
-| location         | string   | no       |             |
-| recurrence\_rule | string   | no       |             |
-
----
-
-## Tag
-
-### TagBase
-
-| Field         | Type   | Required | Default |
-| ------------- | ------ | -------- | ------- |
-| name          | string | yes      |         |
-| color         | string | no       |         |
-| goal\_id      | UUID   | no       |         |
-| milestone\_id | UUID   | no       |         |
-| task\_id      | UUID   | no       |         |
-| subtask\_id   | UUID   | no       |         |
-| todo\_id      | UUID   | no       |         |
-| event\_id     | UUID   | no       |         |
-
-### TagUpdate
-
-| Field | Type   | Required | Description |
-| ----- | ------ | -------- | ----------- |
-| id    | UUID   | yes      | Tag ID      |
-| name  | string | no       |             |
-| color | string | no       |             |
-
----
-
-**All datetime fields are expected in ISO 8601 format (e.g., `2025-06-25T15:30:00+09:00`).**
-
-If you need request/response JSON examples for any entity, let me know!
-
-
-
-# Frontend Overview & Product Vision
-
-## Frontend Technology
-
-* **Framework:** Next.js
-* **Language:** TypeScript
-* **API Communication:** REST (consumes the FastAPI backend described in previous docs)
-
----
-
-## Product Idea: Roadmap as a Service
-
-The application implements a **goal-based roadmap system**:
-
-* **Goal** — The user's main target or final objective.
-* **Milestones** — Key progress points on the way to a Goal. These serve as “safe zones” or checkpoints.
-* **Tasks** — Specific actions that, when completed, allow the user to achieve a Milestone.
-* **Subtasks** — One-time actions under a Task.
-* **Todos** — Recurring (often daily) actions required to maintain progress within a Task.
-* **Events** — Calendar events, handled separately from the roadmap (for scheduling, reminders, etc.).
-
-### Data Hierarchy
-
-```
-Goal
-└── Milestone[]
-    └── Task[]
-        ├── Subtask[]    # one-off tasks
-        └── Todo[]       # recurring (daily) tasks
+```http
+Authorization: Bearer <access_token>
+Content-Type: application/json
 ```
 
----
+Dates are ISO 8601 strings. IDs are UUID strings.
 
-## Integrations
+## Shared values
 
-* **Google Calendar Integration:**
+`status`:
 
-  * API-level integration is implemented (token exchange, backend sync).
-  * **UI display and synchronization of Google Calendar events are still under development and not yet visible on the frontend.**
+- `outstanding`
+- `started`
+- `in progress`
+- `finished`
+- `closed`
+- `aborted`
+- `cancelled`
 
----
+`priority`: `low`, `medium`, or `high`.
 
-## Backend-Frontend Interaction Notes
+## Users and authentication
 
-* **Milestone Ordering:**
+| Method | Path | Request | Response |
+| --- | --- | --- | --- |
+| POST | `/users/` | `{username, email, password_hash}` | `{id, username, email, preferred_theme}` |
+| POST | `/users/token` | Form data: `username`, `password` | `{access_token, token_type}` |
+| GET | `/users/me` | — | `{id, username, email, preferred_theme}` |
+| PATCH | `/users/update` | `{id?, username?, email?, preferred_theme?}` | Current user profile |
+| PATCH | `/users/me` | `{username?, email?, preferred_theme?}` | Current user profile |
+| GET | `/users/` | — | Array containing the current user; authentication required |
+| GET | `/users/{user_id}` | — | Own user profile |
+| DELETE | `/users/{user_id}/delete` | — | `{message}`; only the current user can delete itself |
 
-  * Milestone order is fully controlled by the backend; the frontend should NOT attempt to manage or change the order.
+`password_hash` is the legacy registration field name. The client sends the
+plain password through HTTPS and the backend hashes it before storage. Password
+hashes are never included in API responses.
 
-* **Nested Data Retrieval:**
+## Goals
 
-  * To fetch nested data (e.g., milestones inside a goal, tasks inside a milestone, etc.), the API uses **query parameters** such as `?include_milestones=true`.
-  * The frontend must use these query params to receive hierarchical/expanded data from the backend.
+Create body:
 
----
+```json
+{
+  "title": "Ship TaskNest",
+  "description": "Release the first stable version",
+  "start_datetime": "2026-07-06T09:00:00+09:00",
+  "end_datetime": null,
+  "status": "outstanding",
+  "priority": "high"
+}
+```
 
-## Current Status & To Do
+Only `title` is required. Create and update responses contain `id`, the fields
+above, `status`, `priority`, and `position`.
 
-* Google Calendar events are not displayed in the UI yet — this is a key upcoming task.
-* All roadmap logic (goal → milestone → task → subtask/todo) is functional, with full data retrieval via API.
+| Method | Path | Request | Response |
+| --- | --- | --- | --- |
+| GET | `/user/goals` | — | Active goal array |
+| POST | `/user/goals` | Goal create body | Created goal |
+| PATCH | `/user/goals/update` | `{id, title?, description?, status?, priority?, start_datetime?, end_datetime?, position?}` | Updated goal |
+| PUT | `/user/goals/reorder` | `{goal_ids: [uuid, ...]}` | `{message}` |
+| GET | `/user/goals/{goal_id}` | Query flags below | Goal with requested nested collections |
+| DELETE | `/user/goals/{goal_id}/delete` | — | `{message}`; moves goal to Trash |
 
----
+Nested query flags are `include_milestones`, `include_tasks`,
+`include_subtasks`, and `include_todos`. Soft-deleted nested records are never
+returned.
 
-## Dashboard: the main overview page.
+Reorder accepts the complete active goal list for the current user. A stale list
+is rejected.
 
-Quick Action Creation: fast creation menu for any entity.
+## Milestones
 
-Goals page: list/all goals view.
+Create body:
 
-Milestones page: overview of all milestones.
+```json
+{
+  "title": "API stabilization",
+  "description": "",
+  "goal_id": "<goal-uuid>",
+  "due_date": null,
+  "start_datetime": "2026-07-06T09:00:00+09:00",
+  "end_datetime": null,
+  "status": "outstanding",
+  "priority": "medium",
+  "position": 0
+}
+```
 
-Notes that there are individual views for tasks, subtasks, todos, and events as wel
+`title` and `goal_id` are required by the endpoint. The goal must be active and
+owned by the current user.
 
-in frontend also uses usestore
+| Method | Path | Request | Response |
+| --- | --- | --- | --- |
+| GET | `/user/milestones` | — | Active milestone array |
+| POST | `/user/milestones` | Milestone create body | Created milestone |
+| PATCH | `/user/milestones/update` | `{id, title?, description?, status?, priority?, due_date?, start_datetime?, end_datetime?, goal_id?, position?}` | Updated milestone |
+| PUT | `/user/milestones/reorder` | `{milestone_ids: [uuid, ...]}` | `{message}` |
+| GET | `/user/milestones/{milestone_id}` | `include_tasks`, `include_subtasks`, `include_todos` | Milestone with requested nested data |
+| DELETE | `/user/milestones/{milestone_id}/delete` | — | `{message}`; moves milestone to Trash |
+
+Reorder accepts the complete active milestone list for one goal. A stale or
+cross-goal list is rejected.
+
+## Tasks
+
+Milestone-scoped create body:
+
+```json
+{
+  "title": "Fix persistence",
+  "description": "",
+  "goal_id": "<goal-uuid>",
+  "milestone_id": "<milestone-uuid>",
+  "scope": "milestone",
+  "kind": "project",
+  "due_date": null,
+  "scheduled_date": null,
+  "start_datetime": "2026-07-06T09:00:00+09:00",
+  "end_datetime": null,
+  "status": "outstanding",
+  "priority": "low",
+  "position": 0
+}
+```
+
+Goal-scoped tasks use `scope: "goal"`, a required `goal_id`, and no
+`milestone_id`. They are intended for goal-level routines or tasks that should
+continue across milestones.
+
+`kind` accepts `project`, `routine`, or `challenge`. `scope` accepts `goal` or
+`milestone`. `scheduled_date` means “show this on Today/calendar”; `due_date`
+means deadline. For milestone-scoped tasks, `milestone_id` is required and
+`goal_id` is validated against the milestone.
+
+| Method | Path | Request | Response |
+| --- | --- | --- | --- |
+| GET | `/user/tasks` | Query: `include_subtasks`, `include_todos` | Active task array |
+| POST | `/user/tasks` | Task create body | Created task |
+| PATCH | `/user/tasks/update` | `{id, title?, description?, priority?, status?, due_date?, scheduled_date?, start_datetime?, end_datetime?, goal_id?, milestone_id?, kind?, scope?, position?}` | Updated task |
+| PUT | `/user/tasks/reorder` | `{task_ids: [uuid, ...]}` | `{message}` |
+| GET | `/user/tasks/{task_id}` | Query: `include_subtasks`, `include_todos` | Task with requested actions |
+| DELETE | `/user/tasks/{task_id}/delete` | — | `{message}`; moves task to Trash |
+
+Reorder accepts the complete active task list for one parent scope: either one
+milestone or one goal. A stale or cross-parent list is rejected.
+
+## Todos and subtasks
+
+Todo create fields:
+
+`title` plus optional `description`, `task_id`, `repeat_interval`, `due_date`,
+`next_due_date`, `start_datetime`, `end_datetime`, `status`, `priority`, and
+`position`.
+
+Subtask create fields:
+
+`title` plus optional `description`, `task_id`, `due_date`, `start_datetime`,
+`end_datetime`, `status`, `priority`, and `position`.
+
+`task_id` is required when creating a todo or subtask. The task must be active
+and owned by the current user.
+
+| Method | Path | Request | Response |
+| --- | --- | --- | --- |
+| GET | `/user/todos` | — | Active todo array |
+| POST | `/user/todos` | Todo create fields | Created todo |
+| PATCH | `/user/todos/update` | Todo fields plus required `id` | Updated todo |
+| PUT | `/user/todos/reorder` | `{todo_ids: [uuid, ...]}` | `{message}` |
+| GET | `/user/todos/{todo_id}` | — | Todo |
+| DELETE | `/user/todos/{todo_id}/delete` | — | `{message}`; moves todo to Trash |
+| GET | `/user/task/subtasks` | — | Subtask array |
+| POST | `/user/task/subtasks` | Subtask create fields | Created subtask |
+| PATCH | `/user/task/subtasks/update` | Subtask fields plus required `id` | Updated subtask |
+| PUT | `/user/task/subtasks/reorder` | `{subtask_ids: [uuid, ...]}` | `{message}` |
+| GET | `/user/task/subtasks/{subtask_id}` | — | Subtask |
+| DELETE | `/user/task/subtasks/{subtask_id}/delete` | — | `{message}`; permanently deletes subtask |
+
+Todo reorder accepts the complete active todo list for one task. A stale or
+cross-task list is rejected.
+
+Subtask reorder accepts the complete subtask list for one task. A stale or
+cross-task list is rejected.
+
+## Events
+
+Event fields are `title`, optional `description`, `start_datetime`,
+`end_datetime`, `event_type`, `location`, `recurrence_rule`, and `status`.
+Only `title` is required. Event status is persisted in the database.
+
+| Method | Path | Request | Response |
+| --- | --- | --- | --- |
+| GET | `/user/events` | — | Active event array |
+| POST | `/user/events` | Event fields | Created event |
+| PATCH | `/user/events/update` | Event fields plus required `id` | Updated event |
+| GET | `/user/events/{event_id}` | — | Event |
+| DELETE | `/user/events/{event_id}/delete` | — | `{message}`; moves event to Trash |
+
+## Tags
+
+Tag fields are `name`, optional `color`, and optional links: `goal_id`,
+`milestone_id`, `task_id`, `subtask_id`, `todo_id`, `event_id`.
+
+| Method | Path | Request | Response |
+| --- | --- | --- | --- |
+| GET | `/tags` | — | User tag array |
+| POST | `/tags` | Tag fields | Created tag |
+| PATCH | `/tags/update` | `{id, name?, color?}` | Updated tag |
+| GET | `/tags/{tag_id}` | — | Tag |
+| DELETE | `/tags/delete/{tag_id}` | — | `{message}` |
+
+## Notes
+
+Note fields are `title`, optional `body`, optional `tag`, and optional `pinned`.
+Responses also contain `id`, `created_at`, and `updated_at`.
+
+| Method | Path | Request | Response |
+| --- | --- | --- | --- |
+| GET | `/user/notes` | — | Active note array |
+| POST | `/user/notes` | Note fields | Created note |
+| PATCH | `/user/notes/update` | Note fields plus required `id` | Updated note |
+| GET | `/user/notes/{note_id}` | — | Note |
+| DELETE | `/user/notes/{note_id}/delete` | — | `{message}`; moves note to Trash |
+
+## Daily draft todos
+
+Daily draft todos are quick scratch todos for Today. Fields are `title`,
+`day`, and `done`. Responses also contain `id`, `created_at`, `updated_at`,
+and optional `completed_at`.
+
+| Method | Path | Request | Response |
+| --- | --- | --- | --- |
+| GET | `/user/daily-draft-todos` | Query: `day?`, `include_done?` | Draft todo array for the selected day |
+| POST | `/user/daily-draft-todos` | `{title, day?}` | Created draft todo |
+| PATCH | `/user/daily-draft-todos/update` | `{id, title?, day?, done?}` | Updated draft todo |
+| DELETE | `/user/daily-draft-todos/{todo_id}/delete` | — | `{message}`; hides the draft todo |
+
+## Daily logs
+
+Daily logs are the daily source of truth for Today, but they are not the
+primary UI. Today writes to this record as the user checks actions, enters quick
+metrics, logs a bad day, or closes the day.
+
+Fields are `date`, optional `color`, `note`, `trigger`, `what_helped`,
+and `tomorrow_minimum`.
+
+Allowed colors are `green`, `yellow`, `red`, and `black`.
+
+| Method | Path | Request | Response |
+| --- | --- | --- | --- |
+| GET | `/user/daily-logs` | Query: `start_date?`, `end_date?` | Daily log array |
+| GET | `/user/daily-logs/today` | — | Today's log, created if missing |
+| GET | `/user/daily-logs/{selected_date}` | — | Log for that date, created if missing |
+| POST | `/user/daily-logs` | `{date?, color?, note?, trigger?, what_helped?, tomorrow_minimum?}` | Created or updated log for date |
+| PATCH | `/user/daily-logs/update` | Same fields plus required `id` | Updated daily log |
+
+## Todo occurrences
+
+Todo occurrences are daily facts generated from active `Todo` definitions.
+Today toggles occurrences; it does not mutate the recurring definition row.
+
+| Method | Path | Request | Response |
+| --- | --- | --- | --- |
+| GET | `/user/todo-occurrences` | Query: `selected_date?` | Existing occurrences for date |
+| GET | `/user/todo-occurrences/today` | Query: `selected_date?` | Active todo occurrences, created if missing |
+| PATCH | `/user/todo-occurrences/update` | `{id, status?, value?, note?}` | Updated occurrence |
+
+Allowed occurrence statuses are `open`, `done`, `minimum`, and `skipped`.
+
+## Dynamic metrics
+
+Metrics are not hardcoded in Today. A metric appears in Today only when it has
+a `MetricDefinition` linked to an active goal/task and `show_on_today=true`.
+
+| Method | Path | Request | Response |
+| --- | --- | --- | --- |
+| GET | `/user/metric-definitions` | — | Metric definition array |
+| POST | `/user/metric-definitions` | `{name, unit?, input_type?, show_on_today?, goal_id?, task_id?, position?}` | Created metric definition |
+| PATCH | `/user/metric-definitions/update` | Same fields plus required `id` | Updated metric definition |
+| DELETE | `/user/metric-definitions/{metric_id}/delete` | — | `{message}`; hides the metric definition |
+| GET | `/user/metrics/today` | Query: `selected_date?` | Today metric definitions with today's entries |
+| POST | `/user/metric-entries/upsert` | `{metric_definition_id, date?, value?, numeric_value?, note?}` | Created or updated metric entry |
+
+## Templates
+
+Template fields are `title`, optional `description`, `emoji`, `tags`, and
+`blueprint`. A blueprint contains milestone objects with nested task objects.
+
+| Method | Path | Request | Response |
+| --- | --- | --- | --- |
+| GET | `/user/templates` | — | System and user template array |
+| POST | `/user/templates` | Template fields | Created template |
+| PATCH | `/user/templates/update` | Template fields plus required `id` | Updated template |
+| GET | `/user/templates/{template_id}` | — | Template |
+| DELETE | `/user/templates/{template_id}/delete` | — | `{message}` |
+| POST | `/user/templates/{template_id}/instantiate` | `{title_override?, start_datetime?, end_datetime?}` | Created goal |
+
+## Trash
+
+Supported kinds: `goal`, `milestone`, `task`, `todo`, `event`, and `note`.
+
+| Method | Path | Request | Response |
+| --- | --- | --- | --- |
+| GET | `/user/trash` | — | `[{id, kind, title, deleted_at}]` |
+| POST | `/user/trash/{kind}/{id}/restore` | — | `{message}` |
+| DELETE | `/user/trash/{kind}/{id}` | — | `{message}`; permanent deletion |
+| DELETE | `/user/trash` | — | `{message, removed}` |
+
+## Backup JSON
+
+Export returns active goals, milestones, tasks, subtasks, todos, events, daily
+logs, todo occurrences, metric definitions, and metric entries. Nested goal
+trees are included for portability, and the same entities are also included as
+top-level arrays for simple import tooling.
+
+Import appends a backup into the current account. It creates new UUIDs and
+remaps `goal_id`, `milestone_id`, `task_id`, `todo_id`, `daily_log_id`, and
+`metric_definition_id` relationships. Daily logs are upserted by date so one
+day keeps one source-of-truth row.
+Goal-level tasks are nested under `goals[].tasks`; milestone tasks remain under
+`goals[].milestones[].tasks`.
+
+```json
+{
+  "version": 1,
+  "exportedAt": "2026-07-07T00:00:00.000Z",
+  "goals": [],
+  "milestones": [],
+  "tasks": [],
+  "todos": [],
+  "subtasks": [],
+  "events": [],
+  "daily_logs": [],
+  "todo_occurrences": [],
+  "metric_definitions": [],
+  "metric_entries": []
+}
+```
+
+| Method | Path | Request | Response |
+| --- | --- | --- | --- |
+| GET | `/user/backup/export` | — | Backup JSON payload |
+| POST | `/user/backup/import` | Backup JSON payload | `{message, imported, skipped}` |
+
+## Google Calendar authorization
+
+| Method | Path | Request | Response |
+| --- | --- | --- | --- |
+| POST | `/calendars/google-calendar/token` | `{code}` | `{message}` |
+| GET | `/calendars/google-calendar/token/2` | — | `{access_token}` |
+
+The POST exchanges an authorization code and stores or updates the user's
+access and refresh tokens. The GET returns a valid token and refreshes it when
+it is close to expiration.
+
+## Error responses
+
+- `400`: invalid payload relationship or Google authorization response.
+- `401`: missing/expired application or Google authorization.
+- `403`: attempting to change another user.
+- `404`: record is missing, deleted, or belongs to another user.
+- `409`: duplicate user fields or stale reorder data.
+- `422`: request does not match the schema.
+- `502`/`503`: Google or network integration failure.
+
+Interactive schemas remain available from FastAPI at `/docs` and
+`/openapi.json`.

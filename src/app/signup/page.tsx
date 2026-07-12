@@ -7,10 +7,6 @@ import axios from "axios";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import Link from 'next/link';
 
 interface SignUpFormInputs {
@@ -92,45 +88,41 @@ const SignUp = () => {
  };
 
  return (
- <div className="flex items-center justify-center min-h-screen">
- <Card className="w-full max-w-md p-4">
- <CardHeader>
- <CardTitle>Sign Up</CardTitle>
- </CardHeader>
- <CardContent>
- <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
- <div>
- <Label htmlFor="email">Email</Label>
- <Input id="email" type="email" {...register("email")} placeholder="Enter your email" />
- {errors.email && <p className="text-red-500">{errors.email.message}</p>}
+ <main className="auth-shell">
+ <section className="auth-card" aria-labelledby="signup-title">
+ <div id="signup-title" className="auth-title" role="heading" aria-level={1}>
+ Sign Up
  </div>
- <div>
- <Label htmlFor="username">Username</Label>
- <Input id="username" type="text" {...register("username")} placeholder="Enter your username" />
- {errors.username && <p className="text-red-500">{errors.username.message}</p>}
+ <form onSubmit={handleSubmit(onSubmit)} className="auth-form">
+ <div className="auth-field">
+ <label className="auth-label" htmlFor="email">Email</label>
+ <input className="auth-input" id="email" type="email" {...register("email")} placeholder="Enter your email" />
+ {errors.email && <p className="auth-error">{errors.email.message}</p>}
  </div>
- <div>
- <Label htmlFor="password">Password</Label>
- <Input id="password" type="password" {...register("password_hash")} placeholder="Enter your password" />
- {errors.password_hash && <p className="text-red-500">{errors.password_hash.message}</p>}
+ <div className="auth-field">
+ <label className="auth-label" htmlFor="username">Username</label>
+ <input className="auth-input" id="username" type="text" autoComplete="username" {...register("username")} placeholder="Enter your username" />
+ {errors.username && <p className="auth-error">{errors.username.message}</p>}
  </div>
- {successMessage && <p className="text-green-500">{successMessage}</p>}
- {errorMessage && <p className="text-red-500">{errorMessage}</p>}
- </form>
- </CardContent>
- <CardFooter className="flex justify-between">
- <Button type="submit" onClick={handleSubmit(onSubmit)} disabled={submitting} className="w-full">
+ <div className="auth-field">
+ <label className="auth-label" htmlFor="password">Password</label>
+ <input className="auth-input" id="password" type="password" autoComplete="new-password" {...register("password_hash")} placeholder="Enter your password" />
+ {errors.password_hash && <p className="auth-error">{errors.password_hash.message}</p>}
+ </div>
+ {successMessage && <p className="auth-success">{successMessage}</p>}
+ {errorMessage && <p className="auth-error">{errorMessage}</p>}
+ <button type="submit" disabled={submitting} className="auth-button">
  {submitting ?"Creating account…" :"Sign Up"}
- </Button>
- </CardFooter>
- <div className="flex justify-center items-center space-x-2">
- <Label>Already have an account?</Label>
- <Link href={'/login'}>
- <Label className="text-blue-800"> Log in</Label>
+ </button>
+ </form>
+ <div className="auth-footer">
+ <span>Already have an account?</span>
+ <Link className="auth-link" href={'/login'}>
+ Log in
  </Link>
  </div>
- </Card>
- </div>
+ </section>
+ </main>
  );
 };
 

@@ -1,16 +1,24 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { type CSSProperties, useMemo } from 'react';
 import { useStore } from '@/store/useStore';
 import { collectRecentActivity, calculateActivityStreak, ActivityKind } from '@/lib/recentActivity';
 import { CheckCircle2, Flame } from 'lucide-react';
 
-const KIND_BADGE: Record<ActivityKind, string> = {
- Goal: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300',
- Milestone: 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300',
- Task: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300',
- Subtask: 'bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300',
- Todo: 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300',
+const KIND_TONE: Record<ActivityKind, string> = {
+ Goal: 'var(--tn-accent)',
+ Milestone: 'var(--tn-plum, #8a6594)',
+ Task: 'var(--tn-good, #2f7d50)',
+ Subtask: 'var(--tn-slate, #5a6f8c)',
+ Todo: 'var(--tn-warn, var(--tn-accent-2, var(--tn-accent)))',
+};
+
+const badgeStyle = (kind: ActivityKind): CSSProperties => {
+ const tone = KIND_TONE[kind];
+ return {
+ background: `color-mix(in srgb, ${tone} 12%, var(--tn-card))`,
+ color: tone,
+ };
 };
 
 const formatRelative = (iso: string): string => {
@@ -50,7 +58,8 @@ export const RecentActivity: React.FC = () => {
  </div>
  {streak >= 2 && (
  <div
- className="flex items-center space-x-1 px-3 py-1.5 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full"
+ className="flex items-center space-x-1 px-3 py-1.5 rounded-full"
+ style={badgeStyle('Todo')}
  title={`${streak}-day streak`}
  >
  <Flame className="w-4 h-4" />
@@ -68,10 +77,14 @@ export const RecentActivity: React.FC = () => {
  {items.map((item) => (
  <li
  key={`${item.kind}-${item.id}`}
- className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted dark:bg-card/40"
+ className="flex items-center justify-between px-3 py-2 rounded-lg"
+ style={{
+ background: 'var(--tn-surface-2, var(--tn-hover))',
+ border: 'var(--tn-line)',
+ }}
  >
  <div className="flex items-start space-x-3 min-w-0 flex-1">
- <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+ <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--tn-good, var(--tn-accent))' }} />
  <div className="min-w-0 flex-1">
  <div className="text-sm font-medium text-foreground truncate">
  {item.title}
@@ -84,7 +97,7 @@ export const RecentActivity: React.FC = () => {
  </div>
  </div>
  <div className="flex items-center space-x-2 ml-3 flex-shrink-0">
- <span className={`text-xs px-2 py-0.5 rounded-full ${KIND_BADGE[item.kind]}`}>
+ <span className="text-xs px-2 py-0.5 rounded-full" style={badgeStyle(item.kind)}>
  {item.kind}
  </span>
  <span className="text-xs text-muted-foreground dark:text-muted-foreground">

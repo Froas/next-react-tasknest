@@ -10,7 +10,7 @@ import { useWeeklyReviewPrompt } from '@/store/useWeeklyReview';
 const KIND_STYLES: Record<string, string> = {
  error: 'bg-red-600 text-white',
  success: 'bg-emerald-600 text-white',
- info: 'bg-card text-white',
+ info: 'bg-primary text-primary-foreground',
 };
 
 export const ToastViewport: React.FC = () => {

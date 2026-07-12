@@ -1,0 +1,36 @@
+.sprite {
+ display: block;
+ width: var(--frame-width);
+ height: var(--frame-height);
+ background-image: var(--sprite-url);
+ background-repeat: no-repeat;
+ background-size: var(--sheet-width) var(--sheet-height);
+ background-position: var(--sprite-start-x) var(--sprite-row-y);
+ filter:
+  drop-shadow(1px 0 0 var(--viz-character-outline, white))
+  drop-shadow(-1px 0 0 var(--viz-character-outline, white))
+  drop-shadow(0 1px 0 var(--viz-character-outline, white))
+  drop-shadow(0 -1px 0 var(--viz-character-outline, white))
+  drop-shadow(0 7px 7px rgba(0, 0, 0, 0.28));
+ image-rendering: pixelated;
+ transform:
+  translate(var(--sprite-offset-x), var(--sprite-offset-y))
+  scaleX(var(--sprite-scale-x))
+  scaleY(var(--sprite-scale-y))
+  scale(var(--sprite-scale));
+ transform-origin: center;
+ animation: spriteFrames var(--animation-speed) steps(var(--frame-count)) infinite;
+}
+
+.reducedMotion {
+ animation: none;
+}
+
+@keyframes spriteFrames {
+ from { background-position: var(--sprite-start-x) var(--sprite-row-y); }
+ to { background-position: var(--sprite-end-x) var(--sprite-row-y); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+ .sprite { animation: none; }
+}

@@ -40,12 +40,12 @@ export const InboxWidget: React.FC = () => {
  value={draft}
  onChange={(e) => setDraft(e.target.value)}
  placeholder="Capture a thought…"
- className="flex-1 px-3 py-2 text-sm border border-border dark:border-border bg-card dark:bg-card text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+ className="filter-input flex-1"
  />
  <button
  type="submit"
  disabled={!draft.trim()}
- className="px-3 py-2 text-sm bg-card dark:bg-card text-white rounded-lg hover:bg-card dark:hover:bg-muted disabled:opacity-50 flex items-center space-x-1"
+ className="btn btn-primary disabled:opacity-50"
  >
  <Plus className="w-3 h-3" />
  <span>Add</span>

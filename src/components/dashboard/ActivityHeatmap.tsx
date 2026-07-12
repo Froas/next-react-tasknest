@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, type CSSProperties } from 'react';
 import { useStore } from '@/store/useStore';
 import {
  buildActivityCounts,
@@ -38,15 +38,31 @@ export const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ weeks = 53, co
  }, [goals, grid]);
 
  const cellSize = compact ? 'w-2.5 h-2.5' : 'w-3 h-3';
- const cellGap = compact ? 'gap-0.5' : 'gap-1';
+ const minCellWidth = compact ? '8px' : '8px';
+ const gapPx = compact ? 2 : 3;
+ const graphColumns = `repeat(${grid.weeks.length}, minmax(${minCellWidth}, 1fr))`;
 
- const intensity = (count: number): string => {
- if (count === 0) return 'bg-muted dark:bg-card';
+ const intensityLevel = (level: 0 | 1 | 2 | 3 | 4): CSSProperties => {
+ if (level === 0) {
+ return {
+ background: 'var(--tn-surface-2, var(--tn-hover))',
+ border: 'var(--tn-line)',
+ };
+ }
+ const amount = [0, 24, 42, 60, 78][level];
+ return {
+ background: `color-mix(in srgb, var(--tn-good, #2f7d50) ${amount}%, var(--tn-card))`,
+ border: `1px solid color-mix(in srgb, var(--tn-good, #2f7d50) ${Math.min(amount + 14, 88)}%, var(--tn-card))`,
+ };
+ };
+
+ const intensity = (count: number): CSSProperties => {
+ if (count === 0) return intensityLevel(0);
  const ratio = grid.max === 0 ? 0 : count / grid.max;
- if (ratio < 0.25) return 'bg-emerald-200 dark:bg-emerald-900/50';
- if (ratio < 0.5) return 'bg-emerald-400 dark:bg-emerald-700';
- if (ratio < 0.75) return 'bg-emerald-500 dark:bg-emerald-600';
- return 'bg-emerald-600 dark:bg-emerald-500';
+ if (ratio < 0.25) return intensityLevel(1);
+ if (ratio < 0.5) return intensityLevel(2);
+ if (ratio < 0.75) return intensityLevel(3);
+ return intensityLevel(4);
  };
 
  return (
@@ -73,14 +89,17 @@ export const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ weeks = 53, co
  </div>
  )}
 
- <div className="overflow-x-auto">
- <div className="inline-block">
+ <div className="w-full overflow-x-auto md:overflow-x-visible pb-1">
+ <div className={`${compact ? 'min-w-[320px]' : 'min-w-[520px]'} md:min-w-0 w-full`}>
  {!compact && grid.monthLabels.length > 0 && (
- <div className="flex mb-1 text-[10px] text-muted-foreground dark:text-muted-foreground" style={{ paddingLeft: 24 }}>
+ <div
+ className="grid mb-1 text-[11px] text-muted-foreground dark:text-muted-foreground"
+ style={{ gridTemplateColumns: graphColumns, columnGap: gapPx }}
+ >
  {grid.weeks.map((_, i) => {
  const label = grid.monthLabels.find((m) => m.col === i);
  return (
- <div key={i} className={`${cellSize} ${cellGap.includes('gap-0.5') ? 'mr-0.5' : 'mr-1'}`}>
+ <div key={i} className="h-4 min-w-0 overflow-visible whitespace-nowrap">
  {label ? <span>{label.label}</span> : null}
  </div>
  );
@@ -88,17 +107,12 @@ export const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ weeks = 53, co
  </div>
  )}
 
- <div className="flex">
- {!compact && (
- <div className="flex flex-col mr-1 text-[10px] text-muted-foreground dark:text-muted-foreground justify-around" style={{ height: cellSize.includes('w-3') ? '80px' : '70px' }}>
- <span>Mon</span>
- <span>Wed</span>
- <span>Fri</span>
- </div>
- )}
- <div className={`flex ${cellGap}`}>
+ <div
+ className="grid items-start"
+ style={{ gridTemplateColumns: graphColumns, columnGap: gapPx }}
+ >
  {grid.weeks.map((week, w) => (
- <div key={w} className={`flex flex-col ${cellGap}`}>
+ <div key={w} className="grid grid-rows-7 min-w-0" style={{ rowGap: gapPx }}>
  {week.map((day, d) => {
  const isFuture = day.date.getTime() > Date.now();
  return (
@@ -106,9 +120,11 @@ export const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ weeks = 53, co
  key={d}
  onMouseEnter={() => !isFuture && setHover(day)}
  onMouseLeave={() => setHover(null)}
- className={`${cellSize} rounded-sm ${
- isFuture ? 'opacity-30 bg-muted dark:bg-card' : intensity(day.count)
- } ${hover === day ? 'ring-2 ring-blue-400' : ''}`}
+ className="w-full aspect-square rounded-[4px]"
+ style={{
+ ...(isFuture ? { ...intensityLevel(0), opacity: 0.5 } : intensity(day.count)),
+ boxShadow: hover === day ? '0 0 0 2px var(--tn-accent)' : undefined,
+ }}
  title={
  isFuture
  ? ''
@@ -119,7 +135,6 @@ export const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ weeks = 53, co
  })}
  </div>
  ))}
- </div>
  </div>
 
  {!compact && (
@@ -143,11 +158,11 @@ export const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ weeks = 53, co
  </div>
  <div className="flex items-center space-x-1">
  <span>Less</span>
- <div className={`${cellSize} rounded-sm bg-muted dark:bg-card`} />
- <div className={`${cellSize} rounded-sm bg-emerald-200 dark:bg-emerald-900/50`} />
- <div className={`${cellSize} rounded-sm bg-emerald-400 dark:bg-emerald-700`} />
- <div className={`${cellSize} rounded-sm bg-emerald-500 dark:bg-emerald-600`} />
- <div className={`${cellSize} rounded-sm bg-emerald-600 dark:bg-emerald-500`} />
+ <div className={`${cellSize} rounded-sm`} style={intensityLevel(0)} />
+ <div className={`${cellSize} rounded-sm`} style={intensityLevel(1)} />
+ <div className={`${cellSize} rounded-sm`} style={intensityLevel(2)} />
+ <div className={`${cellSize} rounded-sm`} style={intensityLevel(3)} />
+ <div className={`${cellSize} rounded-sm`} style={intensityLevel(4)} />
  <span>More</span>
  </div>
  </div>
@@ -161,7 +176,7 @@ export const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ weeks = 53, co
 const Stat: React.FC<{ label: string; value: string; highlight?: boolean }> = ({ label, value, highlight }) => (
  <div>
  <div className="text-muted-foreground dark:text-muted-foreground uppercase tracking-wider">{label}</div>
- <div className={`font-semibold ${highlight ? 'text-orange-600 dark:text-orange-400' : 'text-foreground'}`}>
+ <div className="font-semibold text-foreground" style={highlight ? { color: 'var(--tn-warn, #c8932a)' } : undefined}>
  {value}
  </div>
  </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { type CSSProperties, useState } from 'react';
 import { TaskItem as Task, TodoItem as Todo, SubtaskItem as Subtask, StatusType } from '@/lib/types';
 import { CheckCircle2, Circle, Plus, MoreHorizontal, ChevronDown, ChevronRight } from 'lucide-react';
 
@@ -13,7 +13,7 @@ interface TaskKanbanViewProps {
  onQuickAddTask?: (title: string) => Promise<void> | void;
  onAddTodo: (task: Task) => void;
  onAddSubtask: (task: Task) => void;
- onReorderTask?: (draggedTaskId: string, beforeTaskId: string) => void;
+ onReorderTask?: (draggedTaskId: string, beforeTaskId: string) => Promise<void> | void;
  isUpdating: boolean;
 }
 
@@ -25,7 +25,7 @@ interface StatusColumnProps {
  onTodoToggle: (todoId: string, currentStatus: StatusType, parentTaskId: string) => void;
  onAddTodo: (task: Task) => void;
  onAddSubtask: (task: Task) => void;
- onReorderDrop?: (draggedTaskId: string, beforeTaskId: string) => void;
+ onReorderDrop?: (draggedTaskId: string, beforeTaskId: string) => Promise<void> | void;
  isUpdating: boolean;
 }
 
@@ -36,7 +36,7 @@ interface TaskCardProps {
  onTodoToggle: (todoId: string, currentStatus: StatusType, parentTaskId: string) => void;
  onAddTodo: (task: Task) => void;
  onAddSubtask: (task: Task) => void;
- onReorderDrop?: (draggedTaskId: string, beforeTaskId: string) => void;
+ onReorderDrop?: (draggedTaskId: string, beforeTaskId: string) => Promise<void> | void;
  isUpdating: boolean;
 }
 
@@ -47,6 +47,30 @@ interface SubItemCardProps {
  onToggle: (itemId: string, currentStatus: StatusType, parentTaskId: string) => void;
  isUpdating: boolean;
 }
+
+const statusTone = (status: StatusType) => {
+ switch (status) {
+ case StatusType.FINISHED:
+ return 'var(--tn-good, #2f7d50)';
+ case StatusType.IN_PROGRESS:
+ return 'var(--tn-warn, #c8932a)';
+ case StatusType.STARTED:
+ return 'var(--tn-accent)';
+ case StatusType.ABORTED:
+ case StatusType.CANCELLED:
+ return 'var(--tn-bad, #c25d63)';
+ default:
+ return 'var(--tn-fg-muted)';
+ }
+};
+
+const typeTone = (type: 'todo' | 'subtask') =>
+ type === 'todo' ? 'var(--tn-good, #2f7d50)' : 'var(--tn-plum, #8a6594)';
+
+const toneSurface = (tone: string, amount = 10): CSSProperties => ({
+ background: `color-mix(in srgb, ${tone} ${amount}%, var(--tn-card))`,
+ borderColor: `color-mix(in srgb, ${tone} ${Math.max(amount + 14, 26)}%, transparent)`,
+});
 
 const TaskCard: React.FC<TaskCardProps> = ({ task, onTaskToggle, onSubtaskToggle, onTodoToggle, onAddTodo, onAddSubtask, onReorderDrop, isUpdating }) => {
  const [isExpanded, setIsExpanded] = useState(false);
@@ -98,17 +122,21 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onTaskToggle, onSubtaskToggle
  }}
  className={`bg-card dark:bg-card border rounded-lg shadow-sm hover:shadow-md transition-shadow mb-3 cursor-grab active:cursor-grabbing ${
  isDragging ? 'opacity-50' : ''
- } ${isDropTarget ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-900' : 'border-border dark:border-border'}`}
+ }`}
+ style={{
+ borderColor: isDropTarget ? 'var(--tn-accent)' : undefined,
+ boxShadow: isDropTarget ? '0 0 0 2px color-mix(in srgb, var(--tn-accent) 22%, transparent)' : undefined,
+ }}
  >
  <div className="p-3">
  <div className="flex items-start space-x-2">
  <button
  onClick={() => onTaskToggle(task.id, task.status)}
  disabled={isUpdating}
- className="flex-shrink-0 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+ className="flex-shrink-0 mt-1 rounded"
  >
  {isCompleted ? (
- <CheckCircle2 className="w-4 h-4 text-green-500" />
+ <CheckCircle2 className="w-4 h-4" style={{ color: 'var(--tn-good, #2f7d50)' }} />
  ) : (
  <Circle className="w-4 h-4 text-muted-foreground hover:text-foreground" />
  )}
@@ -128,12 +156,12 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onTaskToggle, onSubtaskToggle
  {hasSubItems && (
  <div className="flex items-center space-x-2 text-xs text-muted-foreground dark:text-muted-foreground mb-2">
  {taskTodos.length > 0 && (
- <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">
+ <span className="px-2 py-1 rounded" style={toneSurface(typeTone('todo'), 12)}>
  {taskTodos.filter(t => t.status === StatusType.FINISHED).length}/{taskTodos.length} todos
  </span>
  )}
  {taskSubtasks.length > 0 && (
- <span className="bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 px-2 py-1 rounded">
+ <span className="px-2 py-1 rounded" style={toneSurface(typeTone('subtask'), 12)}>
  {taskSubtasks.filter(s => s.status === StatusType.FINISHED).length}/{taskSubtasks.length} subtasks
  </span>
  )}
@@ -145,13 +173,15 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onTaskToggle, onSubtaskToggle
  <div className="flex items-center space-x-1">
  <button
  onClick={() => onAddTodo(task)}
- className="px-2 py-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded transition-colors"
+ className="px-2 py-1 text-xs rounded transition-colors"
+ style={{ color: typeTone('todo') }}
  >
  + Todo
  </button>
  <button
  onClick={() => onAddSubtask(task)}
- className="px-2 py-1 text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/50 rounded transition-colors"
+ className="px-2 py-1 text-xs rounded transition-colors"
+ style={{ color: typeTone('subtask') }}
  >
  + Subtask
  </button>
@@ -220,21 +250,20 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onTaskToggle, onSubtaskToggle
 
 const SubItemCard: React.FC<SubItemCardProps> = ({ item, type, parentTaskId, onToggle, isUpdating }) => {
  const isCompleted = item.status === StatusType.FINISHED;
- const bgColor = type === 'todo' ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700' : 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-700';
- const dotColor = type === 'todo' ? 'bg-blue-400 dark:bg-blue-500' : 'bg-purple-400 dark:bg-purple-500';
+ const tone = typeTone(type);
  
  return (
- <div className={`border rounded p-2 ${bgColor} hover:shadow-sm transition-shadow`}>
+ <div className="border rounded p-2 hover:shadow-sm transition-shadow" style={toneSurface(tone, 8)}>
  <div className="flex items-start space-x-2">
  <div className="flex items-center space-x-1 flex-shrink-0 mt-0.5">
- <div className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></div>
+ <div className="w-1.5 h-1.5 rounded-full" style={{ background: tone }}></div>
  <button
  onClick={() => onToggle(item.id, item.status, parentTaskId)}
  disabled={isUpdating}
- className="focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+ className="rounded"
  >
  {isCompleted ? (
- <CheckCircle2 className="w-3 h-3 text-green-500" />
+ <CheckCircle2 className="w-3 h-3" style={{ color: 'var(--tn-good, #2f7d50)' }} />
  ) : (
  <Circle className="w-3 h-3 text-muted-foreground hover:text-foreground" />
  )}
@@ -277,19 +306,9 @@ const StatusColumn: React.FC<StatusColumnProps> = ({
  [StatusType.CANCELLED]: 'Cancelled'
  };
 
- const statusColors: Record<StatusType, string> = {
- [StatusType.OUTSTANDING]: 'bg-muted dark:bg-card border-border dark:border-border',
- [StatusType.STARTED]: 'bg-blue-100 dark:bg-blue-900/30 border-blue-300 dark:border-blue-600',
- [StatusType.IN_PROGRESS]: 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-600',
- [StatusType.FINISHED]: 'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-600',
- [StatusType.CLOSED]: 'bg-muted border-border',
- [StatusType.ABORTED]: 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-600',
- [StatusType.CANCELLED]: 'bg-orange-100 dark:bg-orange-900/30 border-orange-300 dark:border-orange-600'
- };
-
  return (
  <div className="md:flex-shrink-0 w-full md:w-80 p-2">
- <div className={`rounded-lg border-2 ${statusColors[status]} h-full min-h-[16rem]`}>
+ <div className="rounded-lg border-2 h-full min-h-[16rem]" style={toneSurface(statusTone(status), 8)}>
  <div className="p-3 border-b border-current border-opacity-20">
  <h3 className="text-sm font-semibold text-foreground">{statusLabels[status]}</h3>
  <p className="text-xs text-foreground dark:text-muted-foreground/60">{tasks.length} tasks</p>
@@ -378,7 +397,7 @@ const TaskKanbanView: React.FC<TaskKanbanViewProps> = ({
  onChange={(e) => setQuickDraft(e.target.value)}
  placeholder="Quick add task..."
  disabled={quickBusy}
- className="flex-1 min-w-0 px-2 py-1.5 text-sm border border-border dark:border-border bg-card dark:bg-card text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+ className="filter-input flex-1 min-w-0 disabled:opacity-50"
  />
  <button
  type="submit"
@@ -392,7 +411,7 @@ const TaskKanbanView: React.FC<TaskKanbanViewProps> = ({
  )}
  <button
  onClick={onAddTask}
- className="flex items-center space-x-1 px-3 py-1.5 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex-shrink-0"
+ className="btn btn-primary flex-shrink-0"
  >
  <Plus className="w-3 h-3" />
  <span>Full form</span>
@@ -419,14 +438,15 @@ const TaskKanbanView: React.FC<TaskKanbanViewProps> = ({
  ))}
  </div>
  ) : (
- <div className="text-center py-12 bg-muted dark:bg-card rounded-lg border-2 border-dashed border-border dark:border-border">
- <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center mx-auto mb-2">
+ <div className="text-center py-12 rounded-lg border-2 border-dashed" style={{ background: 'var(--tn-surface-2, var(--tn-hover))', borderColor: 'color-mix(in srgb, var(--tn-fg-muted) 26%, transparent)' }}>
+ <div className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2" style={{ background: 'var(--tn-chip)' }}>
  <Plus className="w-5 h-5 text-muted-foreground dark:text-muted-foreground" />
  </div>
  <p className="text-sm text-foreground dark:text-muted-foreground/60 mb-2">No tasks yet</p>
  <button
  onClick={onAddTask}
- className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
+ className="text-xs font-medium"
+ style={{ color: 'var(--tn-accent)' }}
  >
  Add your first task
  </button>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { type CSSProperties, useMemo } from 'react';
 import { useTodoStreaks } from '@/store/useTodoStreaks';
 
 const WEEKS = 12;
@@ -19,13 +19,20 @@ const dateKey = (d: Date) => {
  return `${y}-${m}-${day}`;
 };
 
-const intensity = (count: number, max: number): string => {
- if (count === 0) return 'bg-muted dark:bg-card';
+const cellStyle = (count: number, max: number, isFuture = false): CSSProperties => {
+ const base: CSSProperties = {
+ border: 'var(--tn-line)',
+ background: 'var(--tn-surface-2, var(--tn-hover))',
+ opacity: isFuture ? 0.35 : 1,
+ };
+ if (count === 0) return base;
  const ratio = max === 0 ? 0 : count / max;
- if (ratio < 0.25) return 'bg-orange-200 dark:bg-orange-900/40';
- if (ratio < 0.5) return 'bg-orange-300 dark:bg-orange-800/60';
- if (ratio < 0.75) return 'bg-orange-400 dark:bg-orange-700';
- return 'bg-orange-500 dark:bg-orange-600';
+ const amount = ratio < 0.25 ? 22 : ratio < 0.5 ? 42 : ratio < 0.75 ? 62 : 82;
+ return {
+ ...base,
+ background: `color-mix(in srgb, var(--tn-accent) ${amount}%, var(--tn-card))`,
+ borderColor: `color-mix(in srgb, var(--tn-accent) ${Math.min(amount + 12, 90)}%, var(--tn-card))`,
+ };
 };
 
 // 12-week streak heatmap. Aggregates completion counts across all tracked
@@ -70,44 +77,43 @@ export const StreakHeatmap: React.FC = () => {
  return { grid, max, total };
  }, [completions]);
 
- if (total === 0) {
- return (
- <div className="card">
- <h3 className="text-sm font-semibold text-foreground mb-1">Activity</h3>
- <p className="text-xs text-muted-foreground dark:text-muted-foreground">
- Complete a recurring todo to start your streak. The last 12 weeks will appear here.
- </p>
- </div>
- );
- }
-
  return (
  <div className="card">
  <div className="flex items-center justify-between mb-3">
+ <div>
  <h3 className="text-sm font-semibold text-foreground">Activity (last 12 weeks)</h3>
+ {total === 0 && (
+ <p className="text-xs text-muted-foreground dark:text-muted-foreground">
+ Complete a recurring todo to start your streak.
+ </p>
+ )}
+ </div>
  <span className="text-xs text-muted-foreground dark:text-muted-foreground">{total} completions</span>
  </div>
- <div className="flex space-x-1 overflow-x-auto pb-2">
+ <div className="w-full overflow-x-auto sm:overflow-x-visible pb-2">
+ <div className="mx-auto flex w-max max-w-full space-x-1">
  {grid.map((week, wIdx) => (
  <div key={wIdx} className="flex flex-col space-y-1">
  {week.map(({ date, count, isFuture }, dIdx) => (
  <div
  key={dIdx}
  title={isFuture ? '' : `${dateKey(date)} — ${count} completion${count === 1 ? '' : 's'}`}
- className={`w-3 h-3 rounded-sm ${isFuture ? 'opacity-30 bg-muted dark:bg-card' : intensity(count, max)}`}
+ className="w-3 h-3 rounded-sm"
+ style={cellStyle(count, max, isFuture)}
  />
  ))}
  </div>
  ))}
  </div>
- <div className="flex items-center justify-end mt-2 space-x-1 text-xs text-muted-foreground dark:text-muted-foreground">
- <span>less</span>
- <div className="w-3 h-3 rounded-sm bg-muted dark:bg-card" />
- <div className="w-3 h-3 rounded-sm bg-orange-200 dark:bg-orange-900/40" />
- <div className="w-3 h-3 rounded-sm bg-orange-300 dark:bg-orange-800/60" />
- <div className="w-3 h-3 rounded-sm bg-orange-400 dark:bg-orange-700" />
- <div className="w-3 h-3 rounded-sm bg-orange-500 dark:bg-orange-600" />
- <span>more</span>
+ </div>
+ <div className="flex items-center justify-center mt-2 space-x-1 text-xs text-muted-foreground dark:text-muted-foreground">
+ <span>Less</span>
+ <div className="w-3 h-3 rounded-sm" style={cellStyle(0, 4)} />
+ <div className="w-3 h-3 rounded-sm" style={cellStyle(1, 4)} />
+ <div className="w-3 h-3 rounded-sm" style={cellStyle(2, 4)} />
+ <div className="w-3 h-3 rounded-sm" style={cellStyle(3, 4)} />
+ <div className="w-3 h-3 rounded-sm" style={cellStyle(4, 4)} />
+ <span>More</span>
  </div>
  </div>
  );

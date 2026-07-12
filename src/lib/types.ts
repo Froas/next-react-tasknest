@@ -15,6 +15,39 @@ export enum PriorityType {
  HIGH = 'high'
 }
 
+export type TaskKind = 'project' | 'routine' | 'challenge';
+export type TaskScope = 'goal' | 'milestone';
+
+export type CompletionRule =
+ | { type: 'structural'; auto_completed?: boolean }
+ | {
+ type: 'metric_target';
+ metric_name?: string;
+ start_value?: number;
+ current_value?: number;
+ target_value?: number;
+ direction?: 'increase' | 'decrease' | 'at_least' | 'at_most';
+ auto_completed?: boolean;
+ }
+ | {
+ type: 'consistency';
+ label?: string;
+ current_done?: number;
+ required_done?: number;
+ window_days?: number;
+ auto_completed?: boolean;
+ }
+ | {
+ type: 'hybrid';
+ structural_weight?: number;
+ outcome_weight?: number;
+ consistency_weight?: number;
+ outcome?: Extract<CompletionRule, { type: 'metric_target' }>;
+ consistency?: Extract<CompletionRule, { type: 'consistency' }>;
+ current_progress?: number | null;
+ auto_completed?: boolean;
+ };
+
 // Base interfaces
 export interface BaseEntity {
  id: string;
@@ -34,14 +67,17 @@ export interface GoalEntity {
  end_datetime?: string;
  priority: PriorityType;
  status: StatusType;
+ position?: number;
+ completion_rule?: CompletionRule | null;
 }
 
 // Task related types
 export interface SubtaskItem extends BaseEntity {
  task_id: string;
  due_date?: string;
- created_at: string;
- updated_at: string;
+ created_at?: string;
+ updated_at?: string;
+ position?: number;
 }
 
 export interface TodoItem extends BaseEntity {
@@ -49,6 +85,7 @@ export interface TodoItem extends BaseEntity {
  due_date?: string;
  next_due_date?: string;
  repeat_interval?: string;
+ position?: number;
 }
 
 export interface TaskItem extends BaseEntity {
@@ -60,8 +97,14 @@ export interface TaskItem extends BaseEntity {
  start_datetime?: string;
  end_datetime?: string;
  due_date?: string;
- milestone_id: string;
+ scheduled_date?: string;
+ goal_id?: string;
+ milestone_id?: string;
+ kind?: TaskKind;
+ scope?: TaskScope;
  parent_id?: string;
+ position?: number;
+ completion_rule?: CompletionRule | null;
  todos: TodoItem[];
  subtasks: SubtaskItem[];
 }
@@ -71,12 +114,15 @@ export interface MilestoneItem extends BaseEntity {
  goal_id?: string;
  due_date?: string;
  position?: number;
+ completion_rule?: CompletionRule | null;
  tasks: TaskItem[];
 }
 
 // Goal type
 export interface GoalItem extends BaseEntity {
-
+ position?: number;
+ completion_rule?: CompletionRule | null;
+ tasks?: TaskItem[];
  milestones: MilestoneItem[];
 }
 
@@ -93,8 +139,8 @@ export interface Event {
  status: StatusType;
  goal_id?: string;
  milestone_id?: string;
- created_at: string;
- updated_at: string;
+ created_at?: string;
+ updated_at?: string;
 }
 
 // Generated types for AI suggestions
@@ -110,6 +156,7 @@ export interface GeneratedGoalIdea {
 
 // API Response types
 export interface GoalResponse extends Omit<GoalItem, 'user_id'> {
+ tasks?: TaskResponse[];
  milestones: MilestoneResponse[];
 }
 
@@ -138,6 +185,7 @@ export interface GoalUpdate {
  priority?: PriorityType;
  start_datetime?: string;
  end_datetime?: string;
+ completion_rule?: CompletionRule | null;
 }
 
 export interface MilestoneUpdate {
@@ -162,7 +210,12 @@ export interface TaskUpdate {
  start_datetime?: string;
  end_datetime?: string;
  due_date?: string;
+ scheduled_date?: string;
+ goal_id?: string;
  milestone_id?: string;
+ kind?: TaskKind;
+ scope?: TaskScope;
+ position?: number;
 }
 
 export interface TodoUpdate {
@@ -177,6 +230,7 @@ export interface TodoUpdate {
  end_datetime?: string;
  due_date?: string;
  task_id?: string;
+ position?: number;
 }
 
 export interface SubtaskUpdate {
@@ -189,6 +243,7 @@ export interface SubtaskUpdate {
  end_datetime?: string;
  due_date?: string;
  task_id?: string;
+ position?: number;
 }
 
 export interface EventUpdate {
@@ -206,9 +261,10 @@ export interface User {
  id: string;
  username: string;
  email: string;
+ preferred_theme?: string | null;
  full_name?: string;
- created_at: string;
- updated_at: string;
+ created_at?: string;
+ updated_at?: string;
 }
 
 export interface Tag {
@@ -216,6 +272,6 @@ export interface Tag {
  name: string;
  color?: string;
  description?: string;
- created_at: string;
- updated_at: string;
-} 
+ created_at?: string;
+ updated_at?: string;
+}

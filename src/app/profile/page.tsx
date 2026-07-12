@@ -3,13 +3,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useAppSession } from "../clientwrapper";
 import { Button } from "@/components/ui/button";
-import { usersApi } from "@/lib/api";
+import { backupApi, usersApi } from "@/lib/api";
 import { useStore } from "@/store/useStore";
 import { useShallow } from "zustand/react/shallow";
-import { buildExportPayload, downloadJsonFile, parseImportFile } from "@/lib/exportImport";
+import { downloadJsonFile, parseImportFile } from "@/lib/exportImport";
 import { buildIcs, downloadIcsFile } from "@/lib/icsExport";
 import { toast } from "@/store/useToast";
 import { useNotifications } from "@/store/useNotifications";
+import { NAV_ITEMS, NavItemId, useNavPreferences } from "@/lib/navPreferences";
 
 const ProfilePage = () => {
  const session = useAppSession();
@@ -21,29 +22,49 @@ const ProfilePage = () => {
  const [message, setMessage] = useState("");
  const [editField, setEditField] = useState<string | null>(null);
  const [changed, setChanged] = useState(false);
+ const [exporting, setExporting] = useState(false);
  const [importing, setImporting] = useState(false);
  const fileInputRef = useRef<HTMLInputElement | null>(null);
+ const { preferences, setPreferences, resetPreferences } = useNavPreferences();
 
  const goals = useStore((s) => s.goals);
  const milestones = useStore((s) => s.milestones);
  const tasks = useStore((s) => s.tasks);
  const todos = useStore((s) => s.todos);
  const events = useStore((s) => s.events);
- const { setGoals, setMilestones, setTasks, setTodos, setEvents } = useStore(
+ const { fetchGoals, fetchMilestones, fetchTasks, fetchTodos, fetchEvents } = useStore(
  useShallow((s) => ({
- setGoals: s.setGoals,
- setMilestones: s.setMilestones,
- setTasks: s.setTasks,
- setTodos: s.setTodos,
- setEvents: s.setEvents,
+ fetchGoals: s.fetchGoals,
+ fetchMilestones: s.fetchMilestones,
+ fetchTasks: s.fetchTasks,
+ fetchTodos: s.fetchTodos,
+ fetchEvents: s.fetchEvents,
  }))
  );
 
- const handleExport = () => {
- const payload = buildExportPayload(goals, milestones, tasks, todos, events);
+ const refreshWorkspace = async () => {
+ await Promise.all([
+ fetchGoals({ force: true }),
+ fetchMilestones({ force: true }),
+ fetchTasks({ force: true }),
+ fetchTodos({ force: true }),
+ fetchEvents({ force: true }),
+ ]);
+ };
+
+ const handleExport = async () => {
+ setExporting(true);
+ try {
+ const payload = await backupApi.exportData();
  const stamp = new Date().toISOString().slice(0, 10);
  downloadJsonFile(`tasknest-export-${stamp}.json`, payload);
  toast.success('Export downloaded');
+ } catch (err) {
+ console.error('Export failed:', err);
+ toast.error(err instanceof Error ? err.message : 'Failed to export backup');
+ } finally {
+ setExporting(false);
+ }
  };
 
  const handleIcsExport = () => {
@@ -75,15 +96,10 @@ const ProfilePage = () => {
  setImporting(true);
  try {
  const payload = await parseImportFile(file);
- // Local-only restore — does not push to backend. The user can use this
- // to repopulate the in-memory store on a fresh device, but a real
- // server-side import requires backend support that doesn't exist yet.
- setGoals(payload.goals ?? []);
- setMilestones(payload.milestones ?? []);
- setTasks(payload.tasks ?? []);
- setTodos(payload.todos ?? []);
- setEvents(payload.events ?? []);
- toast.success('Import loaded into local view (not synced to server)');
+ const result = await backupApi.importData(payload);
+ await refreshWorkspace();
+ const total = Object.values(result.imported).reduce((sum, value) => sum + value, 0);
+ toast.success(`Imported ${total} item${total === 1 ? '' : 's'} to server`);
  } catch (err) {
  console.error('Import failed:', err);
  toast.error(err instanceof Error ? err.message : 'Failed to import file');
@@ -126,15 +142,52 @@ const ProfilePage = () => {
  };
 
  const handleGoogleCalendar = async () => {
- const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
- `client_id=${process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}` +
- `&redirect_uri=${process.env.NEXT_PUBLIC_REDIRECT_URL}` +
- `&response_type=code` +
- `&scope=${process.env.NEXT_PUBLIC_SCOPE}` +
- `&access_type=offline` +
- `&prompt=consent`;
- window.location.href = googleAuthUrl;
+ const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+ const redirectUri = process.env.NEXT_PUBLIC_REDIRECT_URL;
+ const scope = process.env.NEXT_PUBLIC_SCOPE || 'https://www.googleapis.com/auth/calendar.events';
+ if (!clientId || !redirectUri) {
+ toast.error('Google Calendar is not configured. Add NEXT_PUBLIC_GOOGLE_CLIENT_ID and NEXT_PUBLIC_REDIRECT_URL.');
+ return;
+ }
+ const params = new URLSearchParams({
+ client_id: clientId,
+ redirect_uri: redirectUri,
+ response_type: 'code',
+ scope,
+ access_type: 'offline',
+ prompt: 'consent',
+ });
+ window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 };
+
+ const moveNavItem = (id: NavItemId, direction: -1 | 1) => {
+ setPreferences((current) => {
+ const orderedIds = [...current.orderedIds];
+ const index = orderedIds.indexOf(id);
+ const nextIndex = index + direction;
+ if (index < 0 || nextIndex < 0 || nextIndex >= orderedIds.length) return current;
+ [orderedIds[index], orderedIds[nextIndex]] = [orderedIds[nextIndex], orderedIds[index]];
+ return { ...current, orderedIds };
+ });
+ };
+
+ const toggleNavHidden = (id: NavItemId) => {
+ setPreferences((current) => {
+ const hidden = new Set(current.hiddenIds);
+ if (hidden.has(id)) hidden.delete(id);
+ else hidden.add(id);
+ return { ...current, hiddenIds: Array.from(hidden) };
+ });
+ };
+
+ const toggleNavPrimary = (id: NavItemId) => {
+ setPreferences((current) => {
+ const primary = new Set(current.primaryIds);
+ if (primary.has(id)) primary.delete(id);
+ else primary.add(id);
+ return { ...current, primaryIds: Array.from(primary) };
+ });
+ };
 
  // Theme-aware field renderer (uses --tn-* tokens so it reads on every theme).
  const renderField = (label: string, value: string, field: string, editable = true) => (
@@ -346,6 +399,116 @@ const ProfilePage = () => {
  </TButton>
  </section>
 
+ {/* Navigation */}
+ <section
+ id="navigation"
+ style={{
+ background: 'var(--tn-card)',
+ border: 'var(--tn-line)',
+ borderRadius: 'var(--tn-r-lg, 8px)',
+ padding: 20,
+ boxShadow: 'var(--tn-shadow)',
+ scrollMarginTop: 80,
+ }}
+ >
+ <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
+ <div style={{ flex: 1 }}>
+ <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
+ Navigation
+ </h2>
+ <p style={{ fontSize: 13, color: 'var(--tn-fg-muted)' }}>
+ Choose what appears in the top navbar. Items not pinned to the top stay under More.
+ </p>
+ </div>
+ <TButton onClick={resetPreferences}>Reset</TButton>
+ </div>
+
+ <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+ {preferences.orderedIds.map((id, index) => {
+ const item = NAV_ITEMS.find((navItem) => navItem.id === id);
+ if (!item) return null;
+ const hidden = preferences.hiddenIds.includes(id);
+ const primary = preferences.primaryIds.includes(id);
+ return (
+ <div
+ key={id}
+ className="profile-nav-row"
+ style={{
+ display: 'grid',
+ gridTemplateColumns: 'minmax(120px, 1fr) auto auto auto',
+ alignItems: 'center',
+ gap: 10,
+ padding: '10px 12px',
+ border: 'var(--tn-line)',
+ borderRadius: 'var(--tn-r-md, 8px)',
+ background: hidden ? 'var(--tn-surface-2, var(--tn-hover))' : 'var(--tn-card)',
+ opacity: hidden ? 0.7 : 1,
+ }}
+ >
+ <div>
+ <div style={{ fontSize: 14, fontWeight: 600 }}>{item.name}</div>
+ <div style={{ fontSize: 12, color: 'var(--tn-fg-muted)' }}>{item.href}</div>
+ </div>
+ <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--tn-fg-muted)' }}>
+ <input
+ type="checkbox"
+ checked={!hidden}
+ onChange={() => toggleNavHidden(id)}
+ style={{ accentColor: 'var(--tn-accent)' }}
+ />
+ Visible
+ </label>
+ <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--tn-fg-muted)' }}>
+ <input
+ type="checkbox"
+ checked={primary}
+ onChange={() => toggleNavPrimary(id)}
+ disabled={hidden}
+ style={{ accentColor: 'var(--tn-accent)' }}
+ />
+ Top bar
+ </label>
+ <div style={{ display: 'flex', gap: 4 }}>
+ <button
+ type="button"
+ onClick={() => moveNavItem(id, -1)}
+ disabled={index === 0}
+ className="btn btn-secondary"
+ style={{ padding: '5px 9px', opacity: index === 0 ? 0.45 : 1 }}
+ aria-label={`Move ${item.name} up`}
+ >
+ ↑
+ </button>
+ <button
+ type="button"
+ onClick={() => moveNavItem(id, 1)}
+ disabled={index === preferences.orderedIds.length - 1}
+ className="btn btn-secondary"
+ style={{ padding: '5px 9px', opacity: index === preferences.orderedIds.length - 1 ? 0.45 : 1 }}
+ aria-label={`Move ${item.name} down`}
+ >
+ ↓
+ </button>
+ </div>
+ </div>
+ );
+ })}
+ </div>
+ </section>
+
+ <style jsx>{`
+ @media (max-width: 620px) {
+ :global(.profile-nav-row) {
+ grid-template-columns: 1fr !important;
+ align-items: stretch !important;
+ }
+ :global(.profile-nav-row label),
+ :global(.profile-nav-row > div:last-child) {
+ justify-content: space-between !important;
+ }
+ }
+ `}</style>
+
  {/* Backup */}
  <section>
  <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
@@ -358,12 +521,14 @@ const ProfilePage = () => {
  marginBottom: 12,
  }}
  >
- Export your full tree (goals, milestones, tasks, todos, events) as
- JSON. Import restores the local view only — it does not write back
- to the server.
+ Export your full tree (goals, milestones, tasks, subtasks, todos,
+ events) from the server as JSON. Import appends items to your account
+ and keeps them after reload.
  </p>
  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
- <TButton onClick={handleExport}>Export JSON</TButton>
+ <TButton onClick={handleExport} disabled={exporting}>
+ {exporting ? 'Exporting…' : 'Export JSON'}
+ </TButton>
  <TButton onClick={handleIcsExport}>Export .ics (calendar)</TButton>
  <TButton
  onClick={() => fileInputRef.current?.click()}
@@ -386,4 +551,4 @@ const ProfilePage = () => {
  );
 };
 
-export default ProfilePage; 
+export default ProfilePage;

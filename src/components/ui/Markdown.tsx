@@ -25,12 +25,12 @@ const renderInline = (raw: string): string => {
  // [text](url) — only safe protocols.
  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, text, url) =>
  SAFE_PROTOCOLS.test(url)
- ? `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">${text}</a>`
+ ? `<a href="${url}" target="_blank" rel="noopener noreferrer" class="hover:underline" style="color: var(--tn-accent)">${text}</a>`
  : escapeHtml(`[${text}](${url})`)
  );
  // Auto-link bare URLs we didn't already wrap.
  s = s.replace(/(^|\s)(https?:\/\/[^\s<]+)/g, (_m, lead, url) =>
- `${lead}<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">${url}</a>`
+ `${lead}<a href="${url}" target="_blank" rel="noopener noreferrer" class="hover:underline" style="color: var(--tn-accent)">${url}</a>`
  );
  return s;
 };

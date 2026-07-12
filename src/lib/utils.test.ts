@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { stripMarkdown, toDateInput, toDateTimeInput } from './utils';
+import { stripMarkdown, toDateInput, toDateTimeInput, toOptionalDateInput, toOptionalDateTimeInput } from './utils';
 
 describe('stripMarkdown', () => {
  it('returns empty string for nullish input', () => {
@@ -47,11 +47,22 @@ describe('toDateInput', () => {
 
 describe('toDateTimeInput', () => {
  it('formats ISO as YYYY-MM-DDTHH:mm', () => {
- expect(toDateTimeInput('2026-04-30T15:30:45Z')).toBe('2026-04-30T15:30');
+ expect(toDateTimeInput('2026-04-30T15:30:45')).toBe('2026-04-30T15:30');
  });
 
  it('handles missing input by returning current time', () => {
  const result = toDateTimeInput(undefined);
  expect(result).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
+ });
+});
+
+describe('optional date inputs', () => {
+ it('returns empty string for missing optional date values', () => {
+ expect(toOptionalDateInput(undefined)).toBe('');
+ expect(toOptionalDateTimeInput(undefined)).toBe('');
+ });
+
+ it('formats optional datetime values for datetime-local controls', () => {
+ expect(toOptionalDateTimeInput('2026-04-30T15:30:45')).toBe('2026-04-30T15:30');
  });
 });

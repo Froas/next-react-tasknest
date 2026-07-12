@@ -89,19 +89,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
  return (
  <div>
- <div className="flex justify-between items-center mb-6">
+ <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between">
  <h2 className="text-xl font-semibold text-foreground">Dashboard Overview</h2>
- <div className="flex items-center space-x-2">
+ <div className="flex flex-wrap items-center gap-2">
  <button
  onClick={() => setIsPickingTemplate(true)}
- className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 border border-border dark:border-border text-foreground dark:text-muted-foreground/60 hover:bg-muted dark:hover:bg-card flex items-center space-x-1.5"
+ className="btn btn-secondary"
  >
  <Sparkles className="w-4 h-4" />
  <span>Templates</span>
  </button>
  <button
  onClick={onCreateGoal}
- className="px-4 py-2 rounded-xl font-medium cursor-pointer transition-colors duration-200 bg-card dark:bg-card text-white hover:bg-card dark:hover:bg-muted"
+ className="btn btn-primary"
  >
  Create New Goal
  </button>
@@ -112,7 +112,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
  <TodayWidget />
  <div className="mb-6">
- <ActivityHeatmap weeks={20} />
+ <ActivityHeatmap weeks={53} />
  </div>
  <InboxWidget />
  <RecentActivity />
@@ -127,10 +127,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
  {completedGoals} / {totalGoals}
  </span>
  </div>
- <div className="bg-muted dark:bg-card rounded-full h-2.5 overflow-hidden">
  <div
- className="bg-card h-full rounded-full transition-all duration-300 ease-in-out"
- style={{ width: `${overallProgress}%` }}
+ className="rounded-full h-2.5 overflow-hidden"
+ style={{ background: 'var(--tn-bar-bg, rgba(0,0,0,.08))', border: 'var(--tn-line)' }}
+ >
+ <div
+ className="h-full rounded-full transition-all duration-300 ease-in-out"
+ style={{ width: `${overallProgress}%`, background: 'var(--tn-accent)' }}
  ></div>
  </div>
  </div>
@@ -225,9 +228,10 @@ const PinnableGoalRow: React.FC<{
  aria-label={pinned ? 'Unpin goal' : 'Pin goal'}
  className={`absolute top-3 right-3 z-10 p-1.5 rounded-lg transition-opacity ${
  pinned
- ? 'opacity-100 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30'
+ ? 'opacity-100'
  : 'opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground dark:hover:text-muted-foreground/60 hover:bg-muted dark:hover:bg-card'
  }`}
+ style={pinned ? { color: 'var(--tn-accent)', background: 'color-mix(in srgb, var(--tn-accent) 10%, transparent)' } : undefined}
  >
  <Pin className={`w-4 h-4 ${pinned ? 'fill-current' : ''}`} />
  </button>

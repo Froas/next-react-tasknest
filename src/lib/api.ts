@@ -1,4 +1,5 @@
-import { GoalItem as Goal, MilestoneItem as Milestone, TaskItem as Task, TodoItem as Todo, User, Event, Tag, SubtaskItem as Subtask } from './types';
+import { CompletionRule, GoalItem as Goal, MilestoneItem as Milestone, TaskItem as Task, TodoItem as Todo, User, Event, Tag, SubtaskItem as Subtask } from './types';
+import type { ExportPayload } from './exportImport';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -148,6 +149,13 @@ export const goalsApi = {
  update: (goalData: Partial<Goal>) =>
  apiRequest<Goal>('/user/goals/update', { method: 'PATCH', body: goalData, errorMessage: 'Failed to update goal' }),
 
+ reorder: (goalIds: string[]) =>
+ apiRequest<void>('/user/goals/reorder', {
+ method: 'PUT',
+ body: { goal_ids: goalIds },
+ errorMessage: 'Failed to reorder goals',
+ }),
+
  getById: (
  goalId: string,
  options?: {
@@ -242,6 +250,13 @@ export const tasksApi = {
  errorMessage: 'Failed to update task',
  }),
 
+ reorder: (taskIds: string[]) =>
+ apiRequest<void>('/user/tasks/reorder', {
+ method: 'PUT',
+ body: { task_ids: taskIds },
+ errorMessage: 'Failed to reorder tasks',
+ }),
+
  delete: (taskId: string) =>
  apiRequest<void>(`/user/tasks/${taskId}/delete`, { method: 'DELETE', errorMessage: 'Failed to delete task' }),
 };
@@ -258,6 +273,13 @@ export const todosApi = {
  method: 'PATCH',
  body: todoData,
  errorMessage: 'Failed to update todo',
+ }),
+
+ reorder: (todoIds: string[]) =>
+ apiRequest<void>('/user/todos/reorder', {
+ method: 'PUT',
+ body: { todo_ids: todoIds },
+ errorMessage: 'Failed to reorder todos',
  }),
 
  getById: (todoId: string) =>
@@ -323,6 +345,13 @@ export const subtasksApi = {
  errorMessage: 'Failed to update subtask',
  }),
 
+ reorder: (subtaskIds: string[]) =>
+ apiRequest<void>('/user/task/subtasks/reorder', {
+ method: 'PUT',
+ body: { subtask_ids: subtaskIds },
+ errorMessage: 'Failed to reorder subtasks',
+ }),
+
  getById: (subtaskId: string) =>
  apiRequest<Subtask>(`/user/task/subtasks/${subtaskId}`, { errorMessage: 'Failed to fetch subtask' }),
 
@@ -342,23 +371,313 @@ export interface NoteItem {
  body?: string | null;
  tag?: string | null;
  pinned: boolean;
+ kind?: 'note' | 'signal';
+ source?: string | null;
+ goal_id?: string | null;
+ task_id?: string | null;
  created_at: string;
  updated_at: string;
 }
 
+type NotePayload = {
+ title: string;
+ body?: string | null;
+ tag?: string | null;
+ pinned?: boolean;
+ kind?: 'note' | 'signal';
+ source?: string | null;
+ goal_id?: string | null;
+ task_id?: string | null;
+};
+
 export const notesApi = {
  getAll: () => apiRequest<NoteItem[]>('/user/notes', { errorMessage: 'Failed to fetch notes' }),
 
- create: (data: { title: string; body?: string | null; tag?: string | null; pinned?: boolean }) =>
+ create: (data: NotePayload) =>
  apiRequest<NoteItem>('/user/notes', { method: 'POST', body: data, errorMessage: 'Failed to create note' }),
 
- update: (data: { id: string; title?: string; body?: string | null; tag?: string | null; pinned?: boolean }) =>
+ update: (data: Partial<NotePayload> & { id: string }) =>
  apiRequest<NoteItem>('/user/notes/update', { method: 'PATCH', body: data, errorMessage: 'Failed to update note' }),
 
  getById: (id: string) => apiRequest<NoteItem>(`/user/notes/${id}`, { errorMessage: 'Failed to fetch note' }),
 
  delete: (id: string) =>
  apiRequest<{ message: string }>(`/user/notes/${id}/delete`, { method: 'DELETE', errorMessage: 'Failed to delete note' }),
+};
+
+// ============================================================
+// Daily Draft Todos API
+// ============================================================
+export interface DailyDraftTodoItem {
+ id: string;
+ title: string;
+ day: string;
+ done: boolean;
+ created_at: string;
+ updated_at: string;
+ completed_at?: string | null;
+}
+
+export const dailyDraftTodosApi = {
+ getAll: (options: { day?: string; includeDone?: boolean; includeCarryover?: boolean } = {}) => {
+ const params = new URLSearchParams();
+ if (options.day) params.set('day', options.day);
+ if (options.includeDone !== undefined) params.set('include_done', String(options.includeDone));
+ if (options.includeCarryover !== undefined) params.set('include_carryover', String(options.includeCarryover));
+ const query = params.toString() ? `?${params.toString()}` : '';
+ return apiRequest<DailyDraftTodoItem[]>(`/user/daily-draft-todos${query}`, {
+ errorMessage: 'Failed to fetch daily draft todos',
+ });
+ },
+
+ create: (data: { title: string; day?: string }) =>
+ apiRequest<DailyDraftTodoItem>('/user/daily-draft-todos', {
+ method: 'POST',
+ body: data,
+ errorMessage: 'Failed to create daily draft todo',
+ }),
+
+ update: (data: { id: string; title?: string; day?: string; done?: boolean }) =>
+ apiRequest<DailyDraftTodoItem>('/user/daily-draft-todos/update', {
+ method: 'PATCH',
+ body: data,
+ errorMessage: 'Failed to update daily draft todo',
+ }),
+
+ delete: (id: string) =>
+ apiRequest<{ message: string }>(`/user/daily-draft-todos/${id}/delete`, {
+ method: 'DELETE',
+ errorMessage: 'Failed to delete daily draft todo',
+ }),
+};
+
+// ============================================================
+// Daily Logs API
+// ============================================================
+export type DailyLogColor = 'green' | 'yellow' | 'red' | 'black';
+
+export interface DailyLogItem {
+ id: string;
+ date: string;
+ color?: DailyLogColor | null;
+ note?: string | null;
+ trigger?: string | null;
+ what_helped?: string | null;
+ tomorrow_minimum?: string | null;
+ finalized_at?: string | null;
+ finalized_by?: string | null;
+ created_at: string;
+ updated_at: string;
+}
+
+export const dailyLogsApi = {
+ list: (options: { startDate?: string; endDate?: string } = {}) => {
+ const params = new URLSearchParams();
+ if (options.startDate) params.set('start_date', options.startDate);
+ if (options.endDate) params.set('end_date', options.endDate);
+ const query = params.toString() ? `?${params.toString()}` : '';
+ return apiRequest<DailyLogItem[]>(`/user/daily-logs${query}`, {
+ errorMessage: 'Failed to fetch daily logs',
+ });
+ },
+
+ today: () => apiRequest<DailyLogItem>('/user/daily-logs/today', { errorMessage: 'Failed to fetch today log' }),
+
+ getByDate: (date: string) =>
+ apiRequest<DailyLogItem>(`/user/daily-logs/${date}`, { errorMessage: 'Failed to fetch daily log' }),
+
+ create: (data: {
+ date?: string;
+ color?: DailyLogColor | null;
+ note?: string | null;
+ trigger?: string | null;
+ what_helped?: string | null;
+ tomorrow_minimum?: string | null;
+ }) =>
+ apiRequest<DailyLogItem>('/user/daily-logs', {
+ method: 'POST',
+ body: data,
+ errorMessage: 'Failed to save daily log',
+ }),
+
+ update: (data: {
+ id: string;
+ date?: string;
+ color?: DailyLogColor | null;
+ note?: string | null;
+ trigger?: string | null;
+ what_helped?: string | null;
+ tomorrow_minimum?: string | null;
+ }) =>
+ apiRequest<DailyLogItem>('/user/daily-logs/update', {
+ method: 'PATCH',
+ body: data,
+ errorMessage: 'Failed to update daily log',
+ }),
+};
+
+// ============================================================
+// Todo Occurrences API (daily generated todos)
+// ============================================================
+export type TodoOccurrenceStatus = 'open' | 'done' | 'minimum' | 'skipped' | 'missed' | 'excused';
+
+export interface TodoOccurrenceItem {
+ id: string;
+ date: string;
+ status: TodoOccurrenceStatus;
+ value?: string | null;
+ note?: string | null;
+ completed_at?: string | null;
+ todo_id: string;
+ daily_log_id?: string | null;
+ created_at: string;
+ updated_at: string;
+ todo_title: string;
+ todo_description?: string;
+ task_id?: string | null;
+ task_title?: string | null;
+ task_kind?: string | null;
+ task_scope?: string | null;
+ goal_id?: string | null;
+ goal_title?: string | null;
+ milestone_id?: string | null;
+ milestone_title?: string | null;
+}
+
+export const todoOccurrencesApi = {
+ today: (date?: string) => {
+ const query = date ? `?selected_date=${encodeURIComponent(date)}` : '';
+ return apiRequest<TodoOccurrenceItem[]>(`/user/todo-occurrences/today${query}`, {
+ errorMessage: 'Failed to fetch today todos',
+ });
+ },
+
+ list: (date?: string) => {
+ const query = date ? `?selected_date=${encodeURIComponent(date)}` : '';
+ return apiRequest<TodoOccurrenceItem[]>(`/user/todo-occurrences${query}`, {
+ errorMessage: 'Failed to fetch todo occurrences',
+ });
+ },
+
+ history: (options: {
+ startDate?: string;
+ endDate?: string;
+ statuses?: TodoOccurrenceStatus[];
+ goalId?: string;
+ taskId?: string;
+ } = {}) => {
+ const params = new URLSearchParams();
+ if (options.startDate) params.set('start_date', options.startDate);
+ if (options.endDate) params.set('end_date', options.endDate);
+ if (options.statuses?.length) params.set('status', options.statuses.join(','));
+ if (options.goalId) params.set('goal_id', options.goalId);
+ if (options.taskId) params.set('task_id', options.taskId);
+ const query = params.toString() ? `?${params.toString()}` : '';
+ return apiRequest<TodoOccurrenceItem[]>(`/user/todo-occurrences/history${query}`, {
+ errorMessage: 'Failed to fetch routine history',
+ });
+ },
+
+ update: (data: { id: string; status?: TodoOccurrenceStatus; value?: string | null; note?: string | null }) =>
+ apiRequest<TodoOccurrenceItem>('/user/todo-occurrences/update', {
+ method: 'PATCH',
+ body: data,
+ errorMessage: 'Failed to update todo occurrence',
+ }),
+};
+
+// ============================================================
+// Dynamic Metrics API
+// ============================================================
+export type MetricInputType = 'number' | 'text' | 'boolean';
+
+export interface MetricDefinitionItem {
+ id: string;
+ name: string;
+ unit?: string | null;
+ input_type: MetricInputType;
+ show_on_today: boolean;
+ goal_id?: string | null;
+ task_id?: string | null;
+ position: number;
+ created_at: string;
+ updated_at: string;
+}
+
+export interface TodayMetricItem extends MetricDefinitionItem {
+ goal_title?: string | null;
+ task_title?: string | null;
+ entry_id?: string | null;
+ date?: string | null;
+ value?: string | null;
+ numeric_value?: number | null;
+ note?: string | null;
+}
+
+export interface MetricEntryItem {
+ id: string;
+ date: string;
+ value?: string | null;
+ numeric_value?: number | null;
+ note?: string | null;
+ metric_definition_id: string;
+ daily_log_id?: string | null;
+ created_at: string;
+ updated_at: string;
+}
+
+export const metricDefinitionsApi = {
+ getAll: () => apiRequest<MetricDefinitionItem[]>('/user/metric-definitions', { errorMessage: 'Failed to fetch metric definitions' }),
+
+ create: (data: {
+ name: string;
+ unit?: string | null;
+ input_type?: MetricInputType;
+ show_on_today?: boolean;
+ goal_id?: string | null;
+ task_id?: string | null;
+ position?: number;
+ }) =>
+ apiRequest<MetricDefinitionItem>('/user/metric-definitions', {
+ method: 'POST',
+ body: data,
+ errorMessage: 'Failed to create metric definition',
+ }),
+
+ update: (data: Partial<MetricDefinitionItem> & { id: string }) =>
+ apiRequest<MetricDefinitionItem>('/user/metric-definitions/update', {
+ method: 'PATCH',
+ body: data,
+ errorMessage: 'Failed to update metric definition',
+ }),
+
+ delete: (id: string) =>
+ apiRequest<{ message: string }>(`/user/metric-definitions/${id}/delete`, {
+ method: 'DELETE',
+ errorMessage: 'Failed to delete metric definition',
+ }),
+};
+
+export const metricsApi = {
+ today: (date?: string) => {
+ const query = date ? `?selected_date=${encodeURIComponent(date)}` : '';
+ return apiRequest<TodayMetricItem[]>(`/user/metrics/today${query}`, {
+ errorMessage: 'Failed to fetch today metrics',
+ });
+ },
+
+ upsertEntry: (data: {
+ metric_definition_id: string;
+ date?: string;
+ value?: string | null;
+ numeric_value?: number | null;
+ note?: string | null;
+ }) =>
+ apiRequest<MetricEntryItem>('/user/metric-entries/upsert', {
+ method: 'POST',
+ body: data,
+ errorMessage: 'Failed to save metric',
+ }),
 };
 
 // ============================================================
@@ -370,15 +689,70 @@ export interface TemplateItem {
  description?: string | null;
  emoji?: string | null;
  tags?: string[] | null;
- blueprint?: {
- milestones?: Array<{
- title: string;
- description?: string;
- tasks?: Array<{ title: string; description?: string }>;
- }>;
- } | null;
+ blueprint?: TemplateBlueprint | null;
  created_at: string;
  user_id: string | null;
+}
+
+export interface TemplateBlueprintMetric {
+ name: string;
+ unit?: string | null;
+ input_type?: MetricInputType;
+ show_on_today?: boolean;
+}
+
+export interface TemplateBlueprintTodo {
+ title: string;
+ description?: string;
+ repeat_interval?: string;
+ recurrence?: string;
+ priority?: string;
+ status?: string;
+}
+
+export interface TemplateBlueprintSubtask {
+ title: string;
+ description?: string;
+ priority?: string;
+ status?: string;
+ due_date_offset_days?: number;
+}
+
+export interface TemplateBlueprintTask {
+ title: string;
+ description?: string;
+ kind?: 'project' | 'routine' | 'challenge';
+ scope?: 'goal' | 'milestone';
+ priority?: string;
+ status?: string;
+ due_date_offset_days?: number;
+ scheduled_date_offset_days?: number;
+ todos?: TemplateBlueprintTodo[];
+ subtasks?: TemplateBlueprintSubtask[];
+ metrics?: TemplateBlueprintMetric[];
+ completion_rule?: CompletionRule | null;
+}
+
+export interface TemplateBlueprintMilestone {
+ title: string;
+ description?: string;
+ status?: string;
+ priority?: string;
+ due_date_offset_days?: number;
+ tasks?: TemplateBlueprintTask[];
+ taskTitles?: string[];
+ task_titles?: string[];
+ completion_rule?: CompletionRule | null;
+}
+
+export interface TemplateBlueprint {
+ status?: string;
+ priority?: string;
+ duration_days?: number;
+ completion_rule?: CompletionRule | null;
+ metrics?: TemplateBlueprintMetric[];
+ goal_tasks?: TemplateBlueprintTask[];
+ milestones?: TemplateBlueprintMilestone[];
 }
 
 export const templatesApi = {
@@ -398,6 +772,22 @@ export const templatesApi = {
  /** Materialise a template into a real Goal owned by the user. */
  instantiate: (id: string, overrides?: { title_override?: string; start_datetime?: string; end_datetime?: string }) =>
  apiRequest<Goal>(`/user/templates/${id}/instantiate`, { method: 'POST', body: overrides ?? {}, errorMessage: 'Failed to instantiate template' }),
+
+ instantiateBlueprint: (data: {
+ title: string;
+ description?: string | null;
+ emoji?: string | null;
+ tags?: string[] | null;
+ blueprint?: TemplateBlueprint | null;
+ title_override?: string;
+ start_datetime?: string;
+ end_datetime?: string;
+ }) =>
+ apiRequest<Goal>('/user/templates/instantiate-blueprint', {
+ method: 'POST',
+ body: data,
+ errorMessage: 'Failed to instantiate template',
+ }),
 };
 
 // ============================================================
@@ -423,6 +813,36 @@ export const trashApi = {
 
  empty: () =>
  apiRequest<{ message: string; removed: number }>('/user/trash', { method: 'DELETE', errorMessage: 'Failed to empty trash' }),
+};
+
+// ============================================================
+// Backup API (JSON export/import)
+// ============================================================
+export interface BackupImportResult {
+ message: string;
+ imported: {
+ goals: number;
+ milestones: number;
+ tasks: number;
+ todos: number;
+ subtasks: number;
+ events: number;
+ };
+ skipped?: Partial<BackupImportResult['imported']>;
+}
+
+export const backupApi = {
+ exportData: () =>
+ apiRequest<ExportPayload>('/user/backup/export', {
+ errorMessage: 'Failed to export backup',
+ }),
+
+ importData: (payload: ExportPayload) =>
+ apiRequest<BackupImportResult>('/user/backup/import', {
+ method: 'POST',
+ body: payload,
+ errorMessage: 'Failed to import backup',
+ }),
 };
 
 // ============================================================

@@ -81,7 +81,7 @@ export const BatchImport: React.FC<BatchImportProps> = ({ open, onClose, goalId,
  <Modal open={open} title="Batch import tasks" onClose={onClose} maxWidth="lg">
  <p className="text-sm text-foreground dark:text-muted-foreground/60 mb-3">
  Paste a markdown checklist or any bulleted list. Each line becomes a task. Checked items
- (<code className="px-1 bg-muted dark:bg-card rounded">[x]</code>) are imported as
+ (<code className="px-1 rounded" style={{ background: 'var(--tn-chip)' }}>[x]</code>) are imported as
  already finished.
  </p>
  <textarea
@@ -89,7 +89,7 @@ export const BatchImport: React.FC<BatchImportProps> = ({ open, onClose, goalId,
  onChange={(e) => setText(e.target.value)}
  rows={10}
  placeholder={`- [ ] Pick a course\n- [ ] Daily 20-min practice\n- [x] Bought a notebook\n* Watch one beginner video`}
- className="w-full px-3 py-2 text-sm font-mono border border-border dark:border-border bg-card dark:bg-card text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+ className="filter-input w-full font-mono"
  />
  <div className="flex items-center justify-between mt-3">
  <span className="text-xs text-muted-foreground dark:text-muted-foreground">
@@ -101,14 +101,14 @@ export const BatchImport: React.FC<BatchImportProps> = ({ open, onClose, goalId,
  <button
  onClick={onClose}
  disabled={busy}
- className="px-4 py-2 text-sm rounded-lg bg-muted dark:bg-card text-foreground dark:text-muted-foreground/60 hover:bg-muted dark:hover:bg-muted disabled:opacity-50"
+ className="btn btn-secondary disabled:opacity-50"
  >
  Cancel
  </button>
  <button
  onClick={submit}
  disabled={busy || parsed.length === 0}
- className="px-4 py-2 text-sm rounded-lg bg-card dark:bg-card text-white hover:bg-card dark:hover:bg-muted disabled:opacity-50"
+ className="btn btn-primary disabled:opacity-50"
  >
  {busy ? 'Importing…' : `Import ${parsed.length || ''}`}
  </button>

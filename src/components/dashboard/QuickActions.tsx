@@ -1,17 +1,20 @@
-import React from 'react';
-import { GoalItem as Goal, StatusType, PriorityType } from '@/lib/types';
+import React, { type CSSProperties } from 'react';
 
 interface QuickActionsProps {
  onAddGoal?: () => void;
  onAddTask?: () => void;
+ onAddRoutine?: () => void;
  onAddTodo?: () => void;
+ onAddSubtask?: () => void;
  onAddMilestone?: () => void;
 }
 
 export const QuickActions: React.FC<QuickActionsProps> = ({
  onAddGoal,
  onAddTask,
+ onAddRoutine,
  onAddTodo,
+ onAddSubtask,
  onAddMilestone,
 }) => {
  const actions = [
@@ -46,8 +49,21 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
  onClick: onAddTask,
  },
  {
+ title: 'Add Routine',
+ description: 'Create a goal-level recurring routine',
+ icon: (
+ <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+ <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 1l4 4-4 4" />
+ <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 11V9a4 4 0 014-4h14" />
+ <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 23l-4-4 4-4" />
+ <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13v2a4 4 0 01-4 4H3" />
+ </svg>
+ ),
+ onClick: onAddRoutine,
+ },
+ {
  title: 'Add Todo',
- description: 'Create a new one-time todo item',
+ description: 'Create a recurring todo for a routine or task',
  icon: (
  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -55,40 +71,89 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
  ),
  onClick: onAddTodo,
  },
+ {
+ title: 'Add Subtask',
+ description: 'Create a one-time subtask for a task',
+ icon: (
+ <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+ <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h8M8 12h6m-6 5h4M5 5h.01M5 12h.01M5 19h.01" />
+ </svg>
+ ),
+ onClick: onAddSubtask,
+ },
  ];
+
+ const actionStyle = (enabled: boolean): CSSProperties => ({
+ minHeight: 92,
+ padding: 14,
+ borderRadius: 'var(--tn-r-md, 8px)',
+ border: 'var(--tn-line)',
+ background: 'var(--tn-card)',
+ color: 'var(--tn-fg)',
+ cursor: enabled ? 'pointer' : 'not-allowed',
+ opacity: enabled ? 1 : 0.55,
+ display: 'flex',
+ alignItems: 'flex-start',
+ gap: 12,
+ textAlign: 'left',
+ transition: 'background 160ms ease, transform 160ms ease, box-shadow 160ms ease',
+ boxShadow: 'var(--tn-shadow-soft, none)',
+ });
+
+ const iconStyle: CSSProperties = {
+ width: 42,
+ height: 42,
+ borderRadius: 'var(--tn-r-md, 8px)',
+ background: 'var(--tn-surface-2, var(--tn-hover))',
+ color: 'var(--tn-accent)',
+ display: 'grid',
+ placeItems: 'center',
+ flexShrink: 0,
+ };
 
  return (
  <div className="card">
  <h3 className="text-lg font-semibold mb-4 text-foreground">Quick Actions</h3>
- <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+ <div
+ style={{
+ display: 'grid',
+ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+ gap: 12,
+ }}
+ >
  {actions.map((action, index) => (
  <button
  key={index}
  onClick={action.onClick}
- className={`
- p-4 rounded-lg 
- border border-border dark:border-border
- bg-card dark:bg-card
- hover:bg-muted dark:hover:bg-muted
- hover:border-border dark:hover:border-border
- active:bg-muted dark:active:bg-muted
- transition-all duration-200 
- flex items-start space-x-3
- group
- ${action.onClick ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}
- `}
+ className="group"
+ style={actionStyle(!!action.onClick)}
  disabled={!action.onClick}
  >
- <div className="p-2 rounded-lg bg-muted group-hover:bg-muted dark:group-hover:bg-muted transition-colors duration-200">
- <div className="text-foreground">
+ <div style={iconStyle}>
  {action.icon}
  </div>
- </div>
- <div className="text-left flex-1 min-w-0">
- <h4 className="font-medium text-foreground group-hover:text-foreground dark:group-hover:text-muted-foreground/60 transition-colors duration-200 truncate">
+ <div style={{ flex: 1, minWidth: 0 }}>
+ <h4
+ style={{
+ fontFamily: 'var(--tn-font-sans)',
+ fontWeight: 700,
+ fontSize: 16,
+ lineHeight: 1.2,
+ color: 'var(--tn-fg)',
+ marginBottom: 3,
+ letterSpacing: 0,
+ }}
+ >
  {action.title}
  </h4>
- <p className="text-sm text-foreground dark:text-muted-foreground/60 group-hover:text-foreground dark:group-hover:text-muted-foreground/60 transition-colors duration-200 break-words">
+ <p
+ style={{
+ fontFamily: 'var(--tn-font-sans)',
+ fontSize: 13,
+ color: 'var(--tn-fg-muted)',
+ lineHeight: 1.35,
+ }}
+ >
  {action.description}
  </p>
  </div>

@@ -34,7 +34,7 @@ export const GoalColorPicker: React.FC<GoalColorPickerProps> = ({ goalId }) => {
  onClick={() => setOpen((v) => !v)}
  title="Change goal colour"
  aria-label="Change goal colour"
- className="px-3 py-1.5 text-sm rounded-md font-medium border border-border dark:border-border text-foreground dark:text-muted-foreground/60 hover:bg-muted dark:hover:bg-card flex items-center space-x-1"
+ className="btn btn-secondary"
  >
  <Palette className="w-3.5 h-3.5" />
  <span>Colour</span>
@@ -54,9 +54,10 @@ export const GoalColorPicker: React.FC<GoalColorPickerProps> = ({ goalId }) => {
  setColor(goalId, g);
  setOpen(false);
  }}
- className={`h-8 rounded-md bg-gradient-to-r ${g} ${
- isActive ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-gray-800' : ''
- }`}
+ className={`h-8 rounded-md bg-gradient-to-r ${g}`}
+ style={{
+ boxShadow: isActive ? '0 0 0 2px var(--tn-card), 0 0 0 4px var(--tn-accent)' : undefined,
+ }}
  aria-label={`Set colour to ${g}`}
  />
  );

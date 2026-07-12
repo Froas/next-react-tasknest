@@ -1,19 +1,21 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { GoalItem as Goal, MilestoneItem as Milestone, StatusType, PriorityType, TaskItem as Task } from '@/lib/types';
+import { GoalItem as Goal, MilestoneItem as Milestone, StatusType, PriorityType, TaskItem as Task, Event, TodoItem as Todo, SubtaskItem as Subtask } from '@/lib/types';
 import { MilestoneForm } from './MilestoneForm';
 import { TaskForm } from './TaskForm';
+import { ActionForm, ActionKind } from './ActionForm';
 import { milestonesApi, eventsApi, goalsApi } from '@/lib/api';
 import { useStore } from '@/store/useStore';
 import { useShallow } from 'zustand/react/shallow';
-import { calculateGoalProgress } from '@/lib/progress';
+import { calculateGoalProgress, calculateGoalProgressLanes } from '@/lib/progress';
 import { toast } from '@/store/useToast';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Modal } from '@/components/ui/Modal';
 import GoalHeaderCard from './GoalHeaderCard';
 import MilestonesTimeline from './MilestonesTimeline';
-import { useTheme } from '@/context/ThemeContext';
+import { GoalMetricsPanel } from './GoalMetricsPanel';
+import { GoalCompletionRulePanel } from './GoalCompletionRulePanel';
 
 interface GoalDetailViewProps {
  goal: Goal;
@@ -30,6 +32,8 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
 }) => {
  const [isCreatingMilestone, setIsCreatingMilestone] = useState(false);
  const [isCreatingTask, setIsCreatingTask] = useState(false);
+ const [taskFormMode, setTaskFormMode] = useState<'task' | 'routine'>('task');
+ const [selectedRoutineTaskId, setSelectedRoutineTaskId] = useState<string | null>(null);
  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(initialMilestoneId ?? null);
  const [isSyncingCalendar, setIsSyncingCalendar] = useState(false);
  const [isLoading, setIsLoading] = useState(true);
@@ -38,14 +42,15 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  const [showDeleteGoalConfirm, setShowDeleteGoalConfirm] = useState(false);
  const [isDeleting, setIsDeleting] = useState(false);
 
- const { theme } = useTheme();
- const isDark = theme === 'dark';
  // Subscribe only to the specific goal from the store — unrelated goals
  // changing won't re-render this view.
  const currentGoal = useStore((s) => s.goals.find((g) => g.id === goal.id) ?? goal);
  const {
  updateGoal,
  addTaskToMilestoneInGoal,
+ updateTaskInGoals,
+ updateTodoInGoals,
+ updateSubtaskInGoals,
  addMilestoneToGoal,
  addEvents,
  updateMilestoneInGoals,
@@ -54,6 +59,9 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  useShallow((s) => ({
  updateGoal: s.updateGoal,
  addTaskToMilestoneInGoal: s.addTaskToMilestoneInGoal,
+ updateTaskInGoals: s.updateTaskInGoals,
+ updateTodoInGoals: s.updateTodoInGoals,
+ updateSubtaskInGoals: s.updateSubtaskInGoals,
  addMilestoneToGoal: s.addMilestoneToGoal,
  addEvents: s.addEvents,
  updateMilestoneInGoals: s.updateMilestoneInGoals,
@@ -63,13 +71,6 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
 
  useEffect(() => {
  let cancelled = false;
- const storeGoal = useStore.getState().goals.find(g => g.id === goal.id);
- const alreadyHydrated = !!storeGoal?.milestones?.length;
-
- if (alreadyHydrated) {
- setIsLoading(false);
- return;
- }
 
  const loadGoalDetails = async () => {
  try {
@@ -103,7 +104,7 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  status: StatusType.OUTSTANDING,
  priority: PriorityType.MEDIUM,
  goal_id: goal.id,
- position: currentGoal.milestones?.length ?? 0,
+ position: (currentGoal.milestones?.length ?? 0) + 1,
  });
  addMilestoneToGoal(newMilestone, goal.id);
  toast.success('Milestone added');
@@ -123,7 +124,7 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  due_date: milestoneData.due_date,
  end_datetime: milestoneData.end_datetime,
  goal_id: goal.id,
- position: goal.milestones?.length || 0
+ position: (currentGoal.milestones?.length ?? 0) + 1
  });
  
  // Use optimistic update from store
@@ -160,6 +161,20 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  }
  };
 
+ const handleGoalInlineUpdate = async (data: Partial<Goal>) => {
+ try {
+ const updatedGoal = await goalsApi.update({
+ id: currentGoal.id,
+ ...data,
+ });
+ updateGoal(updatedGoal);
+ } catch (error) {
+ console.error('Error updating goal:', error);
+ toast.error('Failed to update goal');
+ throw error;
+ }
+ };
+
  const handleMilestoneDelete = async (milestoneId: string) => {
  try {
  await milestonesApi.delete(milestoneId);
@@ -174,32 +189,32 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  setIsSyncingCalendar(true);
  setError(null);
  try {
- const eventsToCreate = [];
+ const eventsToCreate: Array<{ kind: 'goal' | 'milestone' | 'task'; data: Omit<Event, 'id'> }> = [];
 
  eventsToCreate.push({
+ kind: 'goal',
+ data: {
  title: `Goal: ${currentGoal.title}`,
  description: `Goal deadline: ${currentGoal.description || 'No description'}`,
  start_datetime: currentGoal.end_datetime || new Date().toISOString(),
  end_datetime: currentGoal.end_datetime || new Date().toISOString(),
  status: currentGoal.status,
- goal_id: currentGoal.id,
  location: 'Goal Planning',
- created_at: new Date().toISOString(),
- updated_at: new Date().toISOString(),
+ },
  });
 
  if (currentGoal.milestones && currentGoal.milestones.length > 0) {
  currentGoal.milestones.forEach(milestone => {
  eventsToCreate.push({
+ kind: 'milestone',
+ data: {
  title: `Milestone: ${milestone.title}`,
  description: `${milestone.description || 'No description'}\nGoal: ${currentGoal.title}`,
  start_datetime: milestone.due_date || milestone.end_datetime || new Date().toISOString(),
  end_datetime: milestone.due_date || milestone.end_datetime || new Date().toISOString(),
  status: milestone.status,
- goal_id: currentGoal.id,
  location: 'Milestone Review',
- created_at: new Date().toISOString(),
- updated_at: new Date().toISOString(),
+ },
  });
 
  if (milestone.tasks && milestone.tasks.length > 0) {
@@ -207,35 +222,50 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  .filter(task => task.due_date && task.priority === PriorityType.HIGH)
  .forEach(task => {
  eventsToCreate.push({
+ kind: 'task',
+ data: {
  title: `Task: ${task.title}`,
  description: `${task.description || 'No description'}\nMilestone: ${milestone.title}\nGoal: ${currentGoal.title}`,
  start_datetime: task.due_date!,
  end_datetime: task.due_date!,
  status: task.status,
- goal_id: currentGoal.id,
  location: 'Task Work',
- created_at: new Date().toISOString(),
- updated_at: new Date().toISOString(),
+ },
  });
  });
  }
  });
  }
 
- const createdEvents = await Promise.all(
- eventsToCreate.map(eventData => eventsApi.create(eventData))
+ const results = await Promise.allSettled(
+ eventsToCreate.map((event) => eventsApi.create(event.data))
  );
+ const createdEvents = results
+ .filter((result): result is PromiseFulfilledResult<Event> => result.status === 'fulfilled')
+ .map((result) => result.value);
+ const failedEvents = results.filter((result) => result.status === 'rejected');
 
- addEvents(createdEvents);
+ if (createdEvents.length > 0) addEvents(createdEvents);
 
- const goalEvents = 1;
- const milestoneEvents = currentGoal.milestones?.length || 0;
- const taskEvents = createdEvents.length - goalEvents - milestoneEvents;
+ const createdKinds = results
+ .map((result, index) => result.status === 'fulfilled' ? eventsToCreate[index].kind : null)
+ .filter(Boolean);
+ const goalEvents = createdKinds.filter((kind) => kind === 'goal').length;
+ const milestoneEvents = createdKinds.filter((kind) => kind === 'milestone').length;
+ const taskEvents = createdKinds.filter((kind) => kind === 'task').length;
 
- alert(`Successfully synced ${createdEvents.length} items to calendar:\n` +
+ if (failedEvents.length > 0) {
+ console.error('Some calendar events failed to sync:', failedEvents);
+ toast.error(`Synced ${createdEvents.length}, failed ${failedEvents.length}`);
+ } else {
+ toast.success(`Synced ${createdEvents.length} calendar item${createdEvents.length === 1 ? '' : 's'}`);
+ }
+
+ alert(`Synced ${createdEvents.length} items to calendar:\n` +
  `• ${goalEvents} Goal event\n` +
  `• ${milestoneEvents} Milestone events\n` +
  `• ${taskEvents} High-priority task events\n\n` +
+ (failedEvents.length > 0 ? `⚠ ${failedEvents.length} items failed. Check console/details.\n\n` : '') +
  `Check the calendar widget to see your scheduled items!`);
  } catch (err) {
  setError(err instanceof Error ? err.message : 'Failed to sync with calendar');
@@ -244,13 +274,22 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  }
  };
 
- const handleCreateTask = (newTask: Task, goalId: string, milestoneId: string) => {
- // Type guard to ensure newTask is Task, not Todo, if necessary.
- // For now, assuming TaskForm only sends Task.
- if ('milestone_id' in newTask && 'todos' in newTask && 'subtasks' in newTask) {
+ const handleCreateTask = (newTask: Task, goalId: string, milestoneId?: string) => {
+ if (newTask?.id && newTask?.title) {
  try {
- addTaskToMilestoneInGoal(newTask, milestoneId, goalId);
+ const normalizedTask = {
+ ...newTask,
+ goal_id: newTask.goal_id ?? goalId,
+ todos: newTask.todos ?? [],
+ subtasks: newTask.subtasks ?? [],
+ };
+ if (!milestoneId || normalizedTask.scope === 'goal') {
+ updateTaskInGoals({ ...normalizedTask, milestone_id: undefined, scope: 'goal' });
+ } else {
+ addTaskToMilestoneInGoal(normalizedTask, milestoneId, goalId);
+ }
  setIsCreatingTask(false);
+ setTaskFormMode('task');
  setSelectedMilestoneId(null);
  // Optionally, trigger a background refresh if still desired for absolute consistency
  // For example: goalsApi.getById(goalId, { include_milestones: true, ... }).then(updatedG => updateGoal(updatedG));
@@ -269,24 +308,54 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  }
  };
 
+ const handleCreateRoutineAction = (
+ item: Subtask | Todo,
+ kind: ActionKind,
+ _goalId: string,
+ _milestoneId: string,
+ _taskId: string,
+ ) => {
+ if (kind === 'todo') {
+ updateTodoInGoals(item as Todo);
+ } else {
+ updateSubtaskInGoals(item as Subtask);
+ }
+ setSelectedRoutineTaskId(null);
+ toast.success(kind === 'todo' ? 'Routine todo added' : 'Routine subtask added');
+ };
+
 
  const progress = calculateGoalProgress(currentGoal);
+ const progressLanes = calculateGoalProgressLanes(currentGoal);
 
  const handleAddMilestone = () => {
  setIsCreatingMilestone(true);
  };
 
+ const openTaskForm = (mode: 'task' | 'routine', milestoneId?: string | null) => {
+ setTaskFormMode(mode);
+ setSelectedMilestoneId(milestoneId ?? null);
+ setIsCreatingTask(true);
+ };
+
  if (isLoading) {
  return (
  <div className="flex justify-center items-center h-64">
- <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+ <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: 'var(--tn-accent)' }}></div>
  </div>
  );
  }
 
  if (error) {
  return (
- <div className="bg-red-50 dark:bg-red-900 text-red-800 dark:text-red-200 p-4 rounded-lg">
+ <div
+ className="p-4 rounded-lg border"
+ style={{
+ background: 'color-mix(in srgb, var(--tn-bad, #c25d63) 10%, var(--tn-card))',
+ color: 'var(--tn-bad, #c25d63)',
+ borderColor: 'color-mix(in srgb, var(--tn-bad, #c25d63) 38%, var(--tn-card))',
+ }}
+ >
  <p className="font-medium">Error loading goal details</p>
  <p className="text-sm mt-1">{error}</p>
  <button
@@ -309,7 +378,8 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  };
  loadGoalDetails();
  }}
- className="mt-2 px-4 py-2 text-sm font-medium text-white bg-red-600 dark:bg-red-500 rounded-lg hover:bg-red-700 dark:hover:bg-red-600"
+ className="mt-2 px-4 py-2 text-sm font-medium rounded-lg"
+ style={{ background: 'var(--tn-bad, #c25d63)', color: '#fff' }}
  >
  Try Again
  </button>
@@ -318,14 +388,22 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  }
 
  return (
- <div data-testid="goal-detail-view" className={`${isDark ? 'bg-card' : 'bg-card'} min-h-screen`}>
+ <div data-testid="goal-detail-view" className="min-h-screen w-full max-w-full overflow-x-hidden">
  {/* Error notification */}
  {error && (
- <div className="mb-4 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg flex items-center justify-between">
+ <div
+ className="mb-4 border px-4 py-3 rounded-lg flex items-center justify-between"
+ style={{
+ background: 'color-mix(in srgb, var(--tn-bad, #c25d63) 10%, var(--tn-card))',
+ color: 'var(--tn-bad, #c25d63)',
+ borderColor: 'color-mix(in srgb, var(--tn-bad, #c25d63) 38%, var(--tn-card))',
+ }}
+ >
  <span>{error}</span>
  <button
  onClick={() => setError(null)}
- className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 ml-4"
+ className="ml-4"
+ style={{ color: 'var(--tn-bad, #c25d63)' }}
  >
  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -334,9 +412,9 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  </div>
  )}
 
- <div className="flex justify-between items-center mb-6">
+ <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between">
  <button
- className="px-2 py-1.5 text-sm rounded-md font-medium cursor-pointer transition-colors duration-200 bg-muted dark:bg-card text-foreground dark:text-muted-foreground/60 hover:bg-muted dark:hover:bg-muted flex items-center"
+ className="btn btn-secondary w-fit"
  onClick={onBack}
  >
  <svg
@@ -350,12 +428,13 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  </svg>
  Back
  </button>
- <div className="flex space-x-2">
+ <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
  <button
  onClick={handleSyncCalendar}
  disabled={isSyncingCalendar}
- className="px-3 py-1.5 text-sm rounded-md font-medium cursor-pointer transition-colors duration-200 bg-green-600 dark:bg-green-500 text-white hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 flex items-center space-x-1"
+ className="btn btn-primary flex-1 justify-center sm:flex-none disabled:opacity-50"
  title="Sync goal, milestones, and high-priority tasks to calendar"
+ style={{ background: 'var(--tn-good, #2f7d50)', color: 'white' }}
  >
  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -364,20 +443,28 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  </button>
  <button
  onClick={handleAddMilestone}
- className="px-2 py-1.5 text-sm rounded-md font-medium cursor-pointer transition-colors duration-200 bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600"
+ className="btn btn-primary flex-1 justify-center sm:flex-none"
  >
  + Milestone
  </button>
  <button
+ onClick={() => {
+ openTaskForm('task', null);
+ }}
+ className="btn btn-secondary flex-1 justify-center sm:flex-none"
+ >
+ + Task
+ </button>
+ <button
  onClick={() => window.print()}
  title="Print goal as a clean document"
- className="no-print px-2 py-1.5 text-sm rounded-md font-medium border border-border dark:border-border text-foreground dark:text-muted-foreground/60 hover:bg-muted dark:hover:bg-card"
+ className="btn btn-secondary no-print flex-1 justify-center sm:flex-none"
  >
  Print
  </button>
  <button
  onClick={() => setShowDeleteGoalConfirm(true)}
- className="px-2 py-1.5 text-sm rounded-md font-medium cursor-pointer transition-colors duration-200 bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700"
+ className="btn btn-danger flex-1 justify-center sm:flex-none"
  >
  Delete
  </button>
@@ -397,28 +484,53 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  </Modal>
 
  <Modal
- open={isCreatingTask && !!selectedMilestoneId}
- title="Add Task"
+ open={isCreatingTask}
+ title={taskFormMode === 'routine' ? 'Add Goal Routine' : selectedMilestoneId ? 'Add Milestone Task' : 'Add Goal Task'}
  onClose={() => {
  setIsCreatingTask(false);
+ setTaskFormMode('task');
  setSelectedMilestoneId(null);
  }}
  >
- {selectedMilestoneId && (
  <TaskForm
  goalId={goal.id}
- milestoneId={selectedMilestoneId}
+ milestoneId={selectedMilestoneId ?? undefined}
+ initialData={taskFormMode === 'routine' ? { kind: 'routine', scope: 'goal', status: StatusType.STARTED, priority: PriorityType.MEDIUM } : undefined}
  onSuccess={handleCreateTask}
  onCancel={() => {
  setIsCreatingTask(false);
+ setTaskFormMode('task');
  setSelectedMilestoneId(null);
  }}
+ />
+ </Modal>
+
+ <Modal
+ open={selectedRoutineTaskId !== null}
+ title="Add Routine Todo"
+ onClose={() => setSelectedRoutineTaskId(null)}
+ >
+ {selectedRoutineTaskId && (
+ <ActionForm
+ goalId={goal.id}
+ milestoneId=""
+ taskId={selectedRoutineTaskId}
+ defaultKind="todo"
+ onSuccess={handleCreateRoutineAction}
+ onCancel={() => setSelectedRoutineTaskId(null)}
  />
  )}
  </Modal>
 
  {/* Goal header */}
- <GoalHeaderCard goal={currentGoal} progress={progress} />
+ <GoalHeaderCard goal={currentGoal} progress={progress} progressLanes={progressLanes} onUpdate={handleGoalInlineUpdate} />
+ <GoalMetricsPanel goalId={currentGoal.id} />
+ <GoalCompletionRulePanel goal={currentGoal} onSaved={updateGoal} />
+ <GoalRoutinesPanel
+ routines={(currentGoal.tasks ?? []).filter((task) => task.scope === 'goal' && task.kind === 'routine')}
+ onAddRoutine={() => openTaskForm('routine', null)}
+ onAddTodo={(taskId) => setSelectedRoutineTaskId(taskId)}
+ />
 
  {/* Milestones timeline */}
  <MilestonesTimeline
@@ -428,8 +540,7 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  onDelete={handleMilestoneDelete}
  onQuickAddMilestone={handleQuickAddMilestone}
  onAddTask={(milestoneId) => {
- setSelectedMilestoneId(milestoneId);
- setIsCreatingTask(true);
+ openTaskForm('task', milestoneId);
  }}
  />
 
@@ -458,3 +569,103 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  </div>
  );
 };
+
+const GoalRoutinesPanel: React.FC<{
+ routines: Task[];
+ onAddRoutine: () => void;
+ onAddTodo: (taskId: string) => void;
+}> = ({ routines, onAddRoutine, onAddTodo }) => (
+ <section
+ className="mb-8 rounded-3xl border p-4 sm:p-5"
+ style={{
+ border: 'var(--tn-line)',
+ background: 'color-mix(in srgb, var(--tn-card) 92%, var(--tn-bg))',
+ boxShadow: 'var(--tn-shadow)',
+ }}
+ >
+ <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+ <div>
+ <h2 className="text-xl font-semibold text-foreground">Goal Routines</h2>
+ <p className="text-sm text-muted-foreground dark:text-muted-foreground">
+ Recurring todos that belong to the whole goal, not a milestone.
+ </p>
+ </div>
+ <button type="button" onClick={onAddRoutine} className="btn btn-primary w-full justify-center sm:w-auto">
+ + Routine
+ </button>
+ </div>
+
+ {routines.length === 0 ? (
+ <div
+ className="rounded-2xl border p-4 text-sm"
+ style={{ border: 'var(--tn-line)', background: 'var(--tn-card)', color: 'var(--tn-fg-muted)' }}
+ >
+ No goal-level routines yet. Add one for habits like food tracking, shutdown, or daily review.
+ </div>
+ ) : (
+ <div className="grid gap-3 lg:grid-cols-2">
+ {routines.map((routine) => {
+ const todos = routine.todos ?? [];
+ return (
+ <article
+ key={routine.id}
+ className="rounded-2xl border p-4"
+ style={{ border: 'var(--tn-line)', background: 'var(--tn-card)' }}
+ >
+ <div className="mb-3 flex items-start justify-between gap-3">
+ <div className="min-w-0">
+ <h3 className="truncate text-base font-semibold text-foreground">{routine.title}</h3>
+ {routine.description && (
+ <p className="mt-1 line-clamp-2 text-sm text-muted-foreground dark:text-muted-foreground">
+ {routine.description}
+ </p>
+ )}
+ </div>
+ <span
+ className="rounded-full px-2 py-1 text-xs font-medium"
+ style={{
+ background: 'color-mix(in srgb, var(--tn-accent) 10%, var(--tn-card))',
+ color: 'var(--tn-accent)',
+ }}
+ >
+ routine
+ </span>
+ </div>
+
+ {todos.length > 0 ? (
+ <ul className="mb-3 space-y-2">
+ {todos.map((todo) => (
+ <li
+ key={todo.id}
+ className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm"
+ style={{ background: 'var(--tn-hover)' }}
+ >
+ <span
+ className="h-2 w-2 flex-shrink-0 rounded-full"
+ style={{ background: 'var(--tn-accent)' }}
+ />
+ <span className="min-w-0 flex-1 truncate text-foreground">{todo.title}</span>
+ <span className="flex-shrink-0 text-xs text-muted-foreground dark:text-muted-foreground">
+ {todo.repeat_interval || 'recurring'}
+ </span>
+ </li>
+ ))}
+ </ul>
+ ) : (
+ <p className="mb-3 rounded-xl px-3 py-2 text-sm text-muted-foreground dark:text-muted-foreground" style={{ background: 'var(--tn-hover)' }}>
+ No recurring todos yet.
+ </p>
+ )}
+
+ <div className="flex justify-end">
+ <button type="button" onClick={() => onAddTodo(routine.id)} className="btn btn-secondary !px-3 !py-2 text-sm">
+ + Todo
+ </button>
+ </div>
+ </article>
+ );
+ })}
+ </div>
+ )}
+ </section>
+);

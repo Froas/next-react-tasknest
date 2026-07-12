@@ -42,16 +42,16 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
  return this.props.fallback(error, this.reset);
  }
  return (
- <div className="min-h-screen flex items-center justify-center bg-muted dark:bg-card px-4">
- <div className="max-w-md w-full text-center bg-card dark:bg-card rounded-xl border border-border dark:border-border p-8 shadow-sm">
+ <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--tn-bg)' }}>
+ <div className="card max-w-md w-full text-center" style={{ padding: 32 }}>
  <h1 className="text-2xl font-semibold text-foreground mb-3">Something went wrong</h1>
- <p className="text-foreground dark:text-muted-foreground/60 mb-6 break-words">
+ <p className="mb-6 break-words" style={{ color: 'var(--tn-fg-muted)' }}>
  {error.message || 'An unexpected error occurred while rendering this page.'}
  </p>
  <div className="flex justify-center space-x-3">
  <button
  onClick={this.reset}
- className="px-4 py-2 rounded-lg bg-card dark:bg-card text-white hover:bg-card dark:hover:bg-muted transition-colors"
+ className="btn btn-primary"
  >
  Try again
  </button>
@@ -59,7 +59,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
  onClick={() => {
  if (typeof window !== 'undefined') window.location.href = '/';
  }}
- className="px-4 py-2 rounded-lg border border-border dark:border-border text-foreground dark:text-muted-foreground/60 hover:bg-muted dark:hover:bg-card transition-colors"
+ className="btn btn-secondary"
  >
  Back to dashboard
  </button>

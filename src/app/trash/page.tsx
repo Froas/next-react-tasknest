@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { withAuth } from '@/hoc/withAuth';
 import { trashApi, type TrashItemBE, type TrashKind } from '@/lib/api';
+import { useStore } from '@/store/useStore';
+import { useShallow } from 'zustand/react/shallow';
 
 const KIND_COLOR: Record<TrashKind, string> = {
  task: '#5a6f8c',
@@ -19,6 +21,56 @@ const TrashPage: React.FC = () => {
  const [busyId, setBusyId] = useState<string | null>(null);
  const [emptying, setEmptying] = useState(false);
  const [error, setError] = useState<string | null>(null);
+ const refreshStore = useStore(
+ useShallow((s) => ({
+ fetchGoals: s.fetchGoals,
+ fetchMilestones: s.fetchMilestones,
+ fetchTasks: s.fetchTasks,
+ fetchTodos: s.fetchTodos,
+ fetchEvents: s.fetchEvents,
+ }))
+ );
+
+ async function refreshRestoredKind(kind: TrashKind) {
+ const options = { force: true };
+ switch (kind) {
+ case 'goal':
+ await Promise.all([
+ refreshStore.fetchGoals(options),
+ refreshStore.fetchMilestones(options),
+ refreshStore.fetchTasks(options),
+ refreshStore.fetchTodos(options),
+ ]);
+ break;
+ case 'milestone':
+ await Promise.all([
+ refreshStore.fetchGoals(options),
+ refreshStore.fetchMilestones(options),
+ refreshStore.fetchTasks(options),
+ refreshStore.fetchTodos(options),
+ ]);
+ break;
+ case 'task':
+ await Promise.all([
+ refreshStore.fetchGoals(options),
+ refreshStore.fetchTasks(options),
+ refreshStore.fetchTodos(options),
+ ]);
+ break;
+ case 'todo':
+ await Promise.all([
+ refreshStore.fetchGoals(options),
+ refreshStore.fetchTasks(options),
+ refreshStore.fetchTodos(options),
+ ]);
+ break;
+ case 'event':
+ await refreshStore.fetchEvents(options);
+ break;
+ case 'note':
+ break;
+ }
+ }
 
  async function reload() {
  setLoading(true);
@@ -41,7 +93,13 @@ const TrashPage: React.FC = () => {
  setBusyId(it.id);
  try {
  await trashApi.restore(it.kind, it.id);
- setItems(items.filter((x) => x.id !== it.id));
+ setItems((current) => current.filter((x) => x.id !== it.id));
+ try {
+ await refreshRestoredKind(it.kind);
+ } catch (refreshError) {
+ console.error('Failed to refresh store after restore:', refreshError);
+ setError('Restored, but failed to refresh the workspace. Reload if it is not visible yet.');
+ }
  } catch (e) {
  setError(e instanceof Error ? e.message : 'Failed to restore');
  } finally {
@@ -54,7 +112,7 @@ const TrashPage: React.FC = () => {
  setBusyId(it.id);
  try {
  await trashApi.purge(it.kind, it.id);
- setItems(items.filter((x) => x.id !== it.id));
+ setItems((current) => current.filter((x) => x.id !== it.id));
  } catch (e) {
  setError(e instanceof Error ? e.message : 'Failed to delete');
  } finally {

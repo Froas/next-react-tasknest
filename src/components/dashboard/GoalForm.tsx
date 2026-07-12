@@ -83,7 +83,13 @@ export const GoalForm: React.FC<GoalFormProps> = ({
  return (
  <form onSubmit={handleSubmit} className="space-y-4">
  {error && (
- <div className="bg-red-50 text-red-800 p-3 rounded-lg text-sm">
+ <div
+ className="p-3 rounded-lg text-sm"
+ style={{
+ background: 'color-mix(in srgb, var(--tn-bad, #c25d63) 12%, var(--tn-card))',
+ color: 'var(--tn-bad, #c25d63)',
+ }}
+ >
  {error}
  </div>
  )}
@@ -99,7 +105,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
  value={formData.title}
  onChange={handleChange}
  required
- className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+ className="w-full px-3 py-2 border border-border bg-card text-foreground placeholder:text-muted-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
  />
  </div>
 
@@ -116,7 +122,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
  />
  </div>
 
- <div className="grid grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
  <div>
  <label htmlFor="status" className="block text-sm font-medium text-foreground mb-1">
  Status
@@ -126,7 +132,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
  name="status"
  value={formData.status}
  onChange={handleChange}
- className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+ className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
  >
  {USER_FACING_STATUSES.map((status) => (
  <option key={status} value={status}>
@@ -145,7 +151,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
  name="priority"
  value={formData.priority}
  onChange={handleChange}
- className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+ className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
  >
  {Object.values(PriorityType).map(priority => (
  <option key={priority} value={priority}>
@@ -156,7 +162,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
  </div>
  </div>
 
- <div className="grid grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
  <div>
  <label htmlFor="start_datetime" className="block text-sm font-medium text-foreground mb-1">
  Start Date
@@ -167,7 +173,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
  name="start_datetime"
  value={formData.start_datetime}
  onChange={handleChange}
- className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+ className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
  />
  </div>
 
@@ -181,23 +187,23 @@ export const GoalForm: React.FC<GoalFormProps> = ({
  name="end_datetime"
  value={formData.end_datetime}
  onChange={handleChange}
- className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+ className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
  />
  </div>
  </div>
 
- <div className="flex justify-end space-x-3 pt-4">
+ <div className="flex flex-col gap-2 pt-4 sm:flex-row sm:justify-end sm:gap-3">
  <button
  type="button"
  onClick={onCancel}
- className="px-4 py-2 text-sm font-medium text-foreground bg-muted rounded-lg hover:bg-muted focus:outline-none focus:ring-2 focus:ring-gray-400"
+ className="btn btn-secondary w-full sm:w-auto justify-center"
  >
  Cancel
  </button>
  <button
  type="submit"
  disabled={isSubmitting}
- className="px-4 py-2 text-sm font-medium text-white bg-card rounded-lg hover:bg-card focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50"
+ className="btn btn-primary w-full sm:w-auto justify-center disabled:opacity-50"
  >
  {isSubmitting ? 'Saving...' : isEditMode ? 'Update Goal' : 'Create Goal'}
  </button>

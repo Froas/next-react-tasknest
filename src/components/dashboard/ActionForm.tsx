@@ -144,19 +144,27 @@ export const ActionForm: React.FC<ActionFormProps> = ({
  };
 
  return (
- <form onSubmit={handleSubmit} className="space-y-4">
+ <form onSubmit={handleSubmit} className="min-w-0 space-y-3 sm:space-y-4">
  {error && (
- <div className="bg-red-50 text-red-800 p-3 rounded-lg text-sm">{error}</div>
+ <div
+ className="p-3 rounded-lg text-sm"
+ style={{
+ background: 'color-mix(in srgb, var(--tn-bad, #c25d63) 12%, var(--tn-card))',
+ color: 'var(--tn-bad, #c25d63)',
+ }}
+ >
+ {error}
+ </div>
  )}
 
- <div className="flex items-center space-x-2 bg-muted dark:bg-card rounded-lg p-1">
+ <div className="grid grid-cols-1 gap-1 rounded-lg p-1 sm:grid-cols-2" style={{ background: 'var(--tn-surface-2, var(--tn-hover))' }}>
  <button
  type="button"
  onClick={() => setKind('subtask')}
  className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
  kind === 'subtask'
- ? 'bg-card dark:bg-card text-foreground shadow-sm'
- : 'text-foreground dark:text-muted-foreground/60 hover:text-foreground dark:hover:text-white'
+ ? 'bg-card text-foreground shadow-sm'
+ : 'text-foreground hover:text-foreground'
  }`}
  >
  One-time (Subtask)
@@ -166,8 +174,8 @@ export const ActionForm: React.FC<ActionFormProps> = ({
  onClick={() => setKind('todo')}
  className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
  kind === 'todo'
- ? 'bg-card dark:bg-card text-foreground shadow-sm'
- : 'text-foreground dark:text-muted-foreground/60 hover:text-foreground dark:hover:text-white'
+ ? 'bg-card text-foreground shadow-sm'
+ : 'text-foreground hover:text-foreground'
  }`}
  >
  Recurring (Todo)
@@ -203,7 +211,7 @@ export const ActionForm: React.FC<ActionFormProps> = ({
  />
  </div>
 
- <div className="grid grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
  <div>
  <label htmlFor="status" className="block text-sm font-medium text-foreground dark:text-muted-foreground/60 mb-1">
  Status
@@ -243,7 +251,7 @@ export const ActionForm: React.FC<ActionFormProps> = ({
  </div>
  </div>
 
- <div className="grid grid-cols-3 gap-4">
+ <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
  <div>
  <label htmlFor="due_date" className="block text-sm font-medium text-foreground dark:text-muted-foreground/60 mb-1">
  Due Date
@@ -286,7 +294,7 @@ export const ActionForm: React.FC<ActionFormProps> = ({
  </div>
 
  {kind === 'todo' && (
- <div className="grid grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
  <div>
  <label htmlFor="repeat_interval" className="block text-sm font-medium text-foreground dark:text-muted-foreground/60 mb-1">
  Repeat
@@ -321,18 +329,18 @@ export const ActionForm: React.FC<ActionFormProps> = ({
  </div>
  )}
 
- <div className="flex justify-end space-x-3 pt-4">
+ <div className="flex flex-col gap-2 pt-4 sm:flex-row sm:justify-end sm:gap-3">
  <button
  type="button"
  onClick={onCancel}
- className="px-4 py-2 text-sm font-medium text-foreground dark:text-muted-foreground/60 bg-muted dark:bg-card rounded-lg hover:bg-muted dark:hover:bg-muted focus:outline-none focus:ring-2 focus:ring-gray-400"
+ className="btn btn-secondary w-full sm:w-auto justify-center"
  >
  Cancel
  </button>
  <button
  type="submit"
  disabled={isSubmitting}
- className="px-4 py-2 text-sm font-medium text-white bg-card dark:bg-card rounded-lg hover:bg-card dark:hover:bg-muted focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50"
+ className="btn btn-primary w-full sm:w-auto justify-center disabled:opacity-50"
  >
  {isSubmitting
  ? 'Saving...'

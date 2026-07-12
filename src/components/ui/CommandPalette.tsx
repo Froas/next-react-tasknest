@@ -230,10 +230,9 @@ export const CommandPalette: React.FC = () => {
  setOpen(false);
  }}
  className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between ${
- isHighlighted
- ? 'bg-blue-50 dark:bg-blue-900/30 text-foreground'
- : 'text-foreground dark:text-muted-foreground/60'
+ isHighlighted ? 'text-foreground' : 'text-foreground dark:text-muted-foreground/60'
  }`}
+ style={isHighlighted ? { background: 'color-mix(in srgb, var(--tn-accent) 10%, var(--tn-card))' } : undefined}
  >
  <span className="truncate">{cmd.label}</span>
  {cmd.hint && (

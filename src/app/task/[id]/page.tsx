@@ -14,6 +14,9 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useDocumentTitle } from '@/lib/useDocumentTitle';
 import { Markdown } from '@/components/ui/Markdown';
 import { ChevronLeft, Target, Flag, CheckCircle2, Circle, Trash2 } from 'lucide-react';
+import { calculateTaskProgressLanes } from '@/lib/progress';
+import { CompletionRulePanel } from '@/components/dashboard/GoalCompletionRulePanel';
+import { ProgressLanes } from '@/components/dashboard/ProgressLanes';
 
 const TaskDetailPage: React.FC = () => {
  const params = useParams();
@@ -21,8 +24,10 @@ const TaskDetailPage: React.FC = () => {
  const id = typeof params?.id === 'string' ? params.id : Array.isArray(params?.id) ? params!.id[0] : '';
 
  // Locate the task across the entire tree to recover breadcrumb context.
- const ctx = useStore((s) => {
+ const ctx = useStore(useShallow((s) => {
  for (const goal of s.goals) {
+ const goalTask = goal.tasks?.find((task) => task.id === id);
+ if (goalTask) return { task: goalTask, goal, milestone: undefined };
  for (const milestone of goal.milestones ?? []) {
  const task = milestone.tasks?.find((t) => t.id === id);
  if (task) return { task, goal, milestone };
@@ -31,14 +36,15 @@ const TaskDetailPage: React.FC = () => {
  const flat = s.tasks.find((t) => t.id === id);
  if (flat) return { task: flat, goal: undefined, milestone: undefined };
  return { task: undefined, goal: undefined, milestone: undefined };
- });
+ }));
 
- const { updateTaskInGoals, updateTodoInGoals, updateSubtaskInGoals, deleteTaskFromGoals } = useStore(
+ const { updateTaskInGoals, updateTodoInGoals, updateSubtaskInGoals, deleteTaskFromGoals, fetchGoals } = useStore(
  useShallow((s) => ({
  updateTaskInGoals: s.updateTaskInGoals,
  updateTodoInGoals: s.updateTodoInGoals,
  updateSubtaskInGoals: s.updateSubtaskInGoals,
  deleteTaskFromGoals: s.deleteTaskFromGoals,
+ fetchGoals: s.fetchGoals,
  }))
  );
 
@@ -89,6 +95,7 @@ const TaskDetailPage: React.FC = () => {
  subtasks: task.subtasks ?? updated.subtasks ?? [],
  todos: task.todos ?? updated.todos ?? [],
  });
+ void fetchGoals({ force: true, silent: true });
  } catch (err) {
  console.error(err);
  toast.error('Failed to update task');
@@ -111,6 +118,7 @@ const TaskDetailPage: React.FC = () => {
  const updated = await todosApi.update(patch);
  updateTodoInGoals({ ...updated, end_datetime: updated.end_datetime ?? localStamp });
  }
+ void fetchGoals({ force: true, silent: true });
  } catch (err) {
  console.error(err);
  toast.error(`Failed to update ${kind}`);
@@ -136,20 +144,20 @@ const TaskDetailPage: React.FC = () => {
 
  if (isLoading) {
  return (
- <div className="min-h-screen bg-muted dark:bg-card flex items-center justify-center">
- <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500" />
+ <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--tn-bg)' }}>
+ <div className="animate-spin rounded-full h-10 w-10 border-b-2" style={{ borderColor: 'var(--tn-accent)' }} />
  </div>
  );
  }
 
  if (!task) {
  return (
- <div className="min-h-screen bg-muted dark:bg-card flex items-center justify-center px-4">
- <div className="max-w-md w-full text-center bg-card dark:bg-card rounded-xl border border-border dark:border-border p-8">
+ <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--tn-bg)' }}>
+ <div className="card max-w-md w-full text-center" style={{ padding: 32 }}>
  <h1 className="text-2xl font-semibold text-foreground mb-3">Task not found</h1>
  <Link
  href="/task"
- className="inline-block px-4 py-2 rounded-lg bg-card dark:bg-card text-white hover:bg-card dark:hover:bg-muted"
+ className="btn btn-primary"
  >
  Back to tasks
  </Link>
@@ -161,36 +169,38 @@ const TaskDetailPage: React.FC = () => {
  const isDone = task.status === StatusType.FINISHED;
  const subtasks = (task.subtasks ?? []) as unknown as Subtask[];
  const todos = task.todos ?? [];
+ const progressLanes = calculateTaskProgressLanes(task);
 
  return (
- <div className="min-h-screen bg-muted dark:bg-card">
- <main className="container mx-auto px-6 py-8 max-w-3xl">
+ <div className="min-h-screen" style={{ background: 'var(--tn-bg)' }}>
+ <main className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
  <div className="flex items-center justify-between mb-6">
  <button
  onClick={() => router.back()}
- className="flex items-center text-sm text-foreground dark:text-muted-foreground/60 hover:text-foreground dark:hover:text-white"
+ className="btn btn-ghost"
  >
  <ChevronLeft className="w-4 h-4 mr-1" /> Back
  </button>
  <button
  onClick={() => setConfirmDelete(true)}
- className="flex items-center space-x-1 px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"
+ className="btn"
+ style={{ background: 'var(--tn-bad, #c25d63)', color: '#fff' }}
  >
  <Trash2 className="w-4 h-4" />
  <span>Delete</span>
  </button>
  </div>
 
- <div className="bg-card dark:bg-card rounded-xl border border-border dark:border-border p-6 mb-6">
+ <div className="card mb-6">
  <div className="space-y-1 mb-4 text-xs">
  {goal && (
- <Link href={`/goal/${goal.id}`} className="flex items-center text-blue-600 dark:text-blue-400 hover:underline">
+ <Link href={`/goal/${goal.id}`} className="flex items-center hover:underline" style={{ color: 'var(--tn-accent)' }}>
  <Target className="w-3 h-3 mr-1" />
  {goal.title}
  </Link>
  )}
  {milestone && (
- <Link href={`/milestone/${milestone.id}`} className="flex items-center text-purple-600 dark:text-purple-400 hover:underline">
+ <Link href={`/milestone/${milestone.id}`} className="flex items-center hover:underline" style={{ color: 'var(--tn-plum, #8a6594)' }}>
  <Flag className="w-3 h-3 mr-1" />
  {milestone.title}
  </Link>
@@ -203,7 +213,7 @@ const TaskDetailPage: React.FC = () => {
  className="mt-1 flex-shrink-0 focus:outline-none"
  >
  {isDone ? (
- <CheckCircle2 className="w-6 h-6 text-green-500" />
+ <CheckCircle2 className="w-6 h-6" style={{ color: 'var(--tn-good, #2f7d50)' }} />
  ) : (
  <Circle className="w-6 h-6 text-muted-foreground hover:text-foreground" />
  )}
@@ -226,6 +236,16 @@ const TaskDetailPage: React.FC = () => {
  {task.due_date && <span>Due: {formatDate(task.due_date)}</span>}
  </div>
  </div>
+
+ <ProgressLanes lanes={progressLanes} className="mb-6" />
+ <CompletionRulePanel
+ entity={task}
+ entityType="task"
+ onSaved={(entity) => {
+ updateTaskInGoals(entity as Task);
+ void fetchGoals({ force: true, silent: true });
+ }}
+ />
 
  {subtasks.length > 0 && (
  <Section title="Subtasks">
@@ -256,7 +276,7 @@ const TaskDetailPage: React.FC = () => {
  )}
 
  {subtasks.length === 0 && todos.length === 0 && (
- <div className="bg-card dark:bg-card rounded-xl border border-border dark:border-border p-6 text-sm text-muted-foreground dark:text-muted-foreground text-center">
+ <div className="card text-sm text-center" style={{ color: 'var(--tn-fg-muted)' }}>
  No subtasks or todos yet. Add them from the parent milestone.
  </div>
  )}
@@ -277,7 +297,7 @@ const TaskDetailPage: React.FC = () => {
 };
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
- <div className="bg-card dark:bg-card rounded-xl border border-border dark:border-border p-4 mb-4">
+ <div className="card mb-4" style={{ padding: 16 }}>
  <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground dark:text-muted-foreground mb-3">
  {title}
  </h2>
@@ -291,9 +311,9 @@ const ChildRow: React.FC<{ title: string; description?: string; done: boolean; o
  done,
  onToggle,
 }) => (
- <li className="flex items-start space-x-3 px-3 py-2 rounded-lg hover:bg-muted dark:hover:bg-card/40">
+ <li className="flex items-start space-x-3 px-3 py-2 rounded-lg" style={{ transition: 'background .15s' }}>
  <button onClick={onToggle} aria-label={done ? 'Mark as outstanding' : 'Mark as finished'} className="mt-0.5 flex-shrink-0">
- {done ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <Circle className="w-5 h-5 text-muted-foreground hover:text-foreground" />}
+ {done ? <CheckCircle2 className="w-5 h-5" style={{ color: 'var(--tn-good, #2f7d50)' }} /> : <Circle className="w-5 h-5 text-muted-foreground hover:text-foreground" />}
  </button>
  <div className="flex-1 min-w-0">
  <div className={`text-sm font-medium truncate ${done ? 'line-through text-muted-foreground dark:text-muted-foreground' : 'text-foreground'}`}>

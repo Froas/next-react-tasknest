@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 interface ModalProps {
  open: boolean;
@@ -24,6 +25,11 @@ const widthClasses: Record<NonNullable<ModalProps['maxWidth']>, string> = {
 export const Modal: React.FC<ModalProps> = ({ open, title, onClose, children, maxWidth = '2xl' }) => {
  const dialogRef = useRef<HTMLDivElement>(null);
  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+ const [mounted, setMounted] = React.useState(false);
+
+ useEffect(() => {
+ setMounted(true);
+ }, []);
 
  useEffect(() => {
  if (!open) return;
@@ -74,11 +80,11 @@ export const Modal: React.FC<ModalProps> = ({ open, title, onClose, children, ma
  };
  }, [open, onClose]);
 
- if (!open) return null;
+ if (!open || !mounted) return null;
 
- return (
+ return createPortal(
  <div
- className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+ className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center p-0 sm:items-center sm:p-4 z-50"
  role="dialog"
  aria-modal="true"
  aria-labelledby="modal-title"
@@ -86,9 +92,9 @@ export const Modal: React.FC<ModalProps> = ({ open, title, onClose, children, ma
  if (e.target === e.currentTarget) onClose();
  }}
  >
- <div ref={dialogRef} className={`bg-card dark:bg-card rounded-xl p-6 w-full max-h-[90vh] overflow-y-auto ${widthClasses[maxWidth]}`}>
- <div className="flex items-start justify-between mb-4">
- <h3 id="modal-title" className="text-lg font-semibold text-foreground">
+ <div ref={dialogRef} className={`bg-card dark:bg-card rounded-t-2xl sm:rounded-xl p-4 sm:p-6 w-full max-h-[92vh] overflow-y-auto shadow-xl ${widthClasses[maxWidth]}`}>
+ <div className="flex items-start justify-between gap-3 mb-4">
+ <h3 id="modal-title" className="text-base sm:text-lg font-semibold text-foreground min-w-0 break-words">
  {title}
  </h3>
  <button
@@ -101,6 +107,7 @@ export const Modal: React.FC<ModalProps> = ({ open, title, onClose, children, ma
  </div>
  {children}
  </div>
- </div>
+ </div>,
+ document.body
  );
 };

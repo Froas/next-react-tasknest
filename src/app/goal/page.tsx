@@ -7,36 +7,41 @@ import { useStore } from '@/store/useStore';
 import { useShallow } from 'zustand/react/shallow';
 import dynamic from 'next/dynamic';
 const GoalForm = dynamic(() => import('@/components/dashboard/GoalForm').then(m => m.GoalForm), { ssr: false });
-import { goalsApi } from '@/lib/api';
+import { goalsApi, trashApi } from '@/lib/api';
 import { priorityWeight } from '@/lib/sort';
 import { toast } from '@/store/useToast';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { GridSkeleton } from '@/components/ui/Skeletons';
 import { usePersistentState } from '@/lib/usePersistentState';
 import { useDocumentTitle } from '@/lib/useDocumentTitle';
+import { DropPlacement, moveIdRelative } from '@/lib/reorder';
 import Link from 'next/link';
-import { Plus, Target, Calendar, Filter } from 'lucide-react';
+import { GripVertical, Plus, Target, Calendar, Filter } from 'lucide-react';
 
 const GoalsPage: React.FC = () => {
  const [isCreatingGoal, setIsCreatingGoal] = useState(false);
  const [filterStatus, setFilterStatus] = usePersistentState<StatusType | 'all'>('goal:filter', 'all');
- const [sortBy, setSortBy] = usePersistentState<'title' | 'priority' | 'due'>('goal:sort', 'title');
+ const [sortBy, setSortBy] = usePersistentState<'custom' | 'title' | 'priority' | 'due'>('goal:sort', 'custom');
  const [isDeleting, setIsDeleting] = useState(false);
  const [search, setSearch] = useState('');
  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
  const [showArchive, setShowArchive] = usePersistentState<boolean>('goal:showArchive', false);
+ const [draggingGoalId, setDraggingGoalId] = useState<string | null>(null);
+ const [dropTargetGoalId, setDropTargetGoalId] = useState<string | null>(null);
+ const [dropTargetGoalPlacement, setDropTargetGoalPlacement] = useState<DropPlacement>('before');
  useDocumentTitle('Goals');
 
  const goals = useStore((s) => s.goals);
  const isLoadingGoals = useStore((s) => s.isLoadingGoals);
  const goalsError = useStore((s) => s.goalsError);
- const { fetchGoals, addGoal, deleteGoal: deleteGoalFromStore, updateGoal } = useStore(
+ const { fetchGoals, addGoal, deleteGoal: deleteGoalFromStore, updateGoal, reorderGoals } = useStore(
  useShallow((s) => ({
  fetchGoals: s.fetchGoals,
  addGoal: s.addGoal,
  deleteGoal: s.deleteGoal,
  updateGoal: s.updateGoal,
+ reorderGoals: s.reorderGoals,
  }))
  );
 
@@ -62,34 +67,34 @@ const GoalsPage: React.FC = () => {
  }
  };
 
- // Soft-delete: hide the goal locally for 5s and offer Undo. If the
- // window passes without action we then call the real DELETE. This
- // collapses the previous"open confirm dialog → confirm → delete" into
- // a single click + grace period, which feels far better while still
- // protecting against fat-finger removals.
- const softDeleteGoal = (id: string) => {
+ const softDeleteGoal = async (id: string) => {
  const goal = goals.find((g) => g.id === id);
  if (!goal) return;
  deleteGoalFromStore(id);
+ try {
+ await goalsApi.delete(id);
+ } catch (err) {
+ console.error('Soft-delete failed:', err);
+ addGoal(goal);
+ toast.error('Failed to delete goal — restored');
+ return;
+ }
  toast.withAction(
  'info',
  `"${goal.title}" deleted`,
  {
  label: 'Undo',
- run: () => addGoal(goal),
- },
- {
- ttlMs: 5000,
- onExpire: async () => {
+ run: async () => {
  try {
- await goalsApi.delete(id);
- } catch (err) {
- console.error('Soft-delete commit failed:', err);
+ await trashApi.restore('goal', id);
  addGoal(goal);
- toast.error('Failed to delete goal — restored');
+ } catch (err) {
+ console.error('Goal restore failed:', err);
+ toast.error('Failed to restore goal');
  }
  },
- }
+ },
+ { ttlMs: 5000 }
  );
  };
 
@@ -154,26 +159,26 @@ const GoalsPage: React.FC = () => {
  const getStatusColor = (status: StatusType) => {
  switch (status) {
  case StatusType.FINISHED:
- return 'bg-green-100 text-green-800 border-green-200';
+ return 'status-finished';
  case StatusType.IN_PROGRESS:
- return 'bg-blue-100 text-blue-800 border-blue-200';
+ return 'status-in-progress';
  case StatusType.OUTSTANDING:
- return 'bg-amber-100 text-amber-800 border-amber-200';
+ return 'status-outstanding';
  default:
- return 'bg-muted text-foreground border-border';
+ return '';
  }
  };
 
  const getPriorityColor = (priority: PriorityType) => {
  switch (priority) {
  case PriorityType.HIGH:
- return 'bg-red-100 text-red-800 border-red-200';
+ return 'priority-high';
  case PriorityType.MEDIUM:
- return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+ return 'priority-medium';
  case PriorityType.LOW:
- return 'bg-green-100 text-green-800 border-green-200';
+ return 'priority-low';
  default:
- return 'bg-muted text-foreground border-border';
+ return '';
  }
  };
 
@@ -193,9 +198,23 @@ const GoalsPage: React.FC = () => {
  });
  const archivedCount = goals.filter((g) => isArchived(g.status)).length;
  const filteredGoals = visibleGoals;
+ const customOrderedGoals = goals
+ .map((goal, index) => ({ goal, index }))
+ .sort((a, b) => {
+ const aPosition = a.goal.position ?? a.index + 1;
+ const bPosition = b.goal.position ?? b.index + 1;
+ return aPosition - bPosition || a.index - b.index;
+ });
+ const customOrderedIds = customOrderedGoals.map(({ goal }) => goal.id);
+ const previewOrderedIds =
+ sortBy === 'custom' && draggingGoalId && dropTargetGoalId
+ ? moveIdRelative(customOrderedIds, draggingGoalId, dropTargetGoalId, dropTargetGoalPlacement)
+ : customOrderedIds;
 
  const sortedGoals = [...filteredGoals].sort((a, b) => {
  switch (sortBy) {
+ case 'custom':
+ return previewOrderedIds.indexOf(a.id) - previewOrderedIds.indexOf(b.id);
  case 'title':
  return a.title.localeCompare(b.title);
  case 'priority':
@@ -207,9 +226,24 @@ const GoalsPage: React.FC = () => {
  }
  });
 
+ const persistGoalOrder = async (targetGoalId: string, placement: DropPlacement) => {
+ if (!draggingGoalId || draggingGoalId === targetGoalId) return;
+ const previousOrder = customOrderedIds;
+ const nextOrder = moveIdRelative(previousOrder, draggingGoalId, targetGoalId, placement);
+ if (nextOrder === previousOrder) return;
+ reorderGoals(nextOrder);
+ try {
+ await goalsApi.reorder(nextOrder);
+ } catch (error) {
+ console.error('Failed to persist goal order:', error);
+ reorderGoals(previousOrder);
+ toast.error('Failed to save goal order');
+ }
+ };
+
  if (isLoadingGoals && goals.length === 0) {
  return (
- <div className="min-h-screen bg-muted dark:bg-card">
+ <div className="min-h-screen" style={{ background: 'var(--tn-bg)' }}>
  <main className="container mx-auto px-6 py-8">
  <GridSkeleton count={6} />
  </main>
@@ -220,14 +254,14 @@ const GoalsPage: React.FC = () => {
  return (
  <div className="page">
  {/* Page Header — themed via --tn-* tokens (responds to active theme) */}
- <div className="page-head" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+ <div className="page-head page-head-row">
  <div>
  <div className="page-eyebrow">Workspace</div>
  <h1 className="page-title">Goals</h1>
  <p className="page-lede">Manage and track your long-term objectives.</p>
  </div>
  
- <div className="flex items-center space-x-2">
+ <div className="page-head-actions">
  {selectedIds.size > 0 && (
  <>
  <span className="text-sm text-foreground dark:text-muted-foreground/60">
@@ -248,7 +282,7 @@ const GoalsPage: React.FC = () => {
  </button>
  <button
  onClick={() => setConfirmBulkDelete(true)}
- className="btn" style={{background:'var(--tn-bad, #c25d63)', color:'#fff'}}
+ className="btn btn-danger"
  >
  Delete selected
  </button>
@@ -256,8 +290,7 @@ const GoalsPage: React.FC = () => {
  )}
  <button
  onClick={() => setIsCreatingGoal(true)}
- className="btn btn-primary"
- style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+ className="btn btn-primary page-cta"
  >
  <Plus className="w-4 h-4" />
  <span>Create Goal</span>
@@ -266,21 +299,21 @@ const GoalsPage: React.FC = () => {
  </div>
 
  {/* Filters and Sort */}
- <div className="sticky top-16 z-20 -mx-6 px-6 py-3 mb-6 bg-muted/90 dark:bg-card/90 backdrop-blur border-b border-border dark:border-border flex flex-wrap items-center gap-3 no-print">
+ <div className="filter-toolbar no-print">
  <input
  type="search"
  value={search}
  onChange={(e) => setSearch(e.target.value)}
  placeholder="Search by title or description..."
  aria-label="Search goals"
- className="flex-1 min-w-[200px] px-3 py-2 border border-border dark:border-border bg-card dark:bg-card text-foreground rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+ className="filter-input"
  />
- <div className="flex items-center space-x-2">
- <Filter className="w-4 h-4 text-muted-foreground dark:text-muted-foreground" />
+ <div className="filter-actions">
+ <Filter className="w-4 h-4 filter-icon" />
  <select
  value={filterStatus}
  onChange={(e) => setFilterStatus(e.target.value as StatusType | 'all')}
- className="px-3 py-2 border border-border dark:border-border bg-card dark:bg-card text-foreground rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+ className="filter-select"
  >
  <option value="all">All Status</option>
  <option value={StatusType.OUTSTANDING}>Outstanding</option>
@@ -292,8 +325,9 @@ const GoalsPage: React.FC = () => {
  <select
  value={sortBy}
  onChange={(e) => setSortBy(e.target.value as any)}
- className="px-3 py-2 border border-border dark:border-border bg-card dark:bg-card text-foreground rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+ className="filter-select"
  >
+ <option value="custom">Custom order</option>
  <option value="title">Sort by Title</option>
  <option value="priority">Sort by Priority</option>
  <option value="due">Sort by Due Date</option>
@@ -303,17 +337,18 @@ const GoalsPage: React.FC = () => {
  <>
  <button
  onClick={() => setShowArchive(!showArchive)}
- className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
- showArchive
- ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
- : 'border-border dark:border-border bg-card dark:bg-card text-foreground dark:text-muted-foreground/60 hover:bg-muted dark:hover:bg-muted'
- }`}
+ className="btn btn-secondary"
+ style={showArchive ? {
+ borderColor: 'var(--tn-accent)',
+ background: 'color-mix(in srgb, var(--tn-accent) 12%, var(--tn-card))',
+ color: 'var(--tn-accent)',
+ } : undefined}
  >
  {showArchive ? 'Hide archived' : `Show archived (${archivedCount})`}
  </button>
  <Link
  href="/goal/archive"
- className="px-3 py-2 text-sm rounded-lg border border-border dark:border-border bg-card dark:bg-card text-foreground dark:text-muted-foreground/60 hover:bg-muted dark:hover:bg-muted"
+ className="btn btn-secondary"
  >
  Archive →
  </Link>
@@ -335,23 +370,91 @@ const GoalsPage: React.FC = () => {
  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
  {sortedGoals.map((goal) => {
  const isSelected = selectedIds.has(goal.id);
+ const canDrag = sortBy === 'custom';
+ const isDragging = draggingGoalId === goal.id;
+ const isDropTarget = dropTargetGoalId === goal.id && draggingGoalId && draggingGoalId !== goal.id;
+ const showDropMarker = isDragging && !!dropTargetGoalId && dropTargetGoalId !== goal.id;
  return (
+ <div key={goal.id} className="min-w-0">
+ {showDropMarker && (
+ <div className="mb-2 flex items-center gap-2 text-xs font-medium" style={{ color: 'var(--tn-accent)' }}>
+ <span className="h-px flex-1 border-t-2 border-dashed" style={{ borderColor: 'var(--tn-accent)' }} />
+ <span>Drop here</span>
+ <span className="h-px flex-1 border-t-2 border-dashed" style={{ borderColor: 'var(--tn-accent)' }} />
+ </div>
+ )}
  <div
- key={goal.id}
+ draggable={canDrag}
+ onDragStart={(e) => {
+ if (!canDrag) return;
+ e.dataTransfer.effectAllowed = 'move';
+ e.dataTransfer.setData('application/x-tasknest-goal-id', goal.id);
+ setDraggingGoalId(goal.id);
+ }}
+ onDragEnd={() => {
+ setDraggingGoalId(null);
+ setDropTargetGoalId(null);
+ }}
+ onDragOver={(e) => {
+ if (!canDrag || !draggingGoalId || draggingGoalId === goal.id) return;
+ e.preventDefault();
+ const rect = e.currentTarget.getBoundingClientRect();
+ const placement: DropPlacement = e.clientY > rect.top + rect.height / 2 ? 'after' : 'before';
+ e.dataTransfer.dropEffect = 'move';
+ setDropTargetGoalId(goal.id);
+ setDropTargetGoalPlacement(placement);
+ }}
+ onDrop={async (e) => {
+ if (!canDrag) return;
+ e.preventDefault();
+ await persistGoalOrder(goal.id, dropTargetGoalPlacement);
+ setDraggingGoalId(null);
+ setDropTargetGoalId(null);
+ }}
  className={`relative bg-card dark:bg-card rounded-lg border p-6 hover:shadow-md transition-shadow ${
- isSelected
- ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-900'
- : 'border-border dark:border-border'
+ canDrag ? 'cursor-grab active:cursor-grabbing' : ''
  }`}
+ style={{
+ borderColor: isDropTarget || isSelected ? 'var(--tn-accent)' : undefined,
+ boxShadow: isDropTarget
+ ? '0 0 0 3px color-mix(in srgb, var(--tn-accent) 24%, transparent)'
+ : isSelected
+ ? '0 0 0 2px color-mix(in srgb, var(--tn-accent) 22%, transparent)'
+ : undefined,
+ opacity: isDragging ? 0.55 : 1,
+ }}
  >
+ {canDrag && (
+ <button
+ type="button"
+ draggable={false}
+ className="absolute left-3 top-4 rounded p-1 pointer-events-none"
+ title="Drag to reorder"
+ aria-label={`Drag ${goal.title} to reorder`}
+ >
+ <GripVertical
+ className="h-4 w-4"
+ style={{ color: 'var(--tn-fg-muted)' }}
+ aria-hidden="true"
+ />
+ </button>
+ )}
  <input
  type="checkbox"
  checked={isSelected}
  onChange={() => toggleSelected(goal.id)}
+ draggable={false}
+ onMouseDown={(e) => e.stopPropagation()}
  aria-label={`Select goal ${goal.title}`}
- className="absolute top-4 right-4 h-4 w-4 rounded border-border text-blue-600 focus:ring-blue-500"
+ className="absolute top-4 right-4 h-4 w-4 rounded border-border"
+ style={{ accentColor: 'var(--tn-accent)' }}
  />
- <Link href={`/goal/${goal.id}`} className="block">
+ <Link
+ href={`/goal/${goal.id}`}
+ draggable={false}
+ className="block"
+ style={{ paddingLeft: canDrag ? 14 : 0 }}
+ >
  <div className="flex items-start justify-between mb-4 pr-8">
  <div className="flex-1">
  <h3 className="text-lg font-semibold text-foreground mb-2">
@@ -366,10 +469,10 @@ const GoalsPage: React.FC = () => {
  </div>
 
  <div className="flex items-center space-x-2 mb-4">
- <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(goal.status)}`}>
+ <span className={`pill ${getStatusColor(goal.status)}`}>
  {goal.status}
  </span>
- <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getPriorityColor(goal.priority)}`}>
+ <span className={`pill ${getPriorityColor(goal.priority)}`}>
  {goal.priority}
  </span>
  </div>
@@ -385,14 +488,17 @@ const GoalsPage: React.FC = () => {
  <div className="flex items-center justify-between text-sm text-muted-foreground dark:text-muted-foreground">
  <span>{goal.milestones?.length || 0} milestones</span>
  <button
+ draggable={false}
+ onMouseDown={(e) => e.stopPropagation()}
  onClick={(e) => {
  e.preventDefault();
  softDeleteGoal(goal.id);
  }}
- className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-xs"
+ className="btn btn-danger-ghost text-xs"
  >
  Delete
  </button>
+ </div>
  </div>
  </div>
  );

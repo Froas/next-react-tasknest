@@ -16,37 +16,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Bell, Search, Settings as Cog, Menu, X, ChevronDown } from 'lucide-react';
 import { useDesignTheme } from '@/context/DesignThemeContext';
-
-interface NavItem {
- id: string;
- name: string;
- href: string;
-}
-
-// Compact primary nav across the top.
-const PRIMARY_NAV: NavItem[] = [
- { id: 'today', name: 'Today', href: '/' },
- { id: 'goals', name: 'Goals', href: '/goal' },
- { id: 'milestones', name: 'Milestones', href: '/milestone' },
- { id: 'tasks', name: 'Tasks', href: '/task' },
- { id: 'todos', name: 'Todos', href: '/todo' },
- { id: 'events', name: 'Events', href: '/event' },
- { id: 'calendar', name: 'Calendar', href: '/calendar' },
-];
-
-// Secondary nav lives under a"More" dropdown so the top bar doesn't wrap.
-const MORE_NAV: NavItem[] = [
- { id: 'notes', name: 'Notes', href: '/notes' },
- { id: 'tags', name: 'Tags', href: '/tags' },
- { id: 'review', name: 'Review', href: '/review' },
- { id: 'visualization', name: 'Visualization', href: '/visualization' },
- { id: 'templates', name: 'Templates', href: '/templates' },
- { id: 'archive', name: 'Archive', href: '/goal/archive' },
- { id: 'trash', name: 'Trash', href: '/trash' },
- { id: 'activity', name: 'Activity', href: '/activity' },
-];
-
-const ALL_NAV = [...PRIMARY_NAV, ...MORE_NAV];
+import { useNavPreferences } from '@/lib/navPreferences';
 
 function isActive(pathname: string, href: string): boolean {
  if (href === '/') return pathname === '/';
@@ -63,6 +33,7 @@ export function AppShell({ children }: AppShellProps) {
  const [mobileOpen, setMobileOpen] = useState(false);
  const [moreOpen, setMoreOpen] = useState(false);
  const { theme, current } = useDesignTheme();
+ const { primaryItems, moreItems, visibleItems } = useNavPreferences();
 
  useEffect(() => {
  setMobileOpen(false);
@@ -96,6 +67,7 @@ export function AppShell({ children }: AppShellProps) {
  }}
  >
  <div
+ className="tn-shell-bar"
  style={{
  maxWidth: 1400,
  margin: '0 auto',
@@ -108,6 +80,7 @@ export function AppShell({ children }: AppShellProps) {
  {/* Brand */}
  <Link
  href="/"
+ className="tn-shell-brand"
  style={{
  display: 'flex',
  alignItems: 'center',
@@ -135,7 +108,7 @@ export function AppShell({ children }: AppShellProps) {
  >
  T
  </span>
- <span>TaskNest</span>
+ <span className="tn-shell-brand-name">TaskNest</span>
  </Link>
 
  {/* Desktop nav */}
@@ -150,7 +123,7 @@ export function AppShell({ children }: AppShellProps) {
  minWidth: 0,
  }}
  >
- {PRIMARY_NAV.map((item) => {
+ {primaryItems.map((item) => {
  const active = isActive(pathname, item.href);
  return (
  <Link
@@ -176,13 +149,14 @@ export function AppShell({ children }: AppShellProps) {
  })}
 
  {/* More dropdown */}
+ {moreItems.length > 0 && (
  <div style={{ position: 'relative' }}>
  <button
  onClick={() => setMoreOpen((v) => !v)}
  style={{
  padding: '7px 10px',
  fontSize: 13.5,
- color: MORE_NAV.some((i) => isActive(pathname, i.href))
+ color: moreItems.some((i) => isActive(pathname, i.href))
  ? 'var(--tn-fg)'
  : 'var(--tn-fg-muted)',
  fontWeight: 500,
@@ -227,7 +201,7 @@ export function AppShell({ children }: AppShellProps) {
  gap: 1,
  }}
  >
- {MORE_NAV.map((item) => {
+ {moreItems.map((item) => {
  const active = isActive(pathname, item.href);
  return (
  <Link
@@ -255,14 +229,15 @@ export function AppShell({ children }: AppShellProps) {
  </>
  )}
  </div>
+ )}
  </nav>
 
  {/* Right side icons */}
- <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+ <div className="tn-shell-actions" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
  <IconButton onClick={openSearch} ariaLabel="Search">
  <Search size={16} />
  </IconButton>
- <IconButton ariaLabel="Notifications">
+ <IconButton ariaLabel="Notifications" className="tn-shell-icon-optional">
  <Bell size={16} />
  </IconButton>
  <IconButton
@@ -280,8 +255,9 @@ export function AppShell({ children }: AppShellProps) {
  />
  </IconButton>
  <IconButton
- onClick={() => router.push('/profile')}
+ onClick={() => router.push('/profile#navigation')}
  ariaLabel="Settings"
+ className="tn-shell-icon-optional"
  >
  <Cog size={16} />
  </IconButton>
@@ -310,6 +286,7 @@ export function AppShell({ children }: AppShellProps) {
 
  {/* Main content */}
  <main
+ className="tn-shell-main"
  style={{
  maxWidth: 1400,
  margin: '0 auto',
@@ -372,7 +349,7 @@ export function AppShell({ children }: AppShellProps) {
  <X size={18} />
  </button>
  </div>
- {ALL_NAV.map((item) => {
+ {visibleItems.map((item) => {
  const active = isActive(pathname, item.href);
  return (
  <Link
@@ -435,11 +412,52 @@ export function AppShell({ children }: AppShellProps) {
  {/* Inline styles for breakpoint behaviour */}
  <style jsx>{`
  @media (max-width: 880px) {
+ :global(.tn-shell-bar) {
+ padding: 10px 16px !important;
+ gap: 10px !important;
+ }
  :global(.tn-shell-nav) {
  display: none !important;
  }
+ :global(.tn-shell-actions) {
+ margin-left: auto !important;
+ gap: 2px !important;
+ }
  :global(.tn-shell-hamburger) {
  display: grid !important;
+ }
+ :global(.tn-shell-main) {
+ padding: 16px !important;
+ }
+ }
+ @media (max-width: 520px) {
+ :global(.tn-shell-bar) {
+ padding: 8px 12px !important;
+ gap: 8px !important;
+ }
+ :global(.tn-shell-brand) {
+ min-width: 0 !important;
+ gap: 7px !important;
+ }
+ :global(.tn-shell-brand-name) {
+ max-width: 86px;
+ overflow: hidden;
+ text-overflow: ellipsis;
+ white-space: nowrap;
+ }
+ :global(.tn-shell-icon) {
+ width: 30px !important;
+ height: 30px !important;
+ }
+ :global(.tn-shell-icon-optional) {
+ display: none !important;
+ }
+ :global(.tn-shell-hamburger) {
+ width: 30px !important;
+ height: 30px !important;
+ }
+ :global(.tn-shell-main) {
+ padding: 12px !important;
  }
  }
  `}</style>
@@ -451,15 +469,18 @@ function IconButton({
  children,
  onClick,
  ariaLabel,
+ className,
 }: {
  children: React.ReactNode;
  onClick?: () => void;
  ariaLabel: string;
+ className?: string;
 }) {
  return (
  <button
  onClick={onClick}
  aria-label={ariaLabel}
+ className={`tn-shell-icon${className ? ` ${className}` : ''}`}
  style={{
  width: 32,
  height: 32,

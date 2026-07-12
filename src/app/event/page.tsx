@@ -7,7 +7,7 @@ import { useStore } from '@/store/useStore';
 import { useShallow } from 'zustand/react/shallow';
 import dynamic from 'next/dynamic';
 const EventForm = dynamic(() => import('@/components/dashboard/EventForm').then(m => m.EventForm), { ssr: false });
-import { eventsApi } from '@/lib/api';
+import { eventsApi, trashApi } from '@/lib/api';
 import { toast } from '@/store/useToast';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { GridSkeleton } from '@/components/ui/Skeletons';
@@ -48,8 +48,6 @@ const EventsPage: React.FC = () => {
  start_datetime: eventData.start_datetime,
  end_datetime: eventData.end_datetime,
  location: eventData.location,
- created_at: new Date().toISOString(),
- updated_at: new Date().toISOString(),
  });
  addEvent(newEvent);
  setIsCreatingEvent(false);
@@ -59,27 +57,34 @@ const EventsPage: React.FC = () => {
  }
  };
 
- // Soft-delete with undo: same pattern as goals/milestones.
- const softDeleteEvent = (id: string) => {
+ const softDeleteEvent = async (id: string) => {
  const event = events.find((e) => e.id === id);
  if (!event) return;
  deleteEventFromStore(id);
- toast.withAction(
- 'info',
- `"${event.title}" deleted`,
- { label: 'Undo', run: () => addEvent(event) },
- {
- ttlMs: 5000,
- onExpire: async () => {
  try {
  await eventsApi.delete(id);
  } catch (err) {
- console.error('Soft-delete commit failed:', err);
+ console.error('Soft-delete failed:', err);
  addEvent(event);
  toast.error('Failed to delete event — restored');
+ return;
+ }
+ toast.withAction(
+ 'info',
+ `"${event.title}" deleted`,
+ {
+ label: 'Undo',
+ run: async () => {
+ try {
+ await trashApi.restore('event', id);
+ addEvent(event);
+ } catch (err) {
+ console.error('Event restore failed:', err);
+ toast.error('Failed to restore event');
  }
  },
- }
+ },
+ { ttlMs: 5000 }
  );
  };
 
@@ -118,13 +123,13 @@ const EventsPage: React.FC = () => {
  const getStatusColor = (status: StatusType) => {
  switch (status) {
  case StatusType.FINISHED:
- return 'bg-green-100 text-green-800 border-green-200';
+ return 'status-finished';
  case StatusType.IN_PROGRESS:
- return 'bg-blue-100 text-blue-800 border-blue-200';
+ return 'status-in-progress';
  case StatusType.OUTSTANDING:
- return 'bg-amber-100 text-amber-800 border-amber-200';
+ return 'status-outstanding';
  default:
- return 'bg-muted text-foreground border-border';
+ return '';
  }
  };
 
@@ -201,21 +206,21 @@ const EventsPage: React.FC = () => {
  </div>
 
  {/* Filters and Sort */}
- <div className="sticky top-16 z-20 -mx-6 px-6 py-3 mb-6 bg-muted/90 dark:bg-card/90 backdrop-blur border-b border-border dark:border-border flex flex-wrap items-center gap-3 no-print">
+ <div className="filter-toolbar no-print">
  <input
  type="search"
  value={search}
  onChange={(e) => setSearch(e.target.value)}
  placeholder="Search by title, description or location..."
  aria-label="Search events"
- className="flex-1 min-w-[200px] px-3 py-2 border border-border dark:border-border bg-card dark:bg-card text-foreground rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+ className="filter-input"
  />
- <div className="flex items-center space-x-2">
- <Filter className="w-4 h-4 text-muted-foreground dark:text-muted-foreground" />
+ <div className="filter-actions">
+ <Filter className="w-4 h-4 filter-icon" />
  <select
  value={filterStatus}
  onChange={(e) => setFilterStatus(e.target.value as StatusType | 'all')}
- className="px-3 py-2 border border-border dark:border-border bg-card dark:bg-card text-foreground rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+ className="filter-select"
  >
  <option value="all">All Status</option>
  <option value={StatusType.OUTSTANDING}>Outstanding</option>
@@ -227,7 +232,7 @@ const EventsPage: React.FC = () => {
  <select
  value={sortBy}
  onChange={(e) => setSortBy(e.target.value as any)}
- className="px-3 py-2 border border-border dark:border-border bg-card dark:bg-card text-foreground rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+ className="filter-select"
  >
  <option value="title">Sort by Title</option>
  <option value="start">Sort by Start Date</option>
@@ -255,18 +260,19 @@ const EventsPage: React.FC = () => {
  return (
  <div
  key={event.id}
- className={`relative bg-card dark:bg-card rounded-lg border p-6 hover:shadow-md transition-shadow ${
- isSelected
- ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-900'
- : 'border-border dark:border-border'
- }`}
+ className="relative bg-card dark:bg-card rounded-lg border p-6 hover:shadow-md transition-shadow"
+ style={{
+ borderColor: isSelected ? 'var(--tn-accent)' : undefined,
+ boxShadow: isSelected ? '0 0 0 2px color-mix(in srgb, var(--tn-accent) 22%, transparent)' : undefined,
+ }}
  >
  <input
  type="checkbox"
  checked={isSelected}
  onChange={() => toggleSelected(event.id)}
  aria-label={`Select event ${event.title}`}
- className="absolute top-4 right-4 h-4 w-4 rounded border-border text-blue-600 focus:ring-blue-500"
+ className="absolute top-4 right-4 h-4 w-4 rounded border-border"
+ style={{ accentColor: 'var(--tn-accent)' }}
  />
  <div className="flex items-start mb-4 pr-8">
  <div className="flex-1">
@@ -278,7 +284,7 @@ const EventsPage: React.FC = () => {
  </div>
 
  <div className="flex items-center space-x-2 mb-4">
- <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(event.status)}`}>
+ <span className={`pill ${getStatusColor(event.status)}`}>
  {event.status}
  </span>
  </div>

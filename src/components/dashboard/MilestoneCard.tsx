@@ -11,6 +11,8 @@ import { calculateMilestoneProgress } from '@/lib/progress';
 import { tasksApi, todosApi, subtasksApi, milestonesApi } from '@/lib/api';
 import { TaskForm } from '@/components/dashboard/TaskForm';
 import { ActionForm, ActionKind } from '@/components/dashboard/ActionForm';
+import { Modal } from '@/components/ui/Modal';
+import { InlineDate, InlineSelect, InlineText } from '@/components/ui/InlineEdit';
 import { ChevronDown, ChevronRight, Plus, Calendar, Target, Trash2 } from 'lucide-react';
 import TaskKanbanView from './TaskKanbanView';
 import { useTheme } from '@/context/ThemeContext';
@@ -18,10 +20,26 @@ import { useTheme } from '@/context/ThemeContext';
 interface MilestoneCardProps {
  milestone: Milestone;
  goalId: string;
- onUpdate: (data: Partial<Milestone>) => void;
+ onUpdate: (data: Partial<Milestone>) => void | Promise<void>;
  onDelete: () => void;
  onAddTask?: () => void;
 }
+
+const statusOptions = [
+ StatusType.OUTSTANDING,
+ StatusType.STARTED,
+ StatusType.IN_PROGRESS,
+ StatusType.FINISHED,
+ StatusType.CLOSED,
+ StatusType.ABORTED,
+ StatusType.CANCELLED,
+] as const;
+
+const priorityOptions = [
+ PriorityType.LOW,
+ PriorityType.MEDIUM,
+ PriorityType.HIGH,
+] as const;
 
 export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, onAddTask }: MilestoneCardProps) {
  const { theme } = useTheme();
@@ -43,6 +61,7 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
  deleteTaskFromGoals,
  moveTaskToMilestone,
  reorderTasksInMilestone,
+ fetchGoals,
  } = useStore(
  useShallow((s) => ({
  addTodoToTaskInMilestoneInGoal: s.addTodoToTaskInMilestoneInGoal,
@@ -55,6 +74,7 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
  deleteTaskFromGoals: s.deleteTaskFromGoals,
  moveTaskToMilestone: s.moveTaskToMilestone,
  reorderTasksInMilestone: s.reorderTasksInMilestone,
+ fetchGoals: s.fetchGoals,
  }))
  );
 
@@ -74,9 +94,10 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
  const currentMilestone: Milestone = milestoneFromStore ?? milestone;
  const tasks: Task[] = currentMilestone.tasks || [];
 
- const handleTaskFormSuccess = (newTask: Task, taskGoalId: string, taskMilestoneId: string) => {
+ const handleTaskFormSuccess = (newTask: Task, taskGoalId: string, taskMilestoneId?: string) => {
  try {
- addTaskToMilestoneInGoal(newTask, taskMilestoneId, taskGoalId);
+ if (!taskMilestoneId || newTask.scope === 'goal') updateTaskInGoals({ ...newTask, goal_id: newTask.goal_id ?? taskGoalId, scope: 'goal' });
+ else addTaskToMilestoneInGoal(newTask, taskMilestoneId, taskGoalId);
  setIsCreatingTask(false);
  } catch (error) {
  console.error('Error optimistically adding task from MilestoneCard:', error);
@@ -104,7 +125,7 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
  }
  };
 
- const handleReorderTask = (draggedId: string, beforeId: string) => {
+ const handleReorderTask = async (draggedId: string, beforeId: string) => {
  const ids = tasks.map((t) => t.id);
  const fromIdx = ids.indexOf(draggedId);
  const toIdx = ids.indexOf(beforeId);
@@ -114,6 +135,13 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
  next.splice(toIdx, 0, draggedId);
  if (next.join(',') === ids.join(',')) return;
  reorderTasksInMilestone(currentMilestone.id, next);
+ try {
+ await tasksApi.reorder(next);
+ } catch (err) {
+ console.error('Failed to reorder tasks:', err);
+ toast.error('Failed to reorder tasks — reverting');
+ reorderTasksInMilestone(currentMilestone.id, ids);
+ }
  };
 
  const handleQuickAddTask = async (title: string) => {
@@ -251,6 +279,7 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
  break;
  }
  }
+ await fetchGoals({ force: true, silent: true });
  } catch (error) {
  console.error('Failed to update task status:', error);
  if (isLatest()) toast.error('Failed to update status');
@@ -262,38 +291,52 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
  const getStatusColor = (status: StatusType) => {
  switch (status) {
  case StatusType.OUTSTANDING:
- return 'bg-muted dark:bg-card text-foreground dark:text-muted-foreground/60 border-border dark:border-border';
+ return 'status-outstanding';
  case StatusType.IN_PROGRESS:
- return 'bg-blue-50 dark:bg-blue-900 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700';
+ return 'status-in-progress';
  case StatusType.FINISHED:
- return 'bg-green-50 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-200 dark:border-green-700';
+ return 'status-finished';
  case StatusType.CANCELLED:
- return 'bg-red-50 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-200 dark:border-red-700';
+ return 'status-outstanding';
  default:
- return 'bg-muted dark:bg-card text-foreground dark:text-muted-foreground/60 border-border dark:border-border';
+ return '';
  }
  };
 
  const getPriorityColor = (priority: PriorityType) => {
  switch (priority) {
  case PriorityType.HIGH:
- return 'bg-red-50 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-200 dark:border-red-700';
+ return 'priority-high';
  case PriorityType.MEDIUM:
- return 'bg-yellow-50 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 border-yellow-200 dark:border-yellow-700';
+ return 'priority-medium';
  case PriorityType.LOW:
- return 'bg-green-50 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-200 dark:border-green-700';
+ return 'priority-low';
  default:
- return 'bg-muted dark:bg-card text-foreground dark:text-muted-foreground/60 border-border dark:border-border';
+ return '';
  }
  };
 
  const progress = calculateMilestoneProgress(currentMilestone);
+ const renderStatusPill = (status: StatusType) => (
+ <span className={`pill ${getStatusColor(status)}`}>{status}</span>
+ );
+ const renderPriorityPill = (priority: PriorityType) => (
+ <span className={`pill ${getPriorityColor(priority)}`}>{priority}</span>
+ );
+ const renderDueDate = (value?: string | null) => (
+ <span className="inline-flex items-center gap-1">
+ <Calendar className="w-3 h-3" />
+ <span>{value ? `Due ${formatDate(value)}` : 'Add due date'}</span>
+ </span>
+ );
 
  return (
  <div
- className={`bg-card dark:bg-card border rounded-lg shadow-sm hover:shadow-md transition-shadow ${
- isDropTarget ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-900' : 'border-border dark:border-border'
- }`}
+ className="bg-card dark:bg-card border rounded-lg shadow-sm hover:shadow-md transition-shadow min-w-0"
+ style={{
+ borderColor: isDropTarget ? 'var(--tn-accent)' : undefined,
+ boxShadow: isDropTarget ? '0 0 0 2px color-mix(in srgb, var(--tn-accent) 22%, transparent)' : undefined,
+ }}
  onDragOver={(e) => {
  if (e.dataTransfer.types.includes('application/x-tasknest-task-id')) {
  e.preventDefault();
@@ -305,28 +348,45 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
  onDrop={handleDropTask}
  >
  {/* Milestone Header */}
- <div className="p-6 border-b border-border dark:border-border">
- <div className="flex items-start justify-between">
- <div className="flex items-start space-x-3 flex-1">
+ <div className="p-4 sm:p-6 border-b border-border dark:border-border">
+ <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+ <div className="flex items-start gap-3 flex-1 min-w-0">
  <div className="flex-shrink-0 mt-1">
- <Target className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+ <Target className="w-5 h-5" style={{ color: 'var(--tn-accent)' }} />
  </div>
  <div className="flex-1 min-w-0">
- <h3 className="text-lg font-semibold text-foreground mb-1">{currentMilestone.title}</h3>
- {currentMilestone.description && (
- <p className="text-sm text-foreground dark:text-muted-foreground/60 mb-3">{currentMilestone.description}</p>
+ <InlineText
+ value={currentMilestone.title}
+ required
+ ariaLabel="Edit milestone title"
+ className="-mx-2 px-2 py-1 mb-1"
+ editClassName="text-lg font-semibold text-foreground"
+ renderValue={(title) => <h3 className="text-lg font-semibold text-foreground mb-1 break-words">{title}</h3>}
+ onSave={(title) => onUpdate({ title })}
+ />
+ <InlineText
+ value={currentMilestone.description ?? ''}
+ placeholder="Add a description..."
+ multiline
+ ariaLabel="Edit milestone description"
+ className="-mx-2 px-2 py-1 mb-3"
+ editClassName="text-sm text-foreground dark:text-muted-foreground/60"
+ renderValue={(description) => (
+ <p className="text-sm text-foreground dark:text-muted-foreground/60 mb-3 break-words">{description}</p>
  )}
+ onSave={(description) => onUpdate({ description })}
+ />
  
  {/* Progress Bar */}
  <div className="mb-3">
  <div className="flex justify-between items-center mb-1">
- <span className="text-xs font-medium text-foreground dark:text-muted-foreground/60">Progress</span>
+ <span className="text-xs font-medium text-foreground dark:text-muted-foreground/60">Structural</span>
  <span className="text-xs text-muted-foreground dark:text-muted-foreground">{Math.round(progress)}%</span>
  </div>
- <div className="w-full bg-muted dark:bg-card rounded-full h-2 overflow-hidden">
+ <div className="w-full rounded-full h-2.5 overflow-hidden" style={{ background: 'var(--tn-bar-bg, rgba(0,0,0,.08))', border: 'var(--tn-line)' }}>
  <div
- className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-500 dark:to-blue-400 h-2 rounded-full transition-all duration-300 relative"
- style={{ width: `${progress}%` }}
+ className="h-full rounded-full transition-all duration-300 relative"
+ style={{ width: `${progress}%`, background: 'var(--tn-accent)' }}
  >
  {/* Animated shine effect */}
  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 dark:via-white/10 to-transparent animate-pulse"></div>
@@ -335,51 +395,60 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
  </div>
 
  {/* Metadata */}
- <div className="flex items-center space-x-4 text-xs text-muted-foreground dark:text-muted-foreground">
- {currentMilestone.due_date && (
- <div className="flex items-center space-x-1">
- <Calendar className="w-3 h-3" />
- <span>Due {formatDate(currentMilestone.due_date)}</span>
- </div>
- )}
- <div className="flex items-center space-x-1">
+ <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-muted-foreground dark:text-muted-foreground">
+ <InlineDate
+ value={currentMilestone.due_date}
+ ariaLabel="Edit milestone due date"
+ renderValue={renderDueDate}
+ onSave={(due_date) => onUpdate({ due_date })}
+ />
+ <div className="flex items-center gap-1">
  <span>{tasks.length} tasks</span>
  </div>
  </div>
  </div>
  </div>
  
- <div className="flex items-center space-x-2 flex-shrink-0">
- <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(currentMilestone.status)}`}>
- {currentMilestone.status}
- </span>
- <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getPriorityColor(currentMilestone.priority)}`}>
- {currentMilestone.priority}
- </span>
+ <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+ <InlineSelect
+ value={currentMilestone.status}
+ options={statusOptions}
+ ariaLabel="Edit milestone status"
+ renderValue={renderStatusPill}
+ onSave={(status) => onUpdate({ status })}
+ />
+ <InlineSelect
+ value={currentMilestone.priority}
+ options={priorityOptions}
+ ariaLabel="Edit milestone priority"
+ renderValue={renderPriorityPill}
+ onSave={(priority) => onUpdate({ priority })}
+ />
  </div>
  </div>
 
  {/* Action Buttons */}
- <div className="flex items-center justify-between mt-4">
+ <div className="flex flex-col gap-3 mt-4 sm:flex-row sm:items-center sm:justify-between">
  <button
  onClick={handleExpand}
- className="flex items-center space-x-2 text-sm text-foreground dark:text-muted-foreground/60 hover:text-foreground dark:hover:text-white transition-colors"
+ className="flex items-center gap-2 text-sm text-foreground dark:text-muted-foreground/60 hover:text-foreground dark:hover:text-white transition-colors"
  >
  {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
  <span>{isExpanded ? 'Hide Tasks' : 'Show Tasks'} ({tasks.length})</span>
  </button>
  
- <div className="flex items-center space-x-2">
+ <div className="flex flex-wrap items-center gap-2">
  <button
  onClick={() => setIsCreatingTask(true)}
- className="flex items-center space-x-1 px-3 py-1.5 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+ className="btn btn-primary flex-1 sm:flex-none justify-center"
  >
  <Plus className="w-3 h-3" />
  <span>Add Task</span>
  </button>
  <button
  onClick={onDelete}
- className="p-1.5 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900 rounded-md transition-colors"
+ className="btn btn-icon btn-danger-ghost"
+ title="Delete milestone"
  >
  <Trash2 className="w-4 h-4" />
  </button>
@@ -389,10 +458,10 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
 
  {/* Tasks Section */}
  {isExpanded && (
- <div className="p-6">
+ <div className="p-4 sm:p-6">
  {isLoading ? (
  <div className="text-center py-8 text-muted-foreground dark:text-muted-foreground">
- <div className="animate-spin w-6 h-6 border-2 border-border dark:border-border border-t-blue-600 dark:border-t-blue-400 rounded-full mx-auto mb-2"></div>
+ <div className="animate-spin w-6 h-6 border-2 rounded-full mx-auto mb-2" style={{ borderColor: 'var(--tn-border, rgba(0,0,0,.12))', borderTopColor: 'var(--tn-accent)' }}></div>
  Loading tasks...
  </div>
  ) : (
@@ -413,26 +482,27 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
  )}
 
  {/* Modal Forms */}
- {isCreatingTask && (
- <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
- <div className="bg-card dark:bg-card rounded-lg p-6 max-w-md w-full mx-4">
- <h3 className="text-lg font-semibold mb-4 text-foreground">Create New Task</h3>
+ <Modal
+ open={isCreatingTask}
+ title="Create New Task"
+ onClose={() => setIsCreatingTask(false)}
+ maxWidth="md"
+ >
  <TaskForm
  goalId={goalId}
  milestoneId={currentMilestone.id}
  onSuccess={handleTaskFormSuccess}
  onCancel={() => setIsCreatingTask(false)}
  />
- </div>
- </div>
- )}
+ </Modal>
 
+ <Modal
+ open={!!actionTarget}
+ title={`Add Action to "${actionTarget?.task.title ?? ''}"`}
+ onClose={() => setActionTarget(null)}
+ maxWidth="2xl"
+ >
  {actionTarget && (
- <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
- <div className="bg-card dark:bg-card rounded-lg p-6 max-w-md w-full mx-4">
- <h3 className="text-lg font-semibold mb-4 text-foreground">
- Add Action to"{actionTarget.task.title}"
- </h3>
  <ActionForm
  goalId={goalId}
  milestoneId={currentMilestone.id}
@@ -441,9 +511,8 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
  onSuccess={handleActionSuccess}
  onCancel={() => setActionTarget(null)}
  />
- </div>
- </div>
  )}
+ </Modal>
  </div>
  );
 }

@@ -1,204 +1,699 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { withAuth } from '@/hoc/withAuth';
+import {
+ AuthRequiredError,
+ dailyLogsApi,
+ metricsApi,
+ notesApi,
+ todoOccurrencesApi,
+ type DailyLogColor,
+ type DailyLogItem,
+ type NoteItem,
+ type TodayMetricItem,
+ type TodoOccurrenceItem,
+} from '@/lib/api';
+import { calculateGoalProgressLanes, calculateStructuralGoalProgress } from '@/lib/progress';
+import { StatusType, type GoalItem, type TaskItem } from '@/lib/types';
+import { useDocumentTitle } from '@/lib/useDocumentTitle';
+import { useStore } from '@/store/useStore';
+import { buildCalendarItems, calendarDateKey, calendarItemHref, isCalendarItemActionable, parseCalendarDate } from '@/lib/calendarItems';
+
+const REVIEW_WINDOW_DAYS = 14;
+
+const pad = (value: number) => String(value).padStart(2, '0');
+
+const dateKey = (date: Date) =>
+ `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+
+const addDays = (date: Date, days: number) => {
+ const copy = new Date(date);
+ copy.setDate(copy.getDate() + days);
+ return copy;
+};
+
+const countBy = (items: NoteItem[], key: (item: NoteItem) => string | null | undefined) => {
+ const counts = new Map<string, number>();
+ items.forEach((item) => {
+ const value = key(item)?.trim();
+ if (!value) return;
+ counts.set(value, (counts.get(value) ?? 0) + 1);
+ });
+ return Array.from(counts.entries())
+ .map(([label, count]) => ({ label, count }))
+ .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+};
+
+const formatDate = (value: string) =>
+ new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+const formatPercent = (value: number) => `${Math.round(value)}%`;
+
+const notesFilterHref = (params: Record<string, string>) => {
+ const search = new URLSearchParams({ kind: 'signal', ...params });
+ return `/notes?${search.toString()}`;
+};
+
+type DueWorkItem = {
+ id: string;
+ title: string;
+ kind: string;
+ href: string;
+ dueKey: string | null;
+ status: StatusType;
+};
+
+const inactiveStatuses = new Set<StatusType>([
+ StatusType.FINISHED,
+ StatusType.CLOSED,
+ StatusType.ABORTED,
+ StatusType.CANCELLED,
+]);
+
+const isActive = (item: { status: StatusType }) => !inactiveStatuses.has(item.status);
+const isRoutineDone = (item: TodoOccurrenceItem) => item.status === 'done' || item.status === 'minimum';
+
+const flattenGoalTasks = (goals: GoalItem[]) =>
+ goals.flatMap((goal) => [
+ ...(goal.tasks ?? []).map((task) => ({ ...task, goal_title: goal.title })),
+ ...(goal.milestones ?? []).flatMap((milestone) =>
+ (milestone.tasks ?? []).map((task) => ({
+ ...task,
+ goal_title: goal.title,
+ milestone_title: milestone.title,
+ })),
+ ),
+ ]);
+
+const flattenGoalTodos = (tasks: TaskItem[]) =>
+ tasks.flatMap((task) => (task.todos ?? []).map((todo) => ({ ...todo, task_title: task.title })));
 
 const ReviewPage: React.FC = () => {
+ useDocumentTitle('Review');
+ const goals = useStore((state) => state.goals);
+ const storeTasks = useStore((state) => state.tasks);
+ const storeTodos = useStore((state) => state.todos);
+ const events = useStore((state) => state.events);
+ const fetchGoals = useStore((state) => state.fetchGoals);
+ const fetchEvents = useStore((state) => state.fetchEvents);
+ const [notes, setNotes] = useState<NoteItem[]>([]);
+ const [dailyLogs, setDailyLogs] = useState<DailyLogItem[]>([]);
+ const [occurrences, setOccurrences] = useState<TodoOccurrenceItem[]>([]);
+ const [todayOccurrences, setTodayOccurrences] = useState<TodoOccurrenceItem[]>([]);
+ const [todayMetrics, setTodayMetrics] = useState<TodayMetricItem[]>([]);
+ const [loading, setLoading] = useState(true);
+ const [reviewLoading, setReviewLoading] = useState(true);
+ const [error, setError] = useState<string | null>(null);
+
+ const today = useMemo(() => new Date(), []);
+ const todayKey = dateKey(today);
+ const reviewStartKey = dateKey(addDays(today, -(REVIEW_WINDOW_DAYS - 1)));
+ const reviewEndKey = todayKey;
+ const upcomingEndKey = dateKey(addDays(today, 6));
+
+ useEffect(() => {
+ let cancelled = false;
+ (async () => {
+ try {
+ const rows = await notesApi.getAll();
+ if (!cancelled) setNotes(rows);
+ } catch (err) {
+ if (err instanceof AuthRequiredError) return;
+ if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load review');
+ } finally {
+ if (!cancelled) setLoading(false);
+ }
+ })();
+ return () => {
+ cancelled = true;
+ };
+ }, []);
+
+ useEffect(() => {
+ fetchGoals();
+ fetchEvents();
+ }, [fetchEvents, fetchGoals]);
+
+ useEffect(() => {
+ let cancelled = false;
+ (async () => {
+ try {
+ const [logs, routineHistory, todayRoutines, metrics] = await Promise.all([
+ dailyLogsApi.list({ startDate: reviewStartKey, endDate: reviewEndKey }),
+ todoOccurrencesApi.history({ startDate: reviewStartKey, endDate: reviewEndKey }),
+ todoOccurrencesApi.today(todayKey),
+ metricsApi.today(todayKey),
+ ]);
+ if (!cancelled) {
+ setDailyLogs(logs);
+ setOccurrences(routineHistory);
+ setTodayOccurrences(todayRoutines);
+ setTodayMetrics(metrics);
+ }
+ } catch (err) {
+ if (err instanceof AuthRequiredError) return;
+ if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load review data');
+ } finally {
+ if (!cancelled) setReviewLoading(false);
+ }
+ })();
+ return () => {
+ cancelled = true;
+ };
+ }, [reviewEndKey, reviewStartKey, todayKey]);
+
+ const relationLabels = useMemo(() => {
+ const labels = new Map<string, { label: string; href: string }>();
+ goals.forEach((goal) => {
+ labels.set(`goal:${goal.id}`, { label: `Goal · ${goal.title}`, href: `/goal/${goal.id}` });
+ (goal.tasks ?? []).forEach((task) => {
+ labels.set(`task:${task.id}`, { label: `Routine · ${goal.title} / ${task.title}`, href: `/task/${task.id}` });
+ });
+ (goal.milestones ?? []).forEach((milestone) => {
+ milestone.tasks.forEach((task) => {
+ labels.set(`task:${task.id}`, {
+ label: `Task · ${goal.title} / ${milestone.title} / ${task.title}`,
+ href: `/task/${task.id}`,
+ });
+ });
+ });
+ });
+ return labels;
+ }, [goals]);
+
+ const signals = useMemo(
+ () => notes.filter((note) => note.kind === 'signal').sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()),
+ [notes],
+ );
+ const regularNotes = notes.filter((note) => note.kind !== 'signal');
+ const sourceCounts = countBy(signals, (note) => note.source);
+ const tagCounts = countBy(signals, (note) => note.tag);
+ const relationCounts = countBy(signals, (note) => {
+ if (note.task_id) return relationLabels.get(`task:${note.task_id}`)?.label ?? 'Linked task';
+ if (note.goal_id) return relationLabels.get(`goal:${note.goal_id}`)?.label ?? 'Linked goal';
+ return null;
+ });
+ const linkedSignals = signals.filter((note) => note.goal_id || note.task_id).length;
+ const recentSignals = signals.slice(0, 12);
+ const allTasks = useMemo(() => flattenGoalTasks(goals), [goals]);
+ const allTodos = useMemo(() => flattenGoalTodos(allTasks), [allTasks]);
+ const activeGoals = goals.filter(isActive);
+ const activeTasks = allTasks.filter(isActive);
+ const routineTasks = activeTasks.filter((task) => task.kind === 'routine');
+ const recurringTodos = allTodos.filter((todo) => todo.repeat_interval);
+ const completedTodayOccurrences = todayOccurrences.filter(isRoutineDone);
+ const completedWindowOccurrences = occurrences.filter(isRoutineDone);
+ const routineAdherence = occurrences.length > 0
+ ? (completedWindowOccurrences.length / occurrences.length) * 100
+ : 0;
+ const averageGoalProgress = activeGoals.length > 0
+ ? activeGoals.reduce((sum, goal) => sum + calculateStructuralGoalProgress(goal), 0) / activeGoals.length
+ : 0;
+ const metricLoggedCount = todayMetrics.filter((metric) =>
+ metric.value?.trim() || metric.numeric_value !== null && metric.numeric_value !== undefined,
+ ).length;
+ const dailyLogColors = dailyLogs.reduce<Record<DailyLogColor | 'unset', number>>((acc, log) => {
+ const key = log.color ?? 'unset';
+ acc[key] = (acc[key] ?? 0) + 1;
+ return acc;
+ }, { green: 0, yellow: 0, red: 0, black: 0, unset: 0 });
+ const dueWork: DueWorkItem[] = buildCalendarItems(goals, storeTasks, storeTodos, events)
+ .filter(isCalendarItemActionable)
+ .map((item) => ({
+ id: item.id,
+ title: item.title,
+ kind: item.itemType,
+ href: calendarItemHref(item),
+ dueKey: calendarDateKey(parseCalendarDate(item.due_date)),
+ status: item.status,
+ }));
+ const overdueWork = dueWork.filter((item) => item.dueKey! < todayKey);
+ const todayWork = dueWork.filter((item) => item.dueKey === todayKey);
+ const upcomingEvents = events.filter((event) => {
+ if (!event.start_datetime) return false;
+ const key = dateKey(new Date(event.start_datetime));
+ return key >= todayKey && key <= upcomingEndKey;
+ }).length;
+ const topGoals = [...activeGoals]
+ .sort((a, b) => calculateStructuralGoalProgress(a) - calculateStructuralGoalProgress(b))
+ .slice(0, 5);
+
  return (
  <div className="page">
  <div className="page-head">
- <div className="page-eyebrow">This week</div>
+ <div className="page-eyebrow">System Review</div>
  <h1 className="page-title">Review</h1>
  <p className="page-lede">
- A weekly look at where you spent attention, and where the work
- moved.
+ See overall progress, routine consistency, daily logs, and radar signals in one place.
  </p>
+ </div>
+
+ {error && (
+ <div className="mb-4 rounded-xl border p-4 text-sm" style={{ borderColor: 'var(--tn-bad)', color: 'var(--tn-bad)' }}>
+ {error}
+ </div>
+ )}
+
+ <div className="section">
+ <div className="stats">
+ <div className="stat">
+ <div className="s-label">Active Goals</div>
+ <div className="s-value">{reviewLoading ? '…' : activeGoals.length}</div>
+ <div className="s-delta">{goals.length} total goals</div>
+ </div>
+ <div className="stat">
+ <div className="s-label">Avg Progress</div>
+ <div className="s-value">{reviewLoading ? '…' : formatPercent(averageGoalProgress)}</div>
+ <div className="s-delta">structural progress</div>
+ </div>
+ <div className="stat">
+ <div className="s-label">Routines Today</div>
+ <div className="s-value">{reviewLoading ? '…' : `${completedTodayOccurrences.length}/${todayOccurrences.length}`}</div>
+ <div className="s-delta">{routineTasks.length} routine tasks · {recurringTodos.length} definitions</div>
+ </div>
+ <div className="stat">
+ <div className="s-label">Due Work</div>
+ <div className="s-value">{reviewLoading ? '…' : overdueWork.length}</div>
+ <div className="s-delta">{todayWork.length} today · {upcomingEvents} events soon</div>
+ </div>
+ </div>
+ </div>
+
+ <div className="section">
+ <div className="section-head">
+ <h2>General Review</h2>
+ <span className="count">last {REVIEW_WINDOW_DAYS} days</span>
+ </div>
+ <div className="grid gap-4 lg:grid-cols-3">
+ <ReviewCard
+ title="Routine consistency"
+ value={occurrences.length ? formatPercent(routineAdherence) : '—'}
+ detail={`${completedWindowOccurrences.length}/${occurrences.length} routine occurrences completed/minimum`}
+ progress={occurrences.length ? routineAdherence : null}
+ />
+ <ReviewCard
+ title="Daily logs"
+ value={`${dailyLogs.length}/${REVIEW_WINDOW_DAYS}`}
+ detail={`${dailyLogColors.green} good · ${dailyLogColors.yellow} minimum · ${dailyLogColors.red} bad`}
+ progress={(dailyLogs.length / REVIEW_WINDOW_DAYS) * 100}
+ />
+ <ReviewCard
+ title="Metrics today"
+ value={`${metricLoggedCount}/${todayMetrics.length}`}
+ detail="metrics filled on Today"
+ progress={todayMetrics.length ? (metricLoggedCount / todayMetrics.length) * 100 : null}
+ />
+ </div>
+ </div>
+
+ <div className="section">
+ <div className="section-head">
+ <h2>Goal Health</h2>
+ <Link href="/goal" className="btn btn-secondary !px-3 !py-2 text-xs">
+ Open goals
+ </Link>
+ </div>
+ {topGoals.length === 0 ? (
+ <div className="card text-sm text-muted-foreground">No active goals to review yet.</div>
+ ) : (
+ <div className="grid gap-3 lg:grid-cols-2">
+ {topGoals.map((goal) => (
+ <GoalReviewRow key={goal.id} goal={goal} />
+ ))}
+ </div>
+ )}
+ </div>
+
+ <div className="section">
+ <div className="section-head">
+ <h2>Work Pressure</h2>
+ <Link href="/" className="btn btn-secondary !px-3 !py-2 text-xs">
+ Open Today
+ </Link>
+ </div>
+ <div className="grid gap-4 lg:grid-cols-2">
+ <DueWorkCard title="Overdue" rows={overdueWork.slice(0, 8)} empty="No overdue work. Nice." />
+ <DueWorkCard title="Due today" rows={todayWork.slice(0, 8)} empty="Nothing due today." />
+ </div>
  </div>
 
  <div className="section">
  <div className="stats">
  <div className="stat">
- <div className="s-label">Tasks closed</div>
- <div className="s-value">12</div>
- <div className="s-delta up">+3 vs last week</div>
+ <div className="s-label">Signals</div>
+ <div className="s-value">{loading ? '…' : signals.length}</div>
+ <div className="s-delta">captured radar items</div>
  </div>
  <div className="stat">
- <div className="s-label">Focus hours</div>
- <div className="s-value">42.5</div>
- <div className="s-delta up">+18% vs avg</div>
+ <div className="s-label">Linked</div>
+ <div className="s-value">{loading ? '…' : linkedSignals}</div>
+ <div className="s-delta">connected to goal/task</div>
  </div>
  <div className="stat">
- <div className="s-label">Streak</div>
- <div className="s-value">
- 13<small>d</small>
- </div>
- <div className="s-delta">writing unbroken</div>
+ <div className="s-label">Sources</div>
+ <div className="s-value">{loading ? '…' : sourceCounts.length}</div>
+ <div className="s-delta">places signal came from</div>
  </div>
  <div className="stat">
- <div className="s-label">Overdue</div>
- <div className="s-value">1</div>
- <div className="s-delta down">deploy-to-vercel</div>
+ <div className="s-label">Notes</div>
+ <div className="s-value">{loading ? '…' : regularNotes.length}</div>
+ <div className="s-delta">non-signal notes</div>
  </div>
  </div>
  </div>
 
  <div className="section">
  <div className="section-head">
- <h2>Time, by goal</h2>
+ <h2>Radar Map</h2>
+ <Link href={notesFilterHref({})} className="btn btn-secondary !px-3 !py-2 text-xs">
+ Signals only
+ </Link>
  </div>
- <div className="card">
- <div
- style={{
- display: 'flex',
- gap: 0,
- height: 12,
- borderRadius: 6,
- overflow: 'hidden',
- marginBottom: 14,
- }}
- >
- <div style={{ flex: 38, background: 'var(--tn-warm)' }} />
- <div style={{ flex: 24, background: 'var(--tn-moss)' }} />
- <div style={{ flex: 22, background: 'var(--tn-slate)' }} />
- <div style={{ flex: 16, background: 'var(--tn-plum)' }} />
+ <RadarGraph sourceCounts={sourceCounts} tagCounts={tagCounts} relationCounts={relationCounts} />
  </div>
- <div
- style={{
- display: 'grid',
- gridTemplateColumns: 'repeat(4, 1fr)',
- gap: 14,
- }}
- >
- {[
- { color: 'var(--tn-warm)', label: 'Brand', hours: '16.2' },
- { color: 'var(--tn-moss)', label: 'Run', hours: '10.0' },
- { color: 'var(--tn-slate)', label: 'Read', hours: '9.3' },
- { color: 'var(--tn-plum)', label: 'Work', hours: '7.0' },
- ].map((row) => (
- <div key={row.label}>
- <div
- style={{
- display: 'flex',
- alignItems: 'center',
- gap: 6,
- marginBottom: 4,
- }}
- >
- <span
- style={{
- width: 10,
- height: 10,
- borderRadius: 3,
- background: row.color,
- }}
+
+ <div className="section">
+ <div className="section-head">
+ <h2>Signal Patterns</h2>
+ <Link href="/notes" className="btn btn-secondary !px-3 !py-2 text-xs">
+ Open notes
+ </Link>
+ </div>
+ <div className="grid gap-4 lg:grid-cols-2">
+ <PatternCard
+ title="By source"
+ rows={sourceCounts}
+ empty="No signal sources yet."
+ hrefForRow={(label) => notesFilterHref({ source: label })}
  />
- <b style={{ fontSize: 13 }}>{row.label}</b>
- </div>
- <div
- style={{
- fontSize: 22,
- fontWeight: 600,
- letterSpacing: '-0.02em',
- }}
- >
- {row.hours}
- <small
- style={{
- fontSize: 12,
- color: 'var(--tn-fg-muted)',
- fontWeight: 400,
- }}
- >
- h
- </small>
- </div>
- </div>
- ))}
- </div>
+ <PatternCard
+ title="By tag"
+ rows={tagCounts}
+ empty="No signal tags yet."
+ hrefForRow={(label) => notesFilterHref({ tag: label })}
+ />
  </div>
  </div>
 
  <div className="section">
  <div className="section-head">
- <h2>Wins &amp; misses</h2>
+ <h2>Recent Signals</h2>
  </div>
- <div
- style={{
- display: 'grid',
- gridTemplateColumns: '1fr 1fr',
- gap: 16,
- }}
- >
+ {loading ? (
+ <div className="card text-sm text-muted-foreground">Loading radar…</div>
+ ) : recentSignals.length === 0 ? (
  <div className="card">
- <h3
- style={{
- fontSize: 14,
- color: 'var(--tn-good)',
- marginBottom: 12,
- letterSpacing: '0.04em',
- textTransform: 'uppercase',
- }}
- >
- ★ Wins
- </h3>
- <ul
- style={{
- listStyle: 'none',
- display: 'flex',
- flexDirection: 'column',
- gap: 8,
- padding: 0,
- margin: 0,
- }}
- >
- <li style={{ fontSize: 14 }}>
- ✓ Shipped the MDX parser ahead of schedule.
- </li>
- <li style={{ fontSize: 14 }}>
- ✓ 13-day writing streak — longest this year.
- </li>
- <li style={{ fontSize: 14 }}>
- ✓ Beta call confirmed import bug priority.
- </li>
- </ul>
+ <h3 className="mb-2 text-base font-semibold text-foreground">No signals yet</h3>
+ <p className="mb-4 text-sm text-muted-foreground">
+ Use Today → Quick Capture → Signal when something feels repeated, odd, useful, or worth tracking.
+ </p>
+ <Link href="/" className="btn btn-primary !px-3 !py-2 text-xs">
+ Capture from Today
+ </Link>
  </div>
- <div className="card">
- <h3
- style={{
- fontSize: 14,
- color: 'var(--tn-bad)',
- marginBottom: 12,
- letterSpacing: '0.04em',
- textTransform: 'uppercase',
- }}
+ ) : (
+ <div className="grid gap-3 lg:grid-cols-2">
+ {recentSignals.map((signal) => {
+ const relation = signal.task_id
+ ? relationLabels.get(`task:${signal.task_id}`)
+ : signal.goal_id
+ ? relationLabels.get(`goal:${signal.goal_id}`)
+ : null;
+ return (
+ <article
+ key={signal.id}
+ className="rounded-2xl border p-4"
+ style={{ border: 'var(--tn-line)', background: 'var(--tn-card)' }}
  >
- ○ Misses
- </h3>
- <ul
- style={{
- listStyle: 'none',
- display: 'flex',
- flexDirection: 'column',
- gap: 8,
- padding: 0,
- margin: 0,
- }}
- >
- <li style={{ fontSize: 14 }}>
- ○ Deploy slipped past target date.
- </li>
- <li style={{ fontSize: 14 }}>
- ○ Missed Saturday's long run — recovered Sunday.
- </li>
- <li style={{ fontSize: 14 }}>
- ○ Case study draft still at 0%.
- </li>
- </ul>
+ <div className="mb-2 flex flex-wrap items-center gap-2">
+ <span className="pill" style={{ borderColor: 'var(--tn-accent)', color: 'var(--tn-accent)' }}>
+ signal
+ </span>
+ {signal.tag && <span className="pill">{signal.tag}</span>}
+ {signal.source && <span className="pill">src: {signal.source}</span>}
+ <span className="ml-auto text-xs text-muted-foreground">{formatDate(signal.updated_at)}</span>
  </div>
+ <h3 className="mb-1 text-sm font-semibold text-foreground">{signal.title}</h3>
+ {signal.body && (
+ <p className="mb-3 line-clamp-3 text-sm text-muted-foreground">
+ {signal.body}
+ </p>
+ )}
+ <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+ {relation ? (
+ <Link href={relation.href} className="hover:underline" style={{ color: 'var(--tn-accent)' }}>
+ {relation.label}
+ </Link>
+ ) : (
+ <span className="text-muted-foreground">No linked goal/task</span>
+ )}
+ <Link href={notesFilterHref({ noteId: signal.id })} className="hover:underline" style={{ color: 'var(--tn-accent)' }}>
+ Edit in notes →
+ </Link>
  </div>
+ </article>
+ );
+ })}
+ </div>
+ )}
  </div>
  </div>
  );
 };
+
+const RadarGraph: React.FC<{
+ sourceCounts: Array<{ label: string; count: number }>;
+ tagCounts: Array<{ label: string; count: number }>;
+ relationCounts: Array<{ label: string; count: number }>;
+}> = ({ sourceCounts, tagCounts, relationCounts }) => {
+ const nodes = [
+ ...sourceCounts.slice(0, 4).map((row, index) => ({
+ id: `source:${row.label}`,
+ label: row.label,
+ count: row.count,
+ href: notesFilterHref({ source: row.label }),
+ x: 18,
+ y: 24 + index * 15,
+ tone: 'source',
+ })),
+ ...tagCounts.slice(0, 4).map((row, index) => ({
+ id: `tag:${row.label}`,
+ label: row.label,
+ count: row.count,
+ href: notesFilterHref({ tag: row.label }),
+ x: 82,
+ y: 24 + index * 15,
+ tone: 'tag',
+ })),
+ ...relationCounts.slice(0, 3).map((row, index) => ({
+ id: `relation:${row.label}`,
+ label: row.label,
+ count: row.count,
+ href: notesFilterHref({}),
+ x: 38 + index * 12,
+ y: 82,
+ tone: 'relation',
+ })),
+ ];
+
+ if (nodes.length === 0) {
+ return (
+ <div className="card">
+ <p className="text-sm text-muted-foreground">
+ Capture signals from Today first; the map will show repeated sources, tags, and linked goals.
+ </p>
+ </div>
+ );
+ }
+
+ return (
+ <div className="card relative min-h-[320px] overflow-hidden">
+ <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+ {nodes.map((node) => (
+ <line
+ key={node.id}
+ x1="50"
+ y1="48"
+ x2={node.x}
+ y2={node.y}
+ stroke="var(--tn-line-strong, var(--tn-fg-muted))"
+ strokeOpacity="0.26"
+ strokeWidth="0.35"
+ />
+ ))}
+ </svg>
+ <div
+ className="absolute left-1/2 top-[48%] z-10 -translate-x-1/2 -translate-y-1/2 rounded-2xl border px-5 py-4 text-center shadow-sm"
+ style={{ border: 'var(--tn-line)', background: 'var(--tn-card)', color: 'var(--tn-fg)' }}
+ >
+ <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Radar</div>
+ <div className="text-2xl font-bold">{nodes.reduce((sum, node) => sum + node.count, 0)}</div>
+ <div className="text-xs text-muted-foreground">signal links</div>
+ </div>
+ {nodes.map((node) => (
+ <Link
+ key={node.id}
+ href={node.href}
+ className="absolute z-20 max-w-[180px] -translate-x-1/2 -translate-y-1/2 rounded-2xl border px-3 py-2 text-sm shadow-sm transition-transform hover:scale-[1.02]"
+ style={{
+ left: `${node.x}%`,
+ top: `${node.y}%`,
+ border: 'var(--tn-line)',
+ background:
+ node.tone === 'source'
+ ? 'color-mix(in srgb, var(--tn-card) 80%, var(--tn-accent) 8%)'
+ : node.tone === 'tag'
+ ? 'color-mix(in srgb, var(--tn-card) 82%, var(--tn-good) 8%)'
+ : 'color-mix(in srgb, var(--tn-card) 82%, var(--tn-warn, #d69c2f) 10%)',
+ color: 'var(--tn-fg)',
+ }}
+ >
+ <div className="truncate font-semibold">{node.label}</div>
+ <div className="text-xs text-muted-foreground">{node.count} signal{node.count === 1 ? '' : 's'}</div>
+ </Link>
+ ))}
+ </div>
+ );
+};
+
+const PatternCard: React.FC<{
+ title: string;
+ rows: Array<{ label: string; count: number }>;
+ empty: string;
+ hrefForRow?: (label: string) => string;
+}> = ({
+ title,
+ rows,
+ empty,
+ hrefForRow,
+}) => (
+ <div className="card">
+ <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">{title}</h3>
+ {rows.length === 0 ? (
+ <p className="text-sm text-muted-foreground">{empty}</p>
+ ) : (
+ <div className="space-y-2">
+ {rows.slice(0, 8).map((row) => (
+ <div key={row.label}>
+ <div className="mb-1 flex items-center justify-between gap-3 text-sm">
+ {hrefForRow ? (
+ <Link href={hrefForRow(row.label)} className="truncate text-foreground hover:underline">
+ {row.label}
+ </Link>
+ ) : (
+ <span className="truncate text-foreground">{row.label}</span>
+ )}
+ <span className="font-semibold text-foreground">{row.count}</span>
+ </div>
+ <div className="h-2 overflow-hidden rounded-full" style={{ background: 'var(--tn-hover)' }}>
+ <div
+ className="h-full rounded-full"
+ style={{
+ width: `${Math.max(10, Math.min(100, row.count * 20))}%`,
+ background: 'var(--tn-accent)',
+ }}
+ />
+ </div>
+ </div>
+ ))}
+ </div>
+ )}
+ </div>
+);
+
+const ReviewCard: React.FC<{
+ title: string;
+ value: string;
+ detail: string;
+ progress: number | null;
+}> = ({ title, value, detail, progress }) => (
+ <div className="card">
+ <div className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">{title}</div>
+ <div className="mb-1 text-3xl font-bold text-foreground">{value}</div>
+ <p className="mb-3 text-sm text-muted-foreground">{detail}</p>
+ {progress !== null && (
+ <div className="h-2 overflow-hidden rounded-full" style={{ background: 'var(--tn-hover)' }}>
+ <div
+ className="h-full rounded-full"
+ style={{
+ width: `${Math.max(0, Math.min(100, progress))}%`,
+ background: 'var(--tn-accent)',
+ }}
+ />
+ </div>
+ )}
+ </div>
+);
+
+const GoalReviewRow: React.FC<{ goal: GoalItem }> = ({ goal }) => {
+ const lanes = calculateGoalProgressLanes(goal);
+ const structural = lanes.find((lane) => lane.id === 'structural');
+ const outcome = lanes.find((lane) => lane.id === 'outcome');
+ const consistency = lanes.find((lane) => lane.id === 'consistency');
+
+ return (
+ <Link
+ href={`/goal/${goal.id}`}
+ className="rounded-2xl border p-4 transition-transform hover:scale-[1.01]"
+ style={{ border: 'var(--tn-line)', background: 'var(--tn-card)', color: 'var(--tn-fg)' }}
+ >
+ <div className="mb-2 flex items-start justify-between gap-3">
+ <div>
+ <h3 className="text-base font-semibold text-foreground">{goal.title}</h3>
+ {goal.description && (
+ <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{goal.description}</p>
+ )}
+ </div>
+ <span className="pill">{goal.status}</span>
+ </div>
+ <div className="mb-3 h-2 overflow-hidden rounded-full" style={{ background: 'var(--tn-hover)' }}>
+ <div
+ className="h-full rounded-full"
+ style={{
+ width: `${Math.max(0, Math.min(100, structural?.value ?? 0))}%`,
+ background: 'var(--tn-accent)',
+ }}
+ />
+ </div>
+ <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
+ <span>Structural · {structural?.value === null || structural?.value === undefined ? '—' : formatPercent(structural.value)}</span>
+ <span>Outcome · {outcome?.value === null || outcome?.value === undefined ? '—' : formatPercent(outcome.value)}</span>
+ <span>Consistency · {consistency?.value === null || consistency?.value === undefined ? '—' : formatPercent(consistency.value)}</span>
+ </div>
+ </Link>
+ );
+};
+
+const DueWorkCard: React.FC<{
+ title: string;
+ rows: Array<{ id: string; title: string; kind: string; href: string; dueKey: string | null }>;
+ empty: string;
+}> = ({ title, rows, empty }) => (
+ <div className="card">
+ <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">{title}</h3>
+ {rows.length === 0 ? (
+ <p className="text-sm text-muted-foreground">{empty}</p>
+ ) : (
+ <div className="space-y-2">
+ {rows.map((row) => (
+ <Link
+ key={`${row.kind}:${row.id}`}
+ href={row.href}
+ className="flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-sm hover:shadow-sm"
+ style={{ border: 'var(--tn-line)', background: 'var(--tn-active)', color: 'var(--tn-fg)' }}
+ >
+ <span className="min-w-0">
+ <span className="block truncate font-medium">{row.title}</span>
+ <span className="text-xs text-muted-foreground">{row.kind}</span>
+ </span>
+ <span className="shrink-0 text-xs text-muted-foreground">{row.dueKey}</span>
+ </Link>
+ ))}
+ </div>
+ )}
+ </div>
+);
 
 export default withAuth(ReviewPage);

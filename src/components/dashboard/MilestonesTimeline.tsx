@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, type CSSProperties } from 'react';
 import { MilestoneItem as Milestone, StatusType } from '@/lib/types';
 import MilestoneCard from './MilestoneCard';
 import { milestonesApi } from '@/lib/api';
 import { useStore } from '@/store/useStore';
 import { toast } from '@/store/useToast';
+import { usePersistentState } from '@/lib/usePersistentState';
 import { Lock } from 'lucide-react';
+import { isMilestoneEffectivelyFinished, isMilestoneLocked } from '@/lib/milestoneGating';
 
 interface MilestonesTimelineProps {
  milestones: Milestone[];
@@ -15,14 +17,19 @@ interface MilestonesTimelineProps {
  onQuickAddMilestone?: (title: string) => Promise<void> | void;
 }
 
-const statusColor = (status: StatusType) => {
+const statusStyle = (status: StatusType): CSSProperties => {
+ const base = (tone: string): CSSProperties => ({
+ background: tone,
+ borderColor: tone,
+ boxShadow: `0 8px 18px color-mix(in srgb, ${tone} 28%, transparent)`,
+ });
  switch (status) {
  case StatusType.FINISHED:
- return 'bg-emerald-500 border-emerald-500 shadow-emerald-500/30';
+ return base('var(--tn-good, #2f7d50)');
  case StatusType.IN_PROGRESS:
- return 'bg-blue-500 border-blue-500 shadow-blue-500/30';
+ return base('var(--tn-accent)');
  default:
- return 'bg-slate-400 border-slate-400 shadow-slate-400/30';
+ return base('var(--tn-fg-muted)');
  }
 };
 
@@ -39,6 +46,7 @@ const MilestonesTimeline: React.FC<MilestonesTimelineProps> = ({
  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
  const [quickDraft, setQuickDraft] = useState('');
  const [quickBusy, setQuickBusy] = useState(false);
+ const [enforceSequential, setEnforceSequential] = usePersistentState('milestones:enforceSequential', false);
 
  const submitQuick = async (e: React.FormEvent) => {
  e.preventDefault();
@@ -100,19 +108,19 @@ const MilestonesTimeline: React.FC<MilestonesTimelineProps> = ({
  Start breaking down your goal into manageable milestones to track your progress effectively.
  </p>
  {onQuickAddMilestone && (
- <form onSubmit={submitQuick} className="w-full max-w-md flex items-center space-x-2">
+ <form onSubmit={submitQuick} className="w-full max-w-md flex flex-col gap-2 sm:flex-row sm:items-center">
  <input
  type="text"
  value={quickDraft}
  onChange={(e) => setQuickDraft(e.target.value)}
  placeholder="First milestone…"
  disabled={quickBusy}
- className="flex-1 px-3 py-2 text-sm border border-border dark:border-border bg-card dark:bg-card text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+ className="filter-input w-full sm:flex-1 disabled:opacity-50"
  />
  <button
  type="submit"
  disabled={!quickDraft.trim() || quickBusy}
- className="px-3 py-2 text-sm bg-card dark:bg-card text-white rounded-lg hover:bg-card dark:hover:bg-muted disabled:opacity-50"
+ className="btn btn-primary w-full sm:w-auto justify-center disabled:opacity-50"
  >
  Add
  </button>
@@ -123,14 +131,30 @@ const MilestonesTimeline: React.FC<MilestonesTimelineProps> = ({
  }
 
  return (
- <div className="relative py-8">
- <div className="mb-8">
+ <div className="relative py-6 sm:py-8 max-w-full overflow-hidden">
+ <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+ <div>
  <h2 className="text-2xl font-bold text-foreground mb-2">Milestones</h2>
  <p className="text-foreground dark:text-muted-foreground">Drag to reorder, click a card to expand.</p>
  </div>
+ <button
+ type="button"
+ onClick={() => setEnforceSequential((value) => !value)}
+ className="btn btn-secondary w-fit text-xs"
+ style={enforceSequential ? {
+ borderColor: 'var(--tn-accent)',
+ color: 'var(--tn-accent)',
+ background: 'color-mix(in srgb, var(--tn-accent) 10%, var(--tn-card))',
+ } : undefined}
+ title="When enabled, later milestones cannot be finished before earlier ones."
+ >
+ <Lock className="w-3.5 h-3.5" />
+ <span>{enforceSequential ? 'Sequential on' : 'Free order'}</span>
+ </button>
+ </div>
 
  <div className="relative">
- <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-gray-200 dark:from-gray-600 via-gray-300 dark:via-gray-500 to-gray-200 dark:to-gray-600" />
+ <div className="absolute left-3 sm:left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-gray-200 dark:from-gray-600 via-gray-300 dark:via-gray-500 to-gray-200 dark:to-gray-600" />
 
  <div className="space-y-8">
  {milestones.map((milestone, idx) => {
@@ -140,10 +164,8 @@ const MilestonesTimeline: React.FC<MilestonesTimelineProps> = ({
  // milestone in the chain is not yet finished. Surface visually,
  // but don't disable interaction outright — user can still expand
  // to plan ahead.
- const previousFinished = milestones
- .slice(0, idx)
- .every((m) => m.status === StatusType.FINISHED);
- const isLocked = !previousFinished && milestone.status !== StatusType.FINISHED;
+ const isEffectivelyFinished = isMilestoneEffectivelyFinished(milestone);
+ const isLocked = isMilestoneLocked(milestones, idx, enforceSequential);
  return (
  <div
  key={milestone.id}
@@ -170,28 +192,35 @@ const MilestonesTimeline: React.FC<MilestonesTimelineProps> = ({
  e.preventDefault();
  handleDrop(milestone.id);
  }}
- className={`relative flex items-start group transition-opacity duration-200 ${
+ className={`relative flex items-start group transition-opacity duration-200 min-w-0 ${
  isDragging ? 'opacity-40' : ''
- } ${isDropTarget ? 'ring-2 ring-blue-400 rounded-xl' : ''}`}
+ }`}
+ style={{
+ borderRadius: isDropTarget ? 'var(--tn-r-lg, 12px)' : undefined,
+ boxShadow: isDropTarget ? '0 0 0 2px var(--tn-accent)' : undefined,
+ }}
  >
  <div className="relative z-10 flex-shrink-0">
  <div className="flex items-center justify-center">
  <div
- className={`w-6 h-6 rounded-full border-4 ${statusColor(milestone.status)}
- shadow-lg transition-all duration-300 group-hover:scale-110`}
+ className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border-4 shadow-lg transition-all duration-300 group-hover:scale-110 cursor-grab active:cursor-grabbing"
+ style={statusStyle(isEffectivelyFinished ? StatusType.FINISHED : milestone.status)}
+ title={`Milestone ${idx + 1}. Drag to reorder.`}
  />
  </div>
- <div className="absolute top-3 left-6 w-8 h-0.5 bg-muted group-hover:bg-muted dark:group-hover:bg-muted transition-colors duration-300" />
+ <div className="absolute top-2.5 sm:top-3 left-5 sm:left-6 w-4 sm:w-8 h-0.5 bg-muted group-hover:bg-muted dark:group-hover:bg-muted transition-colors duration-300" />
  </div>
 
- <div className="flex-1 ml-6 transform transition-all duration-300 group-hover:translate-x-1">
+ <div className="flex-1 min-w-0 ml-4 sm:ml-6 transform transition-all duration-300 group-hover:translate-x-1">
  <div className={`bg-card dark:bg-card rounded-xl border shadow-sm hover:shadow-md transition-shadow duration-300 ${
  isLocked
- ? 'border-amber-200 dark:border-amber-800 opacity-75'
+ ? 'opacity-75'
  : 'border-border dark:border-border'
- }`}>
+ }`}
+ style={isLocked ? { borderColor: 'color-mix(in srgb, var(--tn-warn, #c8932a) 42%, var(--tn-card))' } : undefined}
+ >
  {isLocked && (
- <div className="px-6 pt-4 flex items-center space-x-2 text-xs text-amber-700 dark:text-amber-300">
+ <div className="px-4 sm:px-6 pt-4 flex items-center gap-2 text-xs" style={{ color: 'var(--tn-warn, #c8932a)' }}>
  <Lock className="w-3 h-3" />
  <span>Finish previous milestones first to unlock progression</span>
  </div>
@@ -212,40 +241,34 @@ const MilestonesTimeline: React.FC<MilestonesTimelineProps> = ({
  </div>
  </div>
 
- <div
- className="absolute -left-2 -top-2 w-6 h-6 bg-card dark:bg-muted text-white dark:text-foreground text-xs font-bold rounded-full flex items-center justify-center shadow-lg cursor-grab active:cursor-grabbing"
- title="Drag to reorder"
- >
- {idx + 1}
- </div>
  </div>
  );
  })}
  </div>
 
  <div className="mt-8 flex items-center justify-center">
- <div className="bg-muted dark:bg-card rounded-full px-4 py-2 flex items-center space-x-2">
- <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+ <div className="bg-muted dark:bg-card rounded-full px-4 py-2 flex items-center gap-2 max-w-full">
+ <div className="w-2 h-2 rounded-full" style={{ background: 'var(--tn-good, #2f7d50)' }}></div>
  <span className="text-sm text-foreground dark:text-muted-foreground">
- {milestones.filter((m) => m.status === StatusType.FINISHED).length} of {milestones.length} completed
+ {milestones.filter(isMilestoneEffectivelyFinished).length} of {milestones.length} completed
  </span>
  </div>
  </div>
 
  {onQuickAddMilestone && (
- <form onSubmit={submitQuick} className="mt-4 flex items-center space-x-2 max-w-xl mx-auto">
+ <form onSubmit={submitQuick} className="mt-4 flex flex-col gap-2 max-w-xl mx-auto sm:flex-row sm:items-center">
  <input
  type="text"
  value={quickDraft}
  onChange={(e) => setQuickDraft(e.target.value)}
  placeholder="Quick add milestone…"
  disabled={quickBusy}
- className="flex-1 px-3 py-2 text-sm border border-border dark:border-border bg-card dark:bg-card text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+ className="filter-input w-full sm:flex-1 disabled:opacity-50"
  />
  <button
  type="submit"
  disabled={!quickDraft.trim() || quickBusy}
- className="px-3 py-2 text-sm bg-card dark:bg-card text-white rounded-lg hover:bg-card dark:hover:bg-muted disabled:opacity-50"
+ className="btn btn-primary w-full sm:w-auto justify-center disabled:opacity-50"
  >
  Add
  </button>

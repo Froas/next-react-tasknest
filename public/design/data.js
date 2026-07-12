@@ -1,4 +1,4 @@
-// TaskNest sample data — расширенная версия для всех экранов
+
 window.TN_DATA = {
   user: {
     name: "Alex Carter",

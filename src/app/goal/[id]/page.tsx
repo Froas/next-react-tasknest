@@ -99,6 +99,7 @@ const GoalDetailPage: React.FC = () => {
  let cancelled = false;
  const load = async () => {
  try {
+ setNotFound(false);
  const fullGoal = await goalsApi.getById(id, {
  include_milestones: true,
  include_tasks: true,
@@ -134,23 +135,23 @@ const GoalDetailPage: React.FC = () => {
 
  if (isLoading) {
  return (
- <div className="min-h-screen bg-muted dark:bg-card flex items-center justify-center">
- <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+ <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--tn-bg)' }}>
+ <div className="animate-spin rounded-full h-10 w-10 border-b-2" style={{ borderColor: 'var(--tn-accent)' }}></div>
  </div>
  );
  }
 
  if (notFound || !goal) {
  return (
- <div className="min-h-screen bg-muted dark:bg-card flex items-center justify-center px-4">
- <div className="max-w-md w-full text-center bg-card dark:bg-card rounded-xl border border-border dark:border-border p-8">
+ <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--tn-bg)' }}>
+ <div className="card max-w-md w-full text-center" style={{ padding: 32 }}>
  <h1 className="text-2xl font-semibold text-foreground mb-3">Goal not found</h1>
- <p className="text-foreground dark:text-muted-foreground/60 mb-6">
+ <p className="mb-6" style={{ color: 'var(--tn-fg-muted)' }}>
  The goal you&apos;re looking for doesn&apos;t exist or has been deleted.
  </p>
  <button
  onClick={() => router.push('/goal')}
- className="px-4 py-2 rounded-lg bg-card dark:bg-card text-white hover:bg-card dark:hover:bg-muted"
+ className="btn btn-primary"
  >
  Back to goals
  </button>
@@ -160,30 +161,30 @@ const GoalDetailPage: React.FC = () => {
  }
 
  return (
- <div className="min-h-screen bg-muted dark:bg-card">
- <main className="container mx-auto px-6 py-8">
- <div className="flex justify-end mb-4 space-x-2 no-print flex-wrap gap-2">
+ <div className="min-h-screen" style={{ background: 'var(--tn-bg)', color: 'var(--tn-fg)' }}>
+ <main className="mx-auto w-full max-w-[1500px] px-4 py-5 sm:px-6 sm:py-8">
+ <div className="mb-4 flex flex-wrap justify-end gap-2 no-print">
  <button
  onClick={handleCopyLink}
- className="px-3 py-1.5 text-sm rounded-md font-medium border border-border dark:border-border text-foreground dark:text-muted-foreground/60 hover:bg-muted dark:hover:bg-card flex items-center space-x-1"
+ className="btn btn-secondary"
  title="Copy link to this goal"
  >
- <Copy className="w-3.5 h-3.5" />
+ <Copy className="w-4 h-4" />
  <span>Copy link</span>
  </button>
  <button
  onClick={handleExportMarkdown}
- className="px-3 py-1.5 text-sm rounded-md font-medium border border-border dark:border-border text-foreground dark:text-muted-foreground/60 hover:bg-muted dark:hover:bg-card flex items-center space-x-1"
+ className="btn btn-secondary"
  title="Download goal as markdown"
  >
- <FileText className="w-3.5 h-3.5" />
+ <FileText className="w-4 h-4" />
  <span>Export .md</span>
  </button>
  <GoalColorPicker goalId={goal.id} />
  <button
  onClick={handleDuplicate}
  disabled={isDuplicating}
- className="px-3 py-1.5 text-sm rounded-md font-medium border border-border dark:border-border text-foreground dark:text-muted-foreground/60 hover:bg-muted dark:hover:bg-card disabled:opacity-50"
+ className="btn btn-secondary disabled:opacity-50"
  >
  {isDuplicating ? 'Duplicating…' : 'Duplicate goal'}
  </button>

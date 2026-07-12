@@ -6,54 +6,66 @@ import { MilestoneItem as Milestone, StatusType, PriorityType } from '@/lib/type
 import { useStore } from '@/store/useStore';
 import { useShallow } from 'zustand/react/shallow';
 import { MilestoneForm } from '@/components/dashboard/MilestoneForm';
-import { milestonesApi } from '@/lib/api';
+import { milestonesApi, trashApi } from '@/lib/api';
 import { priorityWeight } from '@/lib/sort';
 import { toast } from '@/store/useToast';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { GridSkeleton } from '@/components/ui/Skeletons';
 import { usePersistentState } from '@/lib/usePersistentState';
 import { useDocumentTitle } from '@/lib/useDocumentTitle';
+import { DropPlacement, moveIdRelative } from '@/lib/reorder';
 import { stripMarkdown } from '@/lib/utils';
 import Link from 'next/link';
-import { Plus, Flag, Calendar, Filter, Target } from 'lucide-react';
+import { Plus, Flag, Calendar, Filter, Target, GripVertical } from 'lucide-react';
+
+type MilestoneSort = 'custom' | 'title' | 'priority' | 'due';
 
 const MilestonesPage: React.FC = () => {
  const [isCreatingMilestone, setIsCreatingMilestone] = useState(false);
  const [filterStatus, setFilterStatus] = usePersistentState<StatusType | 'all'>('milestone:filter', 'all');
- const [sortBy, setSortBy] = usePersistentState<'title' | 'priority' | 'due'>('milestone:sort', 'title');
+ const [sortBy, setSortBy] = usePersistentState<MilestoneSort>('milestone:sort', 'custom');
  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
  const [isDeleting, setIsDeleting] = useState(false);
  const [search, setSearch] = useState('');
  useDocumentTitle('Milestones');
  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+ const [draggingMilestoneId, setDraggingMilestoneId] = useState<string | null>(null);
+ const [dropTargetMilestoneId, setDropTargetMilestoneId] = useState<string | null>(null);
+ const [dropTargetMilestonePlacement, setDropTargetMilestonePlacement] = useState<DropPlacement>('before');
 
  const goals = useStore((s) => s.goals);
  const milestones = useStore((s) => s.milestones);
+ const tasks = useStore((s) => s.tasks);
  const isLoadingMilestones = useStore((s) => s.isLoadingMilestones);
  const milestonesError = useStore((s) => s.milestonesError);
  const {
  fetchMilestones,
+ fetchTasks,
  addMilestone,
  addMilestoneToGoal,
  deleteMilestoneFromGoals,
  fetchGoals,
  updateMilestoneInGoals,
+ reorderMilestonesInGoal,
  } = useStore(
  useShallow((s) => ({
  fetchMilestones: s.fetchMilestones,
+ fetchTasks: s.fetchTasks,
  addMilestone: s.addMilestone,
  addMilestoneToGoal: s.addMilestoneToGoal,
  deleteMilestoneFromGoals: s.deleteMilestoneFromGoals,
  fetchGoals: s.fetchGoals,
  updateMilestoneInGoals: s.updateMilestoneInGoals,
+ reorderMilestonesInGoal: s.reorderMilestonesInGoal,
  }))
  );
 
  useEffect(() => {
  fetchMilestones();
+ fetchTasks();
  fetchGoals();
- }, [fetchMilestones, fetchGoals]);
+ }, [fetchMilestones, fetchTasks, fetchGoals]);
 
  const handleMilestoneSubmit = async (milestoneData: Partial<Milestone>) => {
  try {
@@ -77,35 +89,36 @@ const MilestonesPage: React.FC = () => {
  }
  };
 
- // Soft-delete with undo: optimistic remove, 5-second toast window, then
- // commit via API (or restore on Undo / API failure).
- const softDeleteMilestone = (id: string) => {
+ const softDeleteMilestone = async (id: string) => {
  const milestone = milestones.find((m) => m.id === id);
  if (!milestone) return;
  deleteMilestoneFromGoals(id);
+ try {
+ await milestonesApi.delete(id);
+ } catch (err) {
+ console.error('Soft-delete failed:', err);
+ addMilestone(milestone);
+ if (milestone.goal_id) addMilestoneToGoal(milestone, milestone.goal_id);
+ toast.error('Failed to delete milestone — restored');
+ return;
+ }
  toast.withAction(
  'info',
  `"${milestone.title}" deleted`,
  {
  label: 'Undo',
- run: () => {
- addMilestone(milestone);
- if (milestone.goal_id) addMilestoneToGoal(milestone, milestone.goal_id);
- },
- },
- {
- ttlMs: 5000,
- onExpire: async () => {
+ run: async () => {
  try {
- await milestonesApi.delete(id);
- } catch (err) {
- console.error('Soft-delete commit failed:', err);
+ await trashApi.restore('milestone', id);
  addMilestone(milestone);
  if (milestone.goal_id) addMilestoneToGoal(milestone, milestone.goal_id);
- toast.error('Failed to delete milestone — restored');
+ } catch (err) {
+ console.error('Milestone restore failed:', err);
+ toast.error('Failed to restore milestone');
  }
  },
- }
+ },
+ { ttlMs: 5000 }
  );
  };
 
@@ -185,26 +198,26 @@ const MilestonesPage: React.FC = () => {
  const getStatusColor = (status: StatusType) => {
  switch (status) {
  case StatusType.FINISHED:
- return 'bg-green-100 text-green-800 border-green-200';
+ return 'status-finished';
  case StatusType.IN_PROGRESS:
- return 'bg-blue-100 text-blue-800 border-blue-200';
+ return 'status-in-progress';
  case StatusType.OUTSTANDING:
- return 'bg-amber-100 text-amber-800 border-amber-200';
+ return 'status-outstanding';
  default:
- return 'bg-muted text-foreground border-border';
+ return '';
  }
  };
 
  const getPriorityColor = (priority: PriorityType) => {
  switch (priority) {
  case PriorityType.HIGH:
- return 'bg-red-100 text-red-800 border-red-200';
+ return 'priority-high';
  case PriorityType.MEDIUM:
- return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+ return 'priority-medium';
  case PriorityType.LOW:
- return 'bg-green-100 text-green-800 border-green-200';
+ return 'priority-low';
  default:
- return 'bg-muted text-foreground border-border';
+ return '';
  }
  };
 
@@ -218,8 +231,30 @@ const MilestonesPage: React.FC = () => {
  );
  });
 
+ const goalOrder = new Map(goals.map((goal, index) => [goal.id, index]));
+ const customOrderedMilestoneIds = milestones
+ .map((milestone, index) => ({ milestone, index }))
+ .sort((a, b) => {
+ const aGoalOrder = a.milestone.goal_id ? goalOrder.get(a.milestone.goal_id) ?? Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+ const bGoalOrder = b.milestone.goal_id ? goalOrder.get(b.milestone.goal_id) ?? Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+ const aPosition = a.milestone.position ?? a.index + 1;
+ const bPosition = b.milestone.position ?? b.index + 1;
+ return aGoalOrder - bGoalOrder || aPosition - bPosition || a.index - b.index;
+ })
+ .map(({ milestone }) => milestone.id);
+ const draggingMilestoneForPreview = draggingMilestoneId ? milestones.find((milestone) => milestone.id === draggingMilestoneId) : null;
+ const dropTargetMilestoneForPreview = dropTargetMilestoneId ? milestones.find((milestone) => milestone.id === dropTargetMilestoneId) : null;
+ const previewMilestoneIds =
+ sortBy === 'custom' &&
+ draggingMilestoneForPreview?.goal_id &&
+ dropTargetMilestoneForPreview?.goal_id === draggingMilestoneForPreview.goal_id
+ ? moveIdRelative(customOrderedMilestoneIds, draggingMilestoneId, dropTargetMilestoneId, dropTargetMilestonePlacement)
+ : customOrderedMilestoneIds;
+
  const sortedMilestones = [...filteredMilestones].sort((a, b) => {
  switch (sortBy) {
+ case 'custom':
+ return previewMilestoneIds.indexOf(a.id) - previewMilestoneIds.indexOf(b.id);
  case 'title':
  return a.title.localeCompare(b.title);
  case 'priority':
@@ -230,6 +265,36 @@ const MilestonesPage: React.FC = () => {
  return 0;
  }
  });
+
+ const getMilestoneOrderForGoal = (goalId: string): string[] => milestones
+ .filter((milestone) => milestone.goal_id === goalId)
+ .map((milestone, index) => ({ milestone, index }))
+ .sort((a, b) => {
+ const aPosition = a.milestone.position ?? a.index + 1;
+ const bPosition = b.milestone.position ?? b.index + 1;
+ return aPosition - bPosition || a.index - b.index;
+ })
+ .map(({ milestone }) => milestone.id);
+
+ const persistMilestoneOrder = async (target: Milestone, placement: DropPlacement) => {
+ if (!draggingMilestoneId || draggingMilestoneId === target.id) return;
+ const draggingMilestone = milestones.find((milestone) => milestone.id === draggingMilestoneId);
+ if (!draggingMilestone || !draggingMilestone.goal_id || draggingMilestone.goal_id !== target.goal_id) {
+ toast.info('Milestones can be reordered only inside the same goal');
+ return;
+ }
+ const previousOrder = getMilestoneOrderForGoal(draggingMilestone.goal_id);
+ const nextOrder = moveIdRelative(previousOrder, draggingMilestoneId, target.id, placement);
+ if (nextOrder === previousOrder) return;
+ reorderMilestonesInGoal(draggingMilestone.goal_id, nextOrder);
+ try {
+ await milestonesApi.reorder(nextOrder);
+ } catch (error) {
+ console.error('Failed to persist milestone order:', error);
+ reorderMilestonesInGoal(draggingMilestone.goal_id, previousOrder);
+ toast.error('Failed to save milestone order');
+ }
+ };
 
  if (isLoadingMilestones && milestones.length === 0) {
  return (
@@ -242,13 +307,13 @@ const MilestonesPage: React.FC = () => {
  return (
  <div className="page">
  {/* Page Header */}
- <div className="flex items-center justify-between mb-8">
+ <div className="page-head page-head-row">
  <div>
  <h1 className="page-title">Milestones</h1>
  <p className="page-lede">Track key progress checkpoints across your goals.</p>
  </div>
  
- <div className="flex items-center space-x-2">
+ <div className="page-head-actions">
  {selectedIds.size > 0 && (
  <>
  <span className="text-sm text-foreground dark:text-muted-foreground/60">
@@ -269,7 +334,7 @@ const MilestonesPage: React.FC = () => {
  </button>
  <button
  onClick={() => setConfirmBulkDelete(true)}
- className="btn" style={{background:'var(--tn-bad, #c25d63)', color:'#fff'}}
+ className="btn btn-danger"
  >
  Delete selected
  </button>
@@ -277,30 +342,30 @@ const MilestonesPage: React.FC = () => {
  )}
  <button
  onClick={() => setIsCreatingMilestone(true)}
- className="btn btn-primary"
+ className="btn btn-primary page-cta"
  >
- <Plus className="w-5 h-5" />
+ <Plus className="w-4 h-4" />
  <span>Create Milestone</span>
  </button>
  </div>
  </div>
 
  {/* Filters and Sort */}
- <div className="sticky top-16 z-20 -mx-6 px-6 py-3 mb-6 bg-muted/90 dark:bg-card/90 backdrop-blur border-b border-border dark:border-border flex flex-wrap items-center gap-3 no-print">
+ <div className="filter-toolbar no-print">
  <input
  type="search"
  value={search}
  onChange={(e) => setSearch(e.target.value)}
  placeholder="Search by title or description..."
  aria-label="Search milestones"
- className="flex-1 min-w-[200px] px-3 py-2 border border-border dark:border-border bg-card dark:bg-card text-foreground rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+ className="filter-input"
  />
- <div className="flex items-center space-x-2">
- <Filter className="w-4 h-4 text-muted-foreground dark:text-muted-foreground" />
+ <div className="filter-actions">
+ <Filter className="w-4 h-4 filter-icon" />
  <select
  value={filterStatus}
  onChange={(e) => setFilterStatus(e.target.value as StatusType | 'all')}
- className="px-3 py-2 border border-border dark:border-border bg-card dark:bg-card text-foreground rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+ className="filter-select"
  >
  <option value="all">All Status</option>
  <option value={StatusType.OUTSTANDING}>Outstanding</option>
@@ -312,8 +377,9 @@ const MilestonesPage: React.FC = () => {
  <select
  value={sortBy}
  onChange={(e) => setSortBy(e.target.value as any)}
- className="px-3 py-2 border border-border dark:border-border bg-card dark:bg-card text-foreground rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+ className="filter-select"
  >
+ <option value="custom">Custom order</option>
  <option value="title">Sort by Title</option>
  <option value="priority">Sort by Priority</option>
  <option value="due">Sort by Due Date</option>
@@ -338,23 +404,96 @@ const MilestonesPage: React.FC = () => {
  {sortedMilestones.map((milestone) => {
  const parentGoal = goals.find(g => g.id === milestone.goal_id);
  const isSelected = selectedIds.has(milestone.id);
+ const canDrag = sortBy === 'custom' && !!milestone.goal_id;
+ const isDragging = draggingMilestoneId === milestone.id;
+ const draggingMilestone = draggingMilestoneId ? milestones.find((item) => item.id === draggingMilestoneId) : null;
+ const canDropHere = !!draggingMilestone && draggingMilestone.goal_id === milestone.goal_id && draggingMilestone.id !== milestone.id;
+ const isDropTarget = dropTargetMilestoneId === milestone.id && canDropHere;
+ const showDropMarker = isDragging && !!dropTargetMilestoneId && dropTargetMilestoneId !== milestone.id;
+ const nestedTaskCount = milestone.tasks?.length ?? 0;
+ const flatTaskCount = tasks.filter((task) => task.milestone_id === milestone.id).length;
+ const taskCount = Math.max(nestedTaskCount, flatTaskCount);
  return (
+ <div key={milestone.id} className="min-w-0">
+ {showDropMarker && (
+ <div className="mb-2 flex items-center gap-2 text-xs font-medium" style={{ color: 'var(--tn-accent)' }}>
+ <span className="h-px flex-1 border-t-2 border-dashed" style={{ borderColor: 'var(--tn-accent)' }} />
+ <span>Drop here</span>
+ <span className="h-px flex-1 border-t-2 border-dashed" style={{ borderColor: 'var(--tn-accent)' }} />
+ </div>
+ )}
  <div
- key={milestone.id}
+ draggable={canDrag}
+ onDragStart={(e) => {
+ if (!canDrag) return;
+ e.dataTransfer.effectAllowed = 'move';
+ e.dataTransfer.setData('application/x-tasknest-milestone-id', milestone.id);
+ setDraggingMilestoneId(milestone.id);
+ }}
+ onDragEnd={() => {
+ setDraggingMilestoneId(null);
+ setDropTargetMilestoneId(null);
+ }}
+ onDragOver={(e) => {
+ if (!canDrag || !draggingMilestoneId || draggingMilestoneId === milestone.id) return;
+ e.preventDefault();
+ if (!canDropHere) {
+ e.dataTransfer.dropEffect = 'none';
+ return;
+ }
+ const rect = e.currentTarget.getBoundingClientRect();
+ const placement: DropPlacement = e.clientY > rect.top + rect.height / 2 ? 'after' : 'before';
+ e.dataTransfer.dropEffect = 'move';
+ setDropTargetMilestoneId(milestone.id);
+ setDropTargetMilestonePlacement(placement);
+ }}
+ onDrop={async (e) => {
+ if (!canDrag) return;
+ e.preventDefault();
+ await persistMilestoneOrder(milestone, dropTargetMilestonePlacement);
+ setDraggingMilestoneId(null);
+ setDropTargetMilestoneId(null);
+ }}
  className={`relative bg-card dark:bg-card rounded-lg border p-6 hover:shadow-md transition-shadow ${
- isSelected
- ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-900'
- : 'border-border dark:border-border'
+ canDrag ? 'cursor-grab active:cursor-grabbing' : ''
  }`}
+ style={{
+ borderColor: isDropTarget || isSelected ? 'var(--tn-accent)' : undefined,
+ boxShadow: isDropTarget
+ ? '0 0 0 3px color-mix(in srgb, var(--tn-accent) 24%, transparent)'
+ : isSelected
+ ? '0 0 0 2px color-mix(in srgb, var(--tn-accent) 22%, transparent)'
+ : undefined,
+ opacity: isDragging ? 0.55 : 1,
+ }}
  >
+ {canDrag && (
+ <button
+ type="button"
+ draggable={false}
+ className="absolute left-3 top-4 rounded p-1 pointer-events-none"
+ title="Drag to reorder within this goal"
+ aria-label={`Drag ${milestone.title} to reorder`}
+ >
+ <GripVertical className="h-4 w-4" style={{ color: 'var(--tn-fg-muted)' }} aria-hidden="true" />
+ </button>
+ )}
  <input
  type="checkbox"
  checked={isSelected}
  onChange={() => toggleSelected(milestone.id)}
+ draggable={false}
+ onMouseDown={(e) => e.stopPropagation()}
  aria-label={`Select milestone ${milestone.title}`}
- className="absolute top-4 right-4 h-4 w-4 rounded border-border text-blue-600 focus:ring-blue-500"
+ className="absolute top-4 right-4 h-4 w-4 rounded border-border"
+ style={{ accentColor: 'var(--tn-accent)' }}
  />
- <Link href={`/milestone/${milestone.id}`} className="block">
+ <Link
+ href={`/milestone/${milestone.id}`}
+ draggable={false}
+ className="block"
+ style={{ paddingLeft: canDrag ? 14 : 0 }}
+ >
  <div className="flex items-start mb-4 pr-8">
  <div className="flex-1">
  <h3 className="text-lg font-semibold text-foreground mb-2">{milestone.title}</h3>
@@ -367,17 +506,17 @@ const MilestonesPage: React.FC = () => {
  </div>
 
  {parentGoal && (
- <div className="flex items-center text-xs text-blue-600 dark:text-blue-400 mb-3">
+ <div className="flex items-center text-xs mb-3" style={{ color: 'var(--tn-accent)' }}>
  <Target className="w-3 h-3 mr-1" />
  <span>{parentGoal.title}</span>
  </div>
  )}
 
  <div className="flex items-center space-x-2 mb-4">
- <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(milestone.status)}`}>
+ <span className={`pill ${getStatusColor(milestone.status)}`}>
  {milestone.status}
  </span>
- <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getPriorityColor(milestone.priority)}`}>
+ <span className={`pill ${getPriorityColor(milestone.priority)}`}>
  {milestone.priority}
  </span>
  </div>
@@ -391,16 +530,19 @@ const MilestonesPage: React.FC = () => {
  </Link>
 
  <div className="flex items-center justify-between text-sm text-muted-foreground dark:text-muted-foreground">
- <span>{milestone.tasks?.length || 0} tasks</span>
+ <span>{taskCount} tasks</span>
  <button
+ draggable={false}
+ onMouseDown={(e) => e.stopPropagation()}
  onClick={(e) => {
  e.preventDefault();
  softDeleteMilestone(milestone.id);
  }}
- className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-xs"
+ className="btn btn-danger-ghost text-xs"
  >
  Delete
  </button>
+ </div>
  </div>
  </div>
  );
