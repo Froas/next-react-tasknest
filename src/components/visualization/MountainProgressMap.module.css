@@ -1,12 +1,17 @@
 .mapShell {
   --viz-sky-top: var(--tn-viz-sky-top, color-mix(in srgb, var(--tn-accent) 14%, var(--tn-card)));
   --viz-sky-bottom: var(--tn-viz-sky-bottom, color-mix(in srgb, var(--tn-good, #2f7d50) 10%, var(--tn-card)));
+  --viz-mountain-distant: var(--tn-viz-mountain-distant, color-mix(in srgb, var(--tn-fg) 20%, var(--tn-card)));
   --viz-mountain-far: var(--tn-viz-mountain-far, color-mix(in srgb, var(--tn-fg) 32%, var(--tn-card)));
   --viz-mountain-main: var(--tn-viz-mountain-main, color-mix(in srgb, var(--tn-fg) 58%, var(--tn-card)));
   --viz-mountain-outline: var(--tn-viz-mountain-outline, color-mix(in srgb, var(--tn-fg) 78%, transparent));
   --viz-snow: var(--tn-viz-snow, color-mix(in srgb, white 76%, var(--tn-card)));
   --viz-ground: var(--tn-viz-ground, color-mix(in srgb, var(--tn-good, #2f7d50) 32%, var(--tn-card)));
-  --viz-moon: var(--tn-viz-moon, color-mix(in srgb, var(--tn-warn, #f1c75b) 76%, white));
+  --viz-sun: var(--tn-viz-sun, color-mix(in srgb, var(--tn-warn, #f1c75b) 76%, white));
+  --viz-moon: var(--tn-viz-moon, #f3f0df);
+  --viz-moon-shadow: var(--tn-viz-moon-shadow, var(--viz-sky-top));
+  --viz-sun-display: var(--tn-viz-sun-display, block);
+  --viz-moon-display: var(--tn-viz-moon-display, none);
   --viz-star: var(--tn-viz-star, var(--tn-fg));
   --viz-route: var(--tn-viz-route, color-mix(in srgb, var(--tn-fg) 32%, transparent));
   --viz-completed: var(--tn-viz-completed, var(--tn-good, #2f7d50));
@@ -17,7 +22,7 @@
   --viz-label: var(--tn-viz-label, var(--tn-fg));
   --viz-label-muted: var(--tn-viz-label-muted, var(--tn-fg-muted));
   --viz-label-halo: var(--tn-viz-label-halo, var(--tn-card));
-  --viz-character-outline: var(--tn-viz-character-outline, var(--tn-card));
+  --viz-character-outline: var(--tn-viz-character-outline, var(--tn-fg));
   position: relative;
   overflow: hidden;
   border: var(--tn-line);
@@ -40,6 +45,9 @@
   width: 100%;
   height: 100%;
 }
+
+.sun { display: var(--viz-sun-display); }
+.moon { display: var(--viz-moon-display); }
 
 .route {
   fill: none;

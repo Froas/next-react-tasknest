@@ -55,6 +55,13 @@
   --tn-tag-read-bg:  #d4f5e0; --tn-tag-read-fg:  #1f7d52;
   --tn-tag-life-bg:  rgba(106,75,217,.14); --tn-tag-life-fg:  #6a4bd9;
   --tn-tag-work-bg:  #fff4dc; --tn-tag-work-fg:  #b87b1a;
+
+  /* Mountain journey — daytime */
+  --tn-viz-sky-top: #fdebe4;
+  --tn-viz-sky-bottom: #edf4ee;
+  --tn-viz-sun: #f8d878;
+  --tn-viz-sun-display: block;
+  --tn-viz-moon-display: none;
 }
 
 [data-theme="bento"] body { background: #f1efe9; }

@@ -42,6 +42,7 @@ describe('mountain map generator', () => {
  it('is deterministic for the same goal and different across goals', () => {
  expect(generateMountainMap(goal())).toEqual(generateMountainMap(goal()));
  expect(generateMountainMap(goal('goal-b')).mountainPath).not.toBe(generateMountainMap(goal()).mountainPath);
+ expect(generateMountainMap(goal('goal-b')).distantMountainPath).not.toBe(generateMountainMap(goal()).distantMountainPath);
  });
 
  it('creates base, milestone checkpoints, summit, and task steps from live data', () => {
@@ -51,6 +52,8 @@ describe('mountain map generator', () => {
  expect(map.taskSteps).toHaveLength(3);
  expect(map.taskSteps.some((step) => step.id.endsWith('-routine'))).toBe(false);
  expect(map.routePath.startsWith('M ')).toBe(true);
+ expect(map.routePath.endsWith(`${map.checkpoints.at(-1)?.x.toFixed(1)} ${map.checkpoints.at(-1)?.y.toFixed(1)}`)).toBe(true);
+ expect(map.mountainPath).toContain(`L ${map.peakX.toFixed(1)} ${map.checkpoints.at(-1)?.y.toFixed(1)} L`);
  });
 
  it('keeps progress positions on the generated journey', () => {

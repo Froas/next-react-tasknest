@@ -92,8 +92,8 @@ Status: first interactive prototype implemented on `/visualization`.
 
 Current prototype:
 
-- Each goal deterministically generates its own mountain silhouette, route,
-  snow line, stars, and camp positions.
+- Each goal deterministically generates its own mountain silhouette, layered
+  background ridges, route, snow line, stars, and camp positions.
 - Goal is the natural summit marker; the prototype deliberately avoids an
   artificial castle on the peak.
 - Milestones are clickable camps/checkpoints.
@@ -104,18 +104,23 @@ Current prototype:
   square-root softening keeps unusually large milestones readable.
 - Character position follows live structural goal progress.
 - Character movement and sprite animation are separate layers:
-  `MovingCharacter` uses Framer Motion while `AnimalSprite` only advances PNG
-  frames with `background-position` and `steps()`.
+  `MovingCharacter` uses native SVG coordinates and `animateTransform` while
+  `AnimalSprite` advances PNG-sprite frames through an SVG viewport. No
+  `foreignObject` is used, so the static SVG transform is always present,
+  including the first frame and reduced-motion mode.
 - The first avatar is a reusable seven-frame PNG sprite sheet at
   `public/animals/bat.png`; no animal pixels or animation frames are stored as
-  DOM nodes, data URIs, or `box-shadow` values.
+  DOM nodes, data URIs, or `box-shadow` values. A semantic
+  `--tn-viz-character-outline` supplies theme-aware contrast.
 - Platform-neutral animal configs and route waypoints live under `src/lib`, so
   a future Expo adapter can reuse the same assets and movement rules with
   React Native Reanimated.
 - Core geometry is theme-agnostic. The web renderer consumes semantic
   `--tn-viz-*` tokens with automatic fallbacks to the active TaskNest theme;
   themes can override the environment palette without changing routes,
-  milestones, progress, or animal assets.
+  milestones, progress, or animal assets. The same tokens choose a daytime
+  sun or a night crescent, so the scene follows the selected theme rather than
+  the operating system colour scheme.
 - Responsive checkpoint cards keep the route usable when SVG labels are too
   small on mobile.
 

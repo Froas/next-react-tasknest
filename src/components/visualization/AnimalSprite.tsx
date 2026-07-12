@@ -1,12 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
  AnimalId,
  getAnimalConfig,
  JourneyAnimationState,
 } from '@/lib/journeyAnimals';
-import styles from './AnimalSprite.module.css';
 
 interface AnimalSpriteProps {
  animalId: AnimalId;
@@ -23,32 +22,57 @@ export const AnimalSprite: React.FC<AnimalSpriteProps> = ({
 }) => {
  const animal = getAnimalConfig(animalId);
  const animation = animal.animations[state];
- const startX = animation.frameStart * animal.frameWidth;
- const endX = (animation.frameStart + animation.frameCount) * animal.frameWidth;
- const rowY = animation.row * animal.frameHeight;
+ const direction = (facingLeft ? -1 : 1) * (animal.mirrorX ? -1 : 1);
+ const [frame, setFrame] = useState(animation.frameStart);
+
+ useEffect(() => {
+ setFrame(animation.frameStart);
+ if (reducedMotion) return;
+
+ const frameDuration = (animation.durationSeconds * 1000) / animation.frameCount;
+ const timer = window.setInterval(() => {
+ setFrame((currentFrame) => {
+ const nextFrame = currentFrame + 1;
+ return nextFrame >= animation.frameStart + animation.frameCount
+ ? animation.frameStart
+ : nextFrame;
+ });
+ }, frameDuration);
+
+ return () => window.clearInterval(timer);
+ }, [animation.durationSeconds, animation.frameCount, animation.frameStart, reducedMotion]);
+
+ const viewBoxX = frame * animal.frameWidth;
+ const viewBoxY = animation.row * animal.frameHeight;
+ const scaleX = direction * animal.scaleX * animal.scale;
+ const scaleY = animal.scaleY * animal.scale;
 
  return (
- <span
+ <g
  role="img"
  aria-label={`${animal.name} ${state}`}
- className={`${styles.sprite} ${reducedMotion ? styles.reducedMotion : ''}`}
+ transform={`translate(${animal.offsetX} ${animal.offsetY}) scale(${scaleX} ${scaleY})`}
  style={{
- '--sprite-url': `url("/${animal.assetPath}")`,
- '--frame-width': `${animal.frameWidth}px`,
- '--frame-height': `${animal.frameHeight}px`,
- '--sheet-width': `${animal.frameWidth * animal.sheetColumns}px`,
- '--sheet-height': `${animal.frameHeight * animal.sheetRows}px`,
- '--frame-count': animation.frameCount,
- '--animation-speed': `${animation.durationSeconds}s`,
- '--sprite-start-x': `${-startX}px`,
- '--sprite-end-x': `${-endX}px`,
- '--sprite-row-y': `${-rowY}px`,
- '--sprite-scale': animal.scale,
- '--sprite-scale-x': facingLeft ? -animal.scaleX : animal.scaleX,
- '--sprite-scale-y': animal.scaleY,
- '--sprite-offset-x': `${animal.offsetX}px`,
- '--sprite-offset-y': `${animal.offsetY}px`,
- } as React.CSSProperties}
+ filter: 'drop-shadow(1px 0 0 var(--viz-character-outline, white)) drop-shadow(-1px 0 0 var(--viz-character-outline, white)) drop-shadow(0 1px 0 var(--viz-character-outline, white)) drop-shadow(0 -1px 0 var(--viz-character-outline, white)) drop-shadow(0 7px 7px rgba(0, 0, 0, 0.28))',
+ }}
+ >
+ <svg
+ x={-animal.frameWidth / 2}
+ y={-animal.frameHeight / 2}
+ width={animal.frameWidth}
+ height={animal.frameHeight}
+ viewBox={`${viewBoxX} ${viewBoxY} ${animal.frameWidth} ${animal.frameHeight}`}
+ overflow="hidden"
+ aria-hidden="true"
+ >
+ <image
+ href={`/${animal.assetPath}`}
+ width={animal.frameWidth * animal.sheetColumns}
+ height={animal.frameHeight * animal.sheetRows}
+ preserveAspectRatio="none"
+ style={{ imageRendering: 'pixelated' }}
  />
+ </svg>
+ </g>
  );
 };

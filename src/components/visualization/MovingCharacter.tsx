@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { motion, useAnimationControls, useReducedMotion } from 'framer-motion';
+import { useReducedMotion } from 'framer-motion';
 import { AnimalId, getAnimalConfig, JourneyAnimationState } from '@/lib/journeyAnimals';
 import { buildJourneyWaypoints, journeyDurationSeconds, JourneyCoordinate } from '@/lib/journeyMotion';
 import { AnimalSprite } from './AnimalSprite';
@@ -14,6 +14,12 @@ interface MovingCharacterProps {
  animalId: AnimalId;
 }
 
+interface CharacterMotion {
+ key: string;
+ values: string;
+ duration: number;
+}
+
 export const MovingCharacter: React.FC<MovingCharacterProps> = ({
  point,
  startPoint,
@@ -21,7 +27,6 @@ export const MovingCharacter: React.FC<MovingCharacterProps> = ({
  forceReducedMotion = false,
  animalId,
 }) => {
- const controls = useAnimationControls();
  const systemReducedMotion = useReducedMotion();
  const reducedMotion = forceReducedMotion || Boolean(systemReducedMotion);
  const previousPoint = useRef(startPoint);
@@ -29,10 +34,10 @@ export const MovingCharacter: React.FC<MovingCharacterProps> = ({
  const mounted = useRef(false);
  const [state, setState] = useState<JourneyAnimationState>('idle');
  const [facingLeft, setFacingLeft] = useState(false);
+ const [characterMotion, setCharacterMotion] = useState<CharacterMotion | null>(null);
  const animal = getAnimalConfig(animalId);
 
  useEffect(() => {
- let cancelled = false;
  const replaying = previousReplay.current !== replayKey;
  const from = replaying ? startPoint : previousPoint.current;
  const to = point;
@@ -43,43 +48,48 @@ export const MovingCharacter: React.FC<MovingCharacterProps> = ({
 
  if (!mounted.current || reducedMotion || stationary) {
  mounted.current = true;
- controls.set({ x: to.x, y: to.y });
+ setCharacterMotion(null);
  setState('idle');
  return;
  }
 
  const waypoints = buildJourneyWaypoints(from, to, animal.movementType);
  const duration = journeyDurationSeconds(from, to, animal.movementType, replaying);
- setState('moving');
- void controls.start({
- x: waypoints.map((waypoint) => waypoint.x),
- y: waypoints.map((waypoint) => waypoint.y),
- transition: {
+ setCharacterMotion({
+ key: `${replayKey}:${from.x}:${from.y}:${to.x}:${to.y}`,
+ values: waypoints.map((waypoint) => `${waypoint.x - to.x} ${waypoint.y - to.y}`).join(';'),
  duration,
- ease: 'easeInOut',
- times: waypoints.map((_, index) => index / (waypoints.length - 1)),
- },
- }).then(() => {
- if (!cancelled) setState('arrived');
  });
+ setState('moving');
+ const arrivalTimer = window.setTimeout(() => {
+ setCharacterMotion(null);
+ setState('arrived');
+ }, duration * 1000);
 
  return () => {
- cancelled = true;
- controls.stop();
+ window.clearTimeout(arrivalTimer);
  };
- }, [animal.movementType, controls, point.x, point.y, reducedMotion, replayKey, startPoint]);
+ }, [animal.movementType, point.x, point.y, reducedMotion, replayKey, startPoint]);
 
  return (
- <motion.g
- initial={{ x: point.x, y: point.y }}
- animate={controls}
+ <g
+ transform={`translate(${point.x} ${point.y})`}
  aria-label={`${animal.name} ${state === 'moving' ? 'moving toward current progress' : 'at current progress'}`}
  >
- <foreignObject x={-48} y={-48} width={96} height={96} pointerEvents="none">
- <div style={{ display: 'grid', width: 96, height: 96, placeItems: 'center' }}>
+ <g>
+ {characterMotion && (
+ <animateTransform
+ key={characterMotion.key}
+ attributeName="transform"
+ type="translate"
+ values={characterMotion.values}
+ dur={`${characterMotion.duration}s`}
+ begin="0s"
+ fill="freeze"
+ />
+ )}
  <AnimalSprite animalId={animalId} state={state} facingLeft={facingLeft} reducedMotion={reducedMotion} />
- </div>
- </foreignObject>
- </motion.g>
+ </g>
+ </g>
  );
 };

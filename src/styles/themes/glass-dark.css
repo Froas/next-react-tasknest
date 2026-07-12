@@ -55,6 +55,21 @@
   --tn-tag-read-bg:  rgba(182,255,95,.18);  --tn-tag-read-fg:  #b6ff5f;
   --tn-tag-life-bg:  rgba(157,109,255,.18); --tn-tag-life-fg:  #9d6dff;
   --tn-tag-work-bg:  rgba(255,193,95,.20);  --tn-tag-work-fg:  #ffc15f;
+
+  /* Mountain journey — glass night */
+  --tn-viz-sky-top: #100a25;
+  --tn-viz-sky-bottom: #251644;
+  --tn-viz-mountain-far: #30274c;
+  --tn-viz-mountain-main: #474064;
+  --tn-viz-mountain-outline: #b9b2d0;
+  --tn-viz-snow: #eeeaff;
+  --tn-viz-ground: #211738;
+  --tn-viz-star: #f3edff;
+  --tn-viz-route: rgba(233,224,255,.42);
+  --tn-viz-sun-display: none;
+  --tn-viz-moon-display: block;
+  --tn-viz-moon: #f0edff;
+  --tn-viz-moon-shadow: #100a25;
 }
 
 /* Ambient orbs in the background */

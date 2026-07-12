@@ -59,6 +59,30 @@
   --tn-tag-read-bg:  #0a0a0a; --tn-tag-read-fg:  #ffffff;
   --tn-tag-life-bg:  #0a0a0a; --tn-tag-life-fg:  #ffffff;
   --tn-tag-work-bg:  #0a0a0a; --tn-tag-work-fg:  #ffffff;
+
+  /* Mountain journey — monochrome night */
+  --tn-viz-sky-top: #090909;
+  --tn-viz-sky-bottom: #292929;
+  --tn-viz-mountain-far: #474747;
+  --tn-viz-mountain-main: #737373;
+  --tn-viz-mountain-outline: #f5f5f5;
+  --tn-viz-snow: #e8e8e8;
+  --tn-viz-ground: #171717;
+  --tn-viz-star: #f5f5f5;
+  --tn-viz-route: rgba(255,255,255,.42);
+  --tn-viz-completed: #f5f5f5;
+  --tn-viz-current: #ffffff;
+  --tn-viz-available: #cfcfcf;
+  --tn-viz-locked: #777777;
+  --tn-viz-marker-surface: #111111;
+  --tn-viz-label: #f5f5f5;
+  --tn-viz-label-muted: #d4d4d4;
+  --tn-viz-label-halo: #111111;
+  --tn-viz-character-outline: #f5f5f5;
+  --tn-viz-sun-display: none;
+  --tn-viz-moon-display: block;
+  --tn-viz-moon: #f5f5f5;
+  --tn-viz-moon-shadow: #090909;
 }
 
 [data-theme="brutalist"] body { font-size: 13px; line-height: 1.4; letter-spacing: -0.01em; }

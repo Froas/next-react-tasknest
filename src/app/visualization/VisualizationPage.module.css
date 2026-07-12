@@ -75,6 +75,7 @@
  display: grid;
  gap: 7px;
  min-width: 0;
+ align-self: start;
 }
 
 .field > span {

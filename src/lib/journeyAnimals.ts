@@ -18,6 +18,7 @@ export interface AnimalConfig {
  sheetColumns: number;
  sheetRows: number;
  movementType: JourneyMovementType;
+ mirrorX: boolean;
  scale: number;
  scaleX: number;
  scaleY: number;
@@ -36,6 +37,7 @@ export const ANIMALS: Record<AnimalId, AnimalConfig> = {
  sheetColumns: 7,
  sheetRows: 1,
  movementType: 'flying',
+ mirrorX: true,
  scale: 1.08,
  scaleX: 1.2,
  scaleY: 0.9,

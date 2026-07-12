@@ -55,6 +55,21 @@
   --tn-tag-read-bg:  rgba(126,231,135,.14); --tn-tag-read-fg:  #7ee787;
   --tn-tag-life-bg:  rgba(210,168,255,.14); --tn-tag-life-fg:  #d2a8ff;
   --tn-tag-work-bg:  rgba(242,204,96,.14);  --tn-tag-work-fg:  #f2cc60;
+
+  /* Mountain journey — terminal night */
+  --tn-viz-sky-top: #071819;
+  --tn-viz-sky-bottom: #12332b;
+  --tn-viz-mountain-far: #263d3e;
+  --tn-viz-mountain-main: #3d5554;
+  --tn-viz-mountain-outline: #a5b7b4;
+  --tn-viz-snow: #dce7e4;
+  --tn-viz-ground: #173e2e;
+  --tn-viz-star: #d2ece4;
+  --tn-viz-route: rgba(210,236,228,.4);
+  --tn-viz-sun-display: none;
+  --tn-viz-moon-display: block;
+  --tn-viz-moon: #e8f2ef;
+  --tn-viz-moon-shadow: #071819;
 }
 
 [data-theme="terminal"] body { background: #0d1117; background-image:

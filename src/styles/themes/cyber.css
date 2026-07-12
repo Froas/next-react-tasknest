@@ -55,6 +55,21 @@
   --tn-tag-read-bg: rgba(0,255,200,.18); --tn-tag-read-fg: #00ffc8;
   --tn-tag-life-bg: rgba(180,0,255,.22); --tn-tag-life-fg: #d066ff;
   --tn-tag-work-bg: rgba(255,215,0,.18); --tn-tag-work-fg: #ffd700;
+
+  /* Mountain journey — neon night */
+  --tn-viz-sky-top: #10001f;
+  --tn-viz-sky-bottom: #24063a;
+  --tn-viz-mountain-far: #301149;
+  --tn-viz-mountain-main: #41205a;
+  --tn-viz-mountain-outline: #e5b8ff;
+  --tn-viz-snow: #ffe8fb;
+  --tn-viz-ground: #17102d;
+  --tn-viz-star: #f9ddff;
+  --tn-viz-route: rgba(229,184,255,.45);
+  --tn-viz-sun-display: none;
+  --tn-viz-moon-display: block;
+  --tn-viz-moon: #ffe8fb;
+  --tn-viz-moon-shadow: #10001f;
 }
 
 [data-theme="cyber"] body {

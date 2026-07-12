@@ -47,13 +47,23 @@ export const MountainProgressMap: React.FC<MountainProgressMapProps> = ({
  <feGaussianBlur stdDeviation="5" result="blur" />
  <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
  </filter>
+ <clipPath id={`mountain-clip-${data.seed}`}>
+ <path d={data.mountainPath} />
+ </clipPath>
  </defs>
 
  {data.stars.map((star, index) => <circle key={index} cx={star.x} cy={star.y} r={star.radius} fill="var(--viz-star)" opacity={star.opacity} />)}
+ <g className={styles.sun} aria-hidden="true">
+ <circle cx="1010" cy="105" r="48" fill="var(--viz-sun)" />
+ </g>
+ <g className={styles.moon} aria-hidden="true">
  <circle cx="1010" cy="105" r="48" fill="var(--viz-moon)" />
+ <circle cx="990" cy="87" r="43" fill="var(--viz-moon-shadow)" />
+ </g>
+ <path d={data.distantMountainPath} fill="var(--viz-mountain-distant)" />
  <path d={data.farMountainPath} fill="var(--viz-mountain-far)" />
  <path d={data.mountainPath} fill="var(--viz-mountain-main)" stroke="var(--viz-mountain-outline)" strokeWidth="4" strokeLinejoin="round" />
- <path d={data.snowPath} fill="var(--viz-snow)" />
+ <path d={data.snowPath} fill="var(--viz-snow)" clipPath={`url(#mountain-clip-${data.seed})`} />
  <path d="M0 657 C210 624 410 686 630 650 C850 617 1030 670 1200 638 V720 H0 Z" fill="var(--viz-ground)" />
 
  <path d={data.routePath} className={styles.route} />
@@ -110,7 +120,7 @@ export const MountainProgressMap: React.FC<MountainProgressMapProps> = ({
  </div>
  <div className="text-right text-xs text-muted-foreground">
  <strong className="block text-sm text-foreground">Character prototype</strong>
- PNG sprite animation · Framer Motion position
+ PNG sprite animation · SVG position
  </div>
  </div>
  <nav className={styles.campStrip} aria-label="Journey checkpoints">
