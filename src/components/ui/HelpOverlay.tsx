@@ -9,6 +9,7 @@ const SHORTCUTS = [
  { keys: ['n'], label: 'Go to goals (create new)' },
  { keys: ['?'], label: 'Show this cheat sheet' },
  { keys: ['g', 'g'], label: 'Go to Dashboard' },
+ { keys: ['g', 'y'], label: 'Go to Today' },
  { keys: ['g', 'l'], label: 'Go to Goals' },
  { keys: ['g', 'm'], label: 'Go to Milestones' },
  { keys: ['g', 't'], label: 'Go to Tasks' },

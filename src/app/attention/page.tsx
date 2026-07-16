@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { AlertCircle, CalendarClock, Clock, Clock4 } from 'lucide-react';
 import { withAuth } from '@/hoc/withAuth';
 import { useStore } from '@/store/useStore';
 import { useShallow } from 'zustand/react/shallow';
 import { StatusType } from '@/lib/types';
-import { buildCalendarItems, calendarItemHref, parseCalendarDate, type CalendarItem } from '@/lib/calendarItems';
+import { buildCalendarItems, calendarDateKey, calendarItemHref, parseCalendarDate, type CalendarItem } from '@/lib/calendarItems';
 import { eventsApi, milestonesApi, subtasksApi, tasksApi, todosApi } from '@/lib/api';
 import { toast } from '@/store/useToast';
 
@@ -26,11 +26,36 @@ const startOfDay = (date: Date) => {
  return value;
 };
 
+const attentionItemKey = (item: CalendarItem) => `${item.itemType}:${item.id}`;
+
+const snoozedDate = (days: number) => {
+ const next = startOfDay(new Date());
+ next.setDate(next.getDate() + days);
+ return calendarDateKey(next);
+};
+
+const runWithConcurrency = async <T,>(
+ items: T[],
+ limit: number,
+ worker: (item: T) => Promise<void>,
+) => {
+ let nextIndex = 0;
+ const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+ while (nextIndex < items.length) {
+ const item = items[nextIndex];
+ nextIndex += 1;
+ await worker(item);
+ }
+ });
+ await Promise.all(runners);
+};
+
 const AttentionPage: React.FC = () => {
  const goals = useStore((state) => state.goals);
  const tasks = useStore((state) => state.tasks);
  const todos = useStore((state) => state.todos);
  const events = useStore((state) => state.events);
+ const [optimisticDates, setOptimisticDates] = useState<Record<string, string>>({});
  const { updateTaskInGoals, updateTodoInGoals, updateSubtaskInGoals, updateMilestoneInGoals, updateEvent } = useStore(
  useShallow((state) => ({
  updateTaskInGoals: state.updateTaskInGoals,
@@ -57,6 +82,10 @@ const AttentionPage: React.FC = () => {
  };
 
  const all = buildCalendarItems(goals, tasks, todos, events)
+ .map((item) => {
+ const optimisticDate = optimisticDates[attentionItemKey(item)];
+ return optimisticDate ? { ...item, due_date: optimisticDate } : item;
+ })
  .filter((item) => item.status !== StatusType.FINISHED && item.status !== StatusType.CANCELLED);
  const overdue: CalendarItem[] = [];
  const dueToday: CalendarItem[] = [];
@@ -90,15 +119,19 @@ const AttentionPage: React.FC = () => {
  overdueCount: overdue.length,
  dueTodayCount: dueToday.length,
  };
- }, [events, goals, tasks, todos]);
+ }, [events, goals, optimisticDates, tasks, todos]);
 
- const snooze = async (item: CalendarItem, days: number) => {
- const next = startOfDay(new Date());
- next.setDate(next.getDate() + days);
- const date = next.toISOString().slice(0, 10);
+ const snooze = async (item: CalendarItem, days: number, notify = true): Promise<boolean> => {
+ const date = snoozedDate(days);
  try {
  switch (item.itemType) {
- case 'Task': updateTaskInGoals(await tasksApi.update({ id: item.id, due_date: date })); break;
+ case 'Task': {
+ const dateUpdate = item.dateSource === 'scheduled_date'
+ ? { scheduled_date: date }
+ : { due_date: date };
+ updateTaskInGoals(await tasksApi.update({ id: item.id, ...dateUpdate }));
+ break;
+ }
  case 'Todo': updateTodoInGoals(await todosApi.update({ id: item.id, due_date: date })); break;
  case 'Subtask': updateSubtaskInGoals(await subtasksApi.update({ id: item.id, due_date: date })); break;
  case 'Milestone': updateMilestoneInGoals(await milestonesApi.update({ id: item.id, due_date: date })); break;
@@ -108,13 +141,44 @@ const AttentionPage: React.FC = () => {
  updateEvent(await eventsApi.update({ id: item.id, start_datetime: start.toISOString() }));
  break;
  }
- default: return;
+ default: return false;
  }
- toast.success(`Snoozed for ${days === 1 ? 'a day' : `${days} days`}`);
+ if (notify) toast.success(`Snoozed for ${days === 1 ? 'a day' : `${days} days`}`);
+ return true;
  } catch (error) {
  console.error('Failed to snooze attention item:', error);
- toast.error('Failed to snooze item');
+ if (notify) toast.error('Failed to snooze item');
+ return false;
  }
+ };
+
+ const snoozeAll = async (itemsToSnooze: CalendarItem[], days: 1 | 7) => {
+ const date = snoozedDate(days);
+ const keys = itemsToSnooze.map(attentionItemKey);
+ setOptimisticDates((current) => {
+ const next = { ...current };
+ keys.forEach((key) => { next[key] = date; });
+ return next;
+ });
+
+ let succeeded = 0;
+ try {
+ await runWithConcurrency(itemsToSnooze, 8, async (item) => {
+ if (await snooze(item, days, false)) succeeded += 1;
+ });
+ } finally {
+ setOptimisticDates((current) => {
+ const next = { ...current };
+ keys.forEach((key) => { delete next[key]; });
+ return next;
+ });
+ }
+
+ const failed = itemsToSnooze.length - succeeded;
+ if (succeeded > 0) {
+ toast.success(`Snoozed ${succeeded} item${succeeded === 1 ? '' : 's'} for ${days === 1 ? 'a day' : '7 days'}`);
+ }
+ if (failed > 0) toast.error(`Failed to snooze ${failed} item${failed === 1 ? '' : 's'}`);
  };
 
  return (
@@ -147,9 +211,9 @@ const AttentionPage: React.FC = () => {
  </p>
  </div>
  </div>
- <AttentionBucket title="Overdue" icon={<AlertCircle className="h-4 w-4" />} tone="overdue" items={group.overdue} onSnooze={snooze} />
- <AttentionBucket title="Due today" icon={<Clock className="h-4 w-4" />} tone="today" items={group.dueToday} onSnooze={snooze} />
- <AttentionBucket title="This week" icon={<CalendarClock className="h-4 w-4" />} tone="upcoming" items={group.upcoming} onSnooze={snooze} />
+ <AttentionBucket title="Overdue" icon={<AlertCircle className="h-4 w-4" />} tone="overdue" items={group.overdue} onSnooze={snooze} onSnoozeAll={snoozeAll} />
+ <AttentionBucket title="Due today" icon={<Clock className="h-4 w-4" />} tone="today" items={group.dueToday} onSnooze={snooze} onSnoozeAll={snoozeAll} />
+ <AttentionBucket title="This week" icon={<CalendarClock className="h-4 w-4" />} tone="upcoming" items={group.upcoming} onSnooze={snooze} onSnoozeAll={snoozeAll} />
  </article>
  ))}
  </div>
@@ -165,14 +229,36 @@ const AttentionBucket: React.FC<{
  icon: React.ReactNode;
  tone: AttentionTone;
  items: CalendarItem[];
- onSnooze: (item: CalendarItem, days: number) => void;
-}> = ({ title, icon, tone, items, onSnooze }) => {
+ onSnooze: (item: CalendarItem, days: number, notify?: boolean) => Promise<boolean>;
+ onSnoozeAll: (items: CalendarItem[], days: 1 | 7) => Promise<void>;
+}> = ({ title, icon, tone, items, onSnooze, onSnoozeAll }) => {
+ const [bulkDays, setBulkDays] = useState<1 | 7 | null>(null);
  if (items.length === 0) return null;
  const color = tone === 'overdue' ? 'var(--tn-bad, #c25d63)' : tone === 'today' ? 'var(--tn-accent)' : 'var(--tn-fg-muted)';
+
+ const snoozeAll = async (days: 1 | 7) => {
+ setBulkDays(days);
+ try {
+ await onSnoozeAll(items, days);
+ } finally {
+ setBulkDays(null);
+ }
+ };
+
  return (
  <section className="mb-4 last:mb-0">
- <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider" style={{ color }}>
+ <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+ <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider" style={{ color }}>
  {icon}<span>{title}</span><span>({items.length})</span>
+ </div>
+ <div className="flex items-center gap-2">
+ <button type="button" onClick={() => void snoozeAll(1)} disabled={bulkDays !== null} className="btn btn-secondary !px-2 !py-1 text-xs disabled:opacity-50" title={`Snooze all ${items.length} items for one day`}>
+ {bulkDays === 1 ? 'Moving…' : 'All +1d'}
+ </button>
+ <button type="button" onClick={() => void snoozeAll(7)} disabled={bulkDays !== null} className="btn btn-secondary !px-2 !py-1 text-xs disabled:opacity-50" title={`Snooze all ${items.length} items for one week`}>
+ {bulkDays === 7 ? 'Moving…' : 'All +1w'}
+ </button>
+ </div>
  </div>
  <div className="space-y-2">
  {items.map((item) => (
@@ -181,8 +267,8 @@ const AttentionBucket: React.FC<{
  <span className="block truncate text-sm font-medium text-foreground">{item.title}</span>
  <span className="block truncate text-xs text-muted-foreground dark:text-muted-foreground">{[item.milestoneTitle, item.taskTitle, item.itemType].filter(Boolean).join(' · ')}</span>
  </Link>
- <button type="button" onClick={() => onSnooze(item, 1)} className="btn btn-secondary !px-2 !py-1 text-xs" title="Snooze one day"><Clock4 className="h-3.5 w-3.5" />+1d</button>
- <button type="button" onClick={() => onSnooze(item, 7)} className="btn btn-secondary !px-2 !py-1 text-xs" title="Snooze one week">+1w</button>
+ <button type="button" onClick={() => void onSnooze(item, 1)} disabled={bulkDays !== null} className="btn btn-secondary !px-2 !py-1 text-xs disabled:opacity-50" title="Snooze one day"><Clock4 className="h-3.5 w-3.5" />+1d</button>
+ <button type="button" onClick={() => void onSnooze(item, 7)} disabled={bulkDays !== null} className="btn btn-secondary !px-2 !py-1 text-xs disabled:opacity-50" title="Snooze one week">+1w</button>
  </div>
  ))}
  </div>

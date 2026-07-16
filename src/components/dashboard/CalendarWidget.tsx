@@ -144,15 +144,6 @@ export const CalendarWidget: React.FC = () => {
  }, [items, today]);
  const visibleAttentionItems = showAllAttentionItems ? todayAttentionItems : todayAttentionItems.slice(0, 5);
 
- const openToday = (event: React.MouseEvent<HTMLAnchorElement>) => {
- const target = document.getElementById('today-dashboard');
- if (!target) return;
- event.preventDefault();
- target.scrollIntoView({ behavior: 'smooth', block: 'start' });
- target.focus({ preventScroll: true });
- window.history.replaceState(null, '', '#today-dashboard');
- };
-
  return (
  <div
  style={{
@@ -386,8 +377,7 @@ export const CalendarWidget: React.FC = () => {
  )}
  {hasTodaySummary && (
  <Link
- href="/#today-dashboard"
- onClick={openToday}
+ href="/today"
  style={{
  display: 'block',
  marginBottom: 12,

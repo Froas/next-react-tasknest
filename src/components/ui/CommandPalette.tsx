@@ -59,6 +59,7 @@ export const CommandPalette: React.FC = () => {
 
  const allCommands: Command[] = useMemo(() => {
  const navigate: Command[] = [
+ { id: 'nav-today', label: 'Go to Today', group: 'Navigate', run: () => router.push('/today') },
  { id: 'nav-dashboard', label: 'Go to Dashboard', group: 'Navigate', run: () => router.push('/') },
  { id: 'nav-goals', label: 'Go to Goals', group: 'Navigate', run: () => router.push('/goal') },
  { id: 'nav-milestones', label: 'Go to Milestones', group: 'Navigate', run: () => router.push('/milestone') },

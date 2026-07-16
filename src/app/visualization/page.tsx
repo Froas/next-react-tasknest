@@ -97,12 +97,12 @@ const VisualizationPage: React.FC = () => {
  }, [selectedGoal]);
 
  return (
- <main className={styles.page}>
- <section className={styles.hero}>
+ <main className={`page ${styles.page}`}>
+ <section className={`page-head page-head-row ${styles.hero}`}>
  <div>
- <div className={styles.eyebrow}><Mountain size={16} /> Progress map</div>
- <h1>Journey map</h1>
- <p>One progress system, six visual journeys. Milestones and character progress stay intact when the environment changes.</p>
+ <div className={`page-eyebrow ${styles.heroEyebrow}`}><Mountain size={16} /> Progress map</div>
+ <h1 className="page-title">Journey map</h1>
+ <p className="page-lede">One progress system, six visual journeys. Milestones and character progress stay intact when the environment changes.</p>
  </div>
  <div className={styles.heroBadge}>
  <Sparkles size={18} />

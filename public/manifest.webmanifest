@@ -38,7 +38,7 @@
       "name": "Today",
       "short_name": "Today",
       "description": "Open today's routines and metrics",
-      "url": "/",
+      "url": "/today",
       "icons": [{ "src": "/icons/tasknest-192.png", "sizes": "192x192" }]
     },
     {

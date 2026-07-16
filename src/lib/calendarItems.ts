@@ -6,6 +6,7 @@ export interface CalendarItem {
  id: string;
  title: string;
  due_date: string;
+ dateSource?: 'due_date' | 'scheduled_date' | 'end_datetime' | 'start_datetime';
  end_date?: string;
  status: StatusType;
  itemType: CalendarItemType;
@@ -51,6 +52,7 @@ export const buildCalendarItems = (
  id: goal.id,
  title: goal.title,
  due_date: goal.end_datetime,
+ dateSource: 'end_datetime',
  status: goal.status,
  itemType: 'Goal',
  goalId: goal.id,
@@ -64,6 +66,7 @@ export const buildCalendarItems = (
  id: task.id,
  title: task.title,
  due_date: taskDate,
+ dateSource: task.scheduled_date ? 'scheduled_date' : 'due_date',
  end_date: task.end_datetime,
  status: task.status,
  itemType: 'Task',
@@ -79,6 +82,7 @@ export const buildCalendarItems = (
  id: todo.id,
  title: todo.title,
  due_date: todo.due_date,
+ dateSource: 'due_date',
  status: todo.status,
  itemType: 'Todo',
  goalId: goal.id,
@@ -95,6 +99,7 @@ export const buildCalendarItems = (
  id: subtask.id,
  title: subtask.title,
  due_date: subtask.due_date,
+ dateSource: 'due_date',
  status: subtask.status,
  itemType: 'Subtask',
  goalId: goal.id,
@@ -113,6 +118,7 @@ export const buildCalendarItems = (
  id: milestone.id,
  title: milestone.title,
  due_date: milestoneDue,
+ dateSource: milestone.due_date ? 'due_date' : 'end_datetime',
  end_date: milestone.end_datetime,
  status: milestone.status,
  itemType: 'Milestone',
@@ -129,6 +135,7 @@ export const buildCalendarItems = (
  id: task.id,
  title: task.title,
  due_date: taskDate,
+ dateSource: task.scheduled_date ? 'scheduled_date' : 'due_date',
  end_date: task.end_datetime,
  status: task.status,
  itemType: 'Task',
@@ -146,6 +153,7 @@ export const buildCalendarItems = (
  id: todo.id,
  title: todo.title,
  due_date: todo.due_date,
+ dateSource: 'due_date',
  status: todo.status,
  itemType: 'Todo',
  goalId: goal.id,
@@ -164,6 +172,7 @@ export const buildCalendarItems = (
  id: subtask.id,
  title: subtask.title,
  due_date: subtask.due_date,
+ dateSource: 'due_date',
  status: subtask.status,
  itemType: 'Subtask',
  goalId: goal.id,
@@ -186,6 +195,7 @@ export const buildCalendarItems = (
  id: task.id,
  title: task.title,
  due_date: taskDate,
+ dateSource: task.scheduled_date ? 'scheduled_date' : 'due_date',
  end_date: task.end_datetime,
  status: task.status,
  itemType: 'Task',
@@ -199,6 +209,7 @@ export const buildCalendarItems = (
  id: subtask.id,
  title: subtask.title,
  due_date: subtask.due_date,
+ dateSource: 'due_date',
  status: subtask.status,
  itemType: 'Subtask',
  taskId: task.id,
@@ -214,6 +225,7 @@ export const buildCalendarItems = (
  id: todo.id,
  title: todo.title,
  due_date: todo.due_date,
+ dateSource: 'due_date',
  status: todo.status,
  itemType: 'Todo',
  taskId: todo.task_id,
@@ -227,6 +239,7 @@ export const buildCalendarItems = (
  id: event.id,
  title: event.title,
  due_date: event.start_datetime,
+ dateSource: 'start_datetime',
  end_date: event.end_datetime,
  status: event.status,
  itemType: 'Event',

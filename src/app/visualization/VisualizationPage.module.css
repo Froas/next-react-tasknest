@@ -1,10 +1,7 @@
 .page {
  box-sizing: border-box;
  width: 100%;
- max-width: 1500px;
  min-width: 0;
- margin: 0 auto;
- padding: 46px 0 72px;
  color: var(--tn-fg);
 }
 
@@ -17,37 +14,12 @@
  justify-content: space-between;
  gap: 28px;
  align-items: end;
- padding-bottom: 28px;
- border-bottom: var(--tn-line);
 }
 
-.hero h1 {
- margin: 8px 0 10px;
- font-family: var(--tn-font-display);
- font-size: clamp(42px, 7vw, 92px);
- line-height: .92;
- letter-spacing: -.04em;
- overflow-wrap: anywhere;
-}
-
-.hero p {
- max-width: 780px;
- margin: 0;
- color: var(--tn-fg-muted);
- font-size: clamp(15px, 1.45vw, 20px);
- line-height: 1.6;
- overflow-wrap: anywhere;
-}
-
-.eyebrow {
+.heroEyebrow {
  display: inline-flex;
  align-items: center;
  gap: 8px;
- color: var(--tn-accent);
- font-size: 12px;
- font-weight: 800;
- letter-spacing: .15em;
- text-transform: uppercase;
 }
 
 .heroBadge {
@@ -225,9 +197,8 @@
 }
 
 @media (max-width: 760px) {
- .page { width: 100%; padding-top: 24px; }
+ .page { width: 100%; }
  .hero { display: block; }
- .hero h1 { font-size: clamp(38px, 14vw, 58px); }
  .heroBadge { margin-top: 18px; }
  .controls { grid-template-columns: 1fr; }
  .secondaryButton,

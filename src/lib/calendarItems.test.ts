@@ -85,6 +85,18 @@ describe('buildCalendarItems', () => {
  const taskCount = items.filter((i) => i.itemType === 'Task' && i.id === 't1').length;
  expect(taskCount).toBe(1);
  });
+
+ it('records scheduled_date as the effective task date source', () => {
+ const scheduledTask = {
+ ...goalWithEverything.milestones[0].tasks[0],
+ scheduled_date: '2026-05-08',
+ due_date: '2026-05-10',
+ };
+ const items = buildCalendarItems([], [scheduledTask], [], []);
+ const task = items.find((item) => item.itemType === 'Task' && item.id === 't1');
+ expect(task?.due_date).toBe('2026-05-08');
+ expect(task?.dateSource).toBe('scheduled_date');
+ });
 });
 
 describe('filterItemsByDate', () => {

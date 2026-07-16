@@ -30,6 +30,11 @@ test('web app manifest exposes installable icons and app shortcuts', async ({ pa
     ]),
   );
   expect(manifest.shortcuts).toHaveLength(3);
+  expect(manifest.shortcuts).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ name: 'Today', url: '/today' }),
+    ]),
+  );
 
   for (const icon of manifest.icons) {
     const iconResponse = await request.get(icon.src);
@@ -50,10 +55,10 @@ test('service worker installs and takes control without caching private pages', 
     .toBe(true);
 
   const cacheKeys = await page.evaluate(async () => caches.keys());
-  expect(cacheKeys).toContain('tasknest-pwa-v1-static');
+  expect(cacheKeys).toContain('tasknest-pwa-v2-static');
 
   const cachedUrls = await page.evaluate(async () => {
-    const cache = await caches.open('tasknest-pwa-v1-static');
+    const cache = await caches.open('tasknest-pwa-v2-static');
     return (await cache.keys()).map((request) => new URL(request.url).pathname);
   });
   expect(cachedUrls).toContain('/offline.html');

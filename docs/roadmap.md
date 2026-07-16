@@ -83,6 +83,41 @@ MVP behavior:
 
 ## Feature candidates
 
+### Metric history, statistics, and native health sync
+
+Purpose: turn persisted daily metric entries into useful trends and prepare the
+PWA codebase for health-data synchronization when it is packaged as a native
+mobile application.
+
+Status: planned. Daily `MetricEntry` values already persist by metric and date,
+but there is no range/history API or dedicated statistics UI yet.
+
+Statistics first:
+
+- Add a metric-history API with metric, goal/task, and date-range filters.
+- Add history tables and charts for daily, weekly, and monthly trends.
+- Support aggregation rules by metric: latest value for weight, daily sum for
+  steps, average/min/max where appropriate, and explicit manual overrides.
+- Allow reviewing and correcting past daily entries without losing other days.
+- Show useful summaries such as change, moving average, target progress, streak,
+  and missing-data days.
+
+Native health sync after the PWA-to-native packaging work:
+
+- Add read-only, opt-in Apple HealthKit synchronization on iOS and Health
+  Connect synchronization on Android; start with Weight and Steps.
+- Keep native permission handling and device reads in the mobile shell, then
+  send normalized entries through the existing FastAPI backend.
+- Extend imported metric records with source, external record ID, measurement
+  timestamp, timezone, and sync cursor so retries are idempotent and data is not
+  duplicated.
+- Define conflict rules between manual and imported values, including which
+  source wins and how a user can override or disconnect it.
+- Provide sync status, last-sync time, granular permissions, disconnect, and
+  deletion of imported data.
+- Prefer Health Connect / current Google Health APIs for new Android or cloud
+  integrations rather than building new work on the legacy Google Fit API.
+
 ### Journey visualization
 
 Purpose: turn goal progress into a visual journey without coupling goal data

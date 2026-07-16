@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 // n navigate to /goal (start a new goal flow)
 // ? broadcast `tasknest:show-help` (consumers can listen)
 // g + g go to dashboard
+// g + y go to Today
 // g + l go to goals
 // g + m go to milestones
 // g + t go to tasks
@@ -53,6 +54,7 @@ export const useKeyboardShortcuts = () => {
  if (gPrefixActiveRef.current) {
  const map: Record<string, string> = {
  g: '/',
+ y: '/today',
  l: '/goal',
  m: '/milestone',
  t: '/task',

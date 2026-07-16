@@ -28,6 +28,7 @@ const Header = () => {
  const isActive = (path: string) => pathname === path;
 
  const navItems = [
+ { href: '/today', label: 'Today' },
  { href: '/', label: 'Dashboard' },
  { href: '/goal', label: 'Goals' },
  { href: '/milestone', label: 'Milestones' },

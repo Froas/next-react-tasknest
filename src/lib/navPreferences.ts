@@ -5,6 +5,7 @@ import { AuthRequiredError, userPrefsApi, usersApi } from '@/lib/api';
 
 export type NavItemId =
  | 'today'
+ | 'dashboard'
  | 'goals'
  | 'milestones'
  | 'tasks'
@@ -30,7 +31,8 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
- { id: 'today', name: 'Today', href: '/' },
+ { id: 'today', name: 'Today', href: '/today' },
+ { id: 'dashboard', name: 'Dashboard', href: '/' },
  { id: 'goals', name: 'Goals', href: '/goal' },
  { id: 'milestones', name: 'Milestones', href: '/milestone' },
  { id: 'tasks', name: 'Tasks', href: '/task' },
@@ -58,7 +60,7 @@ export interface NavPreferences {
 
 export const DEFAULT_NAV_PREFERENCES: NavPreferences = {
  orderedIds: NAV_ITEMS.map((item) => item.id),
- primaryIds: ['today', 'goals', 'milestones', 'tasks', 'calendar'],
+ primaryIds: ['today', 'dashboard', 'goals', 'tasks', 'calendar'],
  hiddenIds: [],
 };
 
@@ -71,12 +73,31 @@ const isNavItemId = (value: unknown): value is NavItemId =>
 
 export const normalizeNavPreferences = (value: unknown): NavPreferences => {
  const raw = (value ?? {}) as Partial<NavPreferences>;
- const orderedIds = Array.isArray(raw.orderedIds)
+ const legacyTodayWasDashboard = Array.isArray(raw.orderedIds)
+ && raw.orderedIds.includes('today')
+ && !raw.orderedIds.includes('dashboard');
+ let orderedIds = Array.isArray(raw.orderedIds)
  ? raw.orderedIds.filter(isNavItemId)
  : [];
- const primaryIds = Array.isArray(raw.primaryIds)
+ let primaryIds = Array.isArray(raw.primaryIds)
  ? raw.primaryIds.filter(isNavItemId)
  : DEFAULT_NAV_PREFERENCES.primaryIds;
+ if (legacyTodayWasDashboard) {
+ const todayOrderIndex = orderedIds.indexOf('today');
+ orderedIds = [
+ ...orderedIds.slice(0, todayOrderIndex + 1),
+ 'dashboard',
+ ...orderedIds.slice(todayOrderIndex + 1),
+ ];
+ if (primaryIds.includes('today') && !primaryIds.includes('dashboard')) {
+ const todayPrimaryIndex = primaryIds.indexOf('today');
+ primaryIds = [
+ ...primaryIds.slice(0, todayPrimaryIndex + 1),
+ 'dashboard',
+ ...primaryIds.slice(todayPrimaryIndex + 1),
+ ];
+ }
+ }
  const hiddenIds = Array.isArray(raw.hiddenIds)
  ? raw.hiddenIds.filter(isNavItemId)
  : [];
