@@ -1,7 +1,9 @@
 import { CompletionRule, GoalItem as Goal, MilestoneItem as Milestone, TaskItem as Task, TodoItem as Todo, User, Event, Tag, SubtaskItem as Subtask } from './types';
 import type { ExportPayload } from './exportImport';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// Browser requests go through the same-origin Next.js rewrite. Besides
+// avoiding CORS, this also works for remote browsers connected via a tunnel.
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/backend';
 let memoryAccessToken: string | undefined;
 
 export const setApiAccessToken = (token?: string) => {

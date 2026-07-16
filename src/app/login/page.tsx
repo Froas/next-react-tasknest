@@ -34,11 +34,6 @@ const SignIn = () => {
  resolver: yupResolver(signInSchema),
  });
 
- const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
- if (event.key === 'Enter') {
- handleSubmit(onSubmit)();
- }
- };
  const onSubmit = async (data: SignInFormInputs) => {
  const result = await signIn("credentials", {
  redirect: false,
@@ -75,7 +70,7 @@ const SignIn = () => {
  </div>
  )}
  </div>
- <form onSubmit={handleSubmit(onSubmit)} className="auth-form">
+ <form method="post" onSubmit={handleSubmit(onSubmit)} className="auth-form">
  <div className="auth-field">
  <label className="auth-label" htmlFor="username">Username</label>
  <input className="auth-input" id="username" type="text" autoComplete="username" {...register("username")} placeholder="Enter your username" />
@@ -83,7 +78,7 @@ const SignIn = () => {
  </div>
  <div className="auth-field">
  <label className="auth-label" htmlFor="password">Password</label>
- <input className="auth-input" id="password" type="password" autoComplete="current-password" {...register("password")} placeholder="Enter your password" onKeyDown={handleKeyDown}/>
+ <input className="auth-input" id="password" type="password" autoComplete="current-password" {...register("password")} placeholder="Enter your password" />
  {errors.password && <p className="auth-error">{errors.password.message}</p>}
  </div>
  {errorMessage && <p className="auth-error">{errorMessage}</p>}

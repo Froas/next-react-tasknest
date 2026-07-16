@@ -21,7 +21,7 @@ const signUpSchema = yup.object().shape({
  password_hash: yup.string().min(6,"Password should be longer than 6 symbols").required("Password is required"),
 });
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/backend';
 
 const SignUp = () => {
  const router = useRouter();
@@ -93,7 +93,7 @@ const SignUp = () => {
  <div id="signup-title" className="auth-title" role="heading" aria-level={1}>
  Sign Up
  </div>
- <form onSubmit={handleSubmit(onSubmit)} className="auth-form">
+ <form method="post" onSubmit={handleSubmit(onSubmit)} className="auth-form">
  <div className="auth-field">
  <label className="auth-label" htmlFor="email">Email</label>
  <input className="auth-input" id="email" type="email" {...register("email")} placeholder="Enter your email" />

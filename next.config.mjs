@@ -11,6 +11,18 @@ const nextConfig = {
   // developer's active `next dev` process without corrupting either cache.
   distDir: process.env.NEXT_DIST_DIR || '.next',
   reactStrictMode: true,
+  async rewrites() {
+    // Keep browser API calls same-origin. This is especially important when
+    // the frontend is exposed through a tunnel: `localhost:8000` in browser
+    // code would otherwise point at the visitor's machine, not this server.
+    const apiUrl = (process.env.API_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
+    return [
+      {
+        source: '/backend/:path*',
+        destination: `${apiUrl}/:path*`,
+      },
+    ];
+  },
   async headers() {
     return [
       {

@@ -51,6 +51,7 @@ Create a `.env` file in the project root:
 NEXTAUTH_SECRET=
 ALGORITHM=
 NEXTAUTH_URL=
+API_URL=http://127.0.0.1:8000
 GOOGLE_CALENDAR_API_KEY=
 TELEGRAM_BOT_TOKEN=
 GOOGLE_CLIENT_ID=
@@ -59,6 +60,10 @@ REDIRECT_URL=
 ```
 
 > Replace placeholders with real credentials for your environment and integrations.
+
+The browser uses the same-origin `/backend` path, which Next.js proxies to
+`API_URL`. This means only the Next.js port needs to be exposed when using a
+tunnel. Set `NEXTAUTH_URL` to the tunnel's public HTTPS URL and restart Next.js.
 
 ---
 

@@ -4,7 +4,10 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import axios from "axios";
 
-const API_BASE_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// This runs on the Next.js server, so it can reach FastAPI directly. Do not
+// use NEXT_PUBLIC_API_URL here: its same-origin `/backend` value is intended
+// for browser code and is not an absolute URL on the server.
+const API_BASE_URL = process.env.API_URL || 'http://127.0.0.1:8000';
 const configuredSessionTtl = Number(process.env.NEXTAUTH_SESSION_TTL_SECONDS);
 const SESSION_TTL_SECONDS = Number.isFinite(configuredSessionTtl) && configuredSessionTtl > 0
  ? configuredSessionTtl
