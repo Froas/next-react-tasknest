@@ -13,6 +13,7 @@ import { usePersistentState } from '@/lib/usePersistentState';
 import { StatusType, PriorityType } from '@/lib/types';
 import { priorityWeight } from '@/lib/sort';
 import { useSession } from 'next-auth/react';
+import { useDashboardPreferences } from '@/lib/dashboardPreferences';
 
 const DashboardView = dynamic(() => import('@/components/dashboard/DashboardView').then(m => m.DashboardView));
 const GoalDetailView = dynamic(() => import('@/components/dashboard/GoalDetailView').then(m => m.GoalDetailView));
@@ -55,6 +56,13 @@ const Home = () => {
  // Delete States
  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
  const [isDeleting, setIsDeleting] = useState(false);
+ const {
+ preferences: dashboardPreferences,
+ setPreferences: setDashboardPreferences,
+ resetPreferences: resetDashboardPreferences,
+ mainWidgets,
+ sidebarWidgets,
+ } = useDashboardPreferences();
 
  // Store Integration — split into per-slice subscriptions so the page does
  // not re-render when unrelated slices (events, todos, etc.) change.
@@ -168,6 +176,7 @@ const Home = () => {
  priority: goalData.priority,
  start_datetime: goalData.start_datetime,
  end_datetime: goalData.end_datetime,
+ journey_theme_id: goalData.journey_theme_id ?? selectedGoal.journey_theme_id ?? 'mountain',
  });
  updateGoal({ ...selectedGoal, ...updatedGoal });
  setIsEditMode(false);
@@ -182,6 +191,7 @@ const Home = () => {
  priority: goalData.priority || PriorityType.HIGH,
  start_datetime: goalData.start_datetime,
  end_datetime: goalData.end_datetime,
+ journey_theme_id: goalData.journey_theme_id ?? 'mountain',
  });
  addGoal(newGoal);
  setIsCreatingGoal(false);
@@ -438,23 +448,12 @@ const Home = () => {
 
  return (
  <div className="min-h-screen flex flex-col font-sans" style={{ background: 'var(--tn-bg)', color: 'var(--tn-fg)' }}>
- <main className="flex-grow mx-auto w-full max-w-[1600px] px-4 py-5 sm:px-6 md:px-10 md:py-8 grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(320px,0.85fr)] gap-6">
+ <main className={`page flex-grow grid grid-cols-1 ${sidebarWidgets.length > 0 ? 'xl:grid-cols-[minmax(0,2fr)_minmax(320px,0.85fr)]' : ''} gap-6`}>
  <section className="min-w-0">
  {currentView === 'dashboard' ? (
  <DashboardView
- onSelectGoal={(goalId: string) => {
- const goal = goals.find((g: Goal) => g.id === goalId);
- if (goal) {
- handleGoalClick(goal);
- }
- }}
- onGoalUpdate={(updatedGoals: Goal[]) => {
- // This callback is not used in the current implementation
- // but we need to match the interface
- }}
  onCreateGoal={handleAddGoal}
- orderBy={orderBy}
- setOrderBy={setOrderBy}
+ widgets={mainWidgets}
  />
  ) : currentView === 'goal-detail' && selectedGoal ? (
  <GoalDetailView
@@ -474,17 +473,23 @@ const Home = () => {
  )}
  </section>
 
- <aside className="min-w-0 space-y-6">
- <CalendarWidget />
- <QuickActions
+ {sidebarWidgets.length > 0 && <aside className="grid min-w-0 self-start content-start grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-1">
+ {sidebarWidgets.map((widget) => (
+ <div
+ key={widget.id}
+ className={widget.size === 'compact' ? 'min-w-0 md:col-span-1 xl:col-span-1' : 'min-w-0 md:col-span-2 xl:col-span-1'}
+ >
+ {widget.id === 'calendar' ? <CalendarWidget /> : <QuickActions
  onAddGoal={handleAddGoal}
  onAddMilestone={() => handleQuickAction('milestone')}
  onAddTask={() => handleQuickAction('task')}
  onAddRoutine={() => handleQuickAction('routine')}
  onAddTodo={() => handleQuickAction('todo')}
  onAddSubtask={() => handleQuickAction('subtask')}
- />
- </aside>
+ />}
+ </div>
+ ))}
+ </aside>}
 
  {/* Selection Modals */}
  {isSelectingGoal && (

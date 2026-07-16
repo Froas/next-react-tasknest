@@ -1,10 +1,9 @@
 import React, { useState, type CSSProperties } from 'react';
 import { MilestoneItem as Milestone, StatusType } from '@/lib/types';
 import MilestoneCard from './MilestoneCard';
-import { milestonesApi } from '@/lib/api';
+import { goalsApi, milestonesApi } from '@/lib/api';
 import { useStore } from '@/store/useStore';
 import { toast } from '@/store/useToast';
-import { usePersistentState } from '@/lib/usePersistentState';
 import { Lock } from 'lucide-react';
 import { isMilestoneEffectivelyFinished, isMilestoneLocked } from '@/lib/milestoneGating';
 
@@ -42,11 +41,27 @@ const MilestonesTimeline: React.FC<MilestonesTimelineProps> = ({
  onQuickAddMilestone,
 }) => {
  const reorderMilestonesInGoal = useStore((s) => s.reorderMilestonesInGoal);
+ const goal = useStore((s) => s.goals.find((item) => item.id === goalId));
+ const updateGoal = useStore((s) => s.updateGoal);
  const [draggingId, setDraggingId] = useState<string | null>(null);
  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
  const [quickDraft, setQuickDraft] = useState('');
  const [quickBusy, setQuickBusy] = useState(false);
- const [enforceSequential, setEnforceSequential] = usePersistentState('milestones:enforceSequential', false);
+ const enforceSequential = goal?.enforce_sequential_milestones ?? false;
+
+ const toggleSequential = async () => {
+ if (!goal) return;
+ const next = !enforceSequential;
+ updateGoal({ ...goal, enforce_sequential_milestones: next });
+ try {
+ const updated = await goalsApi.update({ id: goalId, enforce_sequential_milestones: next });
+ updateGoal(updated);
+ } catch (error) {
+ updateGoal(goal);
+ console.error('Failed to save sequential milestone mode:', error);
+ toast.error('Failed to save milestone mode');
+ }
+ };
 
  const submitQuick = async (e: React.FormEvent) => {
  e.preventDefault();
@@ -139,7 +154,7 @@ const MilestonesTimeline: React.FC<MilestonesTimelineProps> = ({
  </div>
  <button
  type="button"
- onClick={() => setEnforceSequential((value) => !value)}
+ onClick={() => void toggleSequential()}
  className="btn btn-secondary w-fit text-xs"
  style={enforceSequential ? {
  borderColor: 'var(--tn-accent)',

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { GoalItem as Goal, MilestoneItem as Milestone, StatusType, PriorityType, TaskItem as Task, Event, TodoItem as Todo, SubtaskItem as Subtask } from '@/lib/types';
 import { MilestoneForm } from './MilestoneForm';
 import { TaskForm } from './TaskForm';
@@ -16,6 +17,9 @@ import GoalHeaderCard from './GoalHeaderCard';
 import MilestonesTimeline from './MilestonesTimeline';
 import { GoalMetricsPanel } from './GoalMetricsPanel';
 import { GoalCompletionRulePanel } from './GoalCompletionRulePanel';
+import { JourneyThemeSelector } from '@/components/visualization/JourneyThemeSelector';
+import { formatDate, stripMarkdown } from '@/lib/utils';
+import { STATUS_LABELS } from '@/lib/sort';
 
 interface GoalDetailViewProps {
  goal: Goal;
@@ -327,6 +331,12 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
 
  const progress = calculateGoalProgress(currentGoal);
  const progressLanes = calculateGoalProgressLanes(currentGoal);
+ const goalTasks = (currentGoal.tasks ?? []).filter(
+ (task) => (task.scope === 'goal' || !task.milestone_id) && task.kind !== 'routine',
+ );
+ const goalRoutines = (currentGoal.tasks ?? []).filter(
+ (task) => (task.scope === 'goal' || !task.milestone_id) && task.kind === 'routine',
+ );
 
  const handleAddMilestone = () => {
  setIsCreatingMilestone(true);
@@ -524,10 +534,25 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
 
  {/* Goal header */}
  <GoalHeaderCard goal={currentGoal} progress={progress} progressLanes={progressLanes} onUpdate={handleGoalInlineUpdate} />
+ <section
+ className="mb-8 rounded-3xl border p-4 sm:p-5"
+ style={{ border: 'var(--tn-line)', background: 'var(--tn-card)' }}
+ >
+ <JourneyThemeSelector
+ value={currentGoal.journey_theme_id ?? 'mountain'}
+ onChange={(journeyThemeId) => void handleGoalInlineUpdate({ journey_theme_id: journeyThemeId })}
+ compact
+ showLivePreview
+ />
+ </section>
  <GoalMetricsPanel goalId={currentGoal.id} />
  <GoalCompletionRulePanel goal={currentGoal} onSaved={updateGoal} />
+ <GoalTasksPanel
+ tasks={goalTasks}
+ onAddTask={() => openTaskForm('task', null)}
+ />
  <GoalRoutinesPanel
- routines={(currentGoal.tasks ?? []).filter((task) => task.scope === 'goal' && task.kind === 'routine')}
+ routines={goalRoutines}
  onAddRoutine={() => openTaskForm('routine', null)}
  onAddTodo={(taskId) => setSelectedRoutineTaskId(taskId)}
  />
@@ -567,6 +592,121 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  onCancel={() => !isDeleting && setShowDeleteGoalConfirm(false)}
  />
  </div>
+ );
+};
+
+const GoalTasksPanel: React.FC<{
+ tasks: Task[];
+ onAddTask: () => void;
+}> = ({ tasks, onAddTask }) => {
+ const completedTasks = tasks.filter((task) => task.status === StatusType.FINISHED).length;
+
+ return (
+ <section
+ className="mb-8 rounded-3xl border p-4 sm:p-5"
+ style={{
+ border: 'var(--tn-line)',
+ background: 'color-mix(in srgb, var(--tn-card) 92%, var(--tn-bg))',
+ boxShadow: 'var(--tn-shadow)',
+ }}
+ >
+ <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+ <div>
+ <div className="flex flex-wrap items-center gap-2">
+ <h2 className="text-xl font-semibold text-foreground">Goal Tasks</h2>
+ {tasks.length > 0 && (
+ <span
+ className="rounded-full px-2.5 py-1 text-xs font-medium"
+ style={{ background: 'var(--tn-hover)', color: 'var(--tn-fg-muted)' }}
+ >
+ {completedTasks}/{tasks.length} finished
+ </span>
+ )}
+ </div>
+ <p className="text-sm text-muted-foreground dark:text-muted-foreground">
+ One-off project work linked directly to this goal. These tasks contribute to Structural Progress.
+ </p>
+ </div>
+ <button type="button" onClick={onAddTask} className="btn btn-primary w-full justify-center sm:w-auto">
+ + Goal Task
+ </button>
+ </div>
+
+ {tasks.length === 0 ? (
+ <div
+ className="rounded-2xl border p-4 text-sm"
+ style={{ border: 'var(--tn-line)', background: 'var(--tn-card)', color: 'var(--tn-fg-muted)' }}
+ >
+ No goal-level project tasks yet. Milestone tasks remain in the timeline below.
+ </div>
+ ) : (
+ <div className="grid gap-3 lg:grid-cols-2">
+ {tasks.map((task) => {
+ const subtasks = task.subtasks ?? [];
+ const completedSubtasks = subtasks.filter((subtask) => subtask.status === StatusType.FINISHED).length;
+ const completedStructuralItems = (task.status === StatusType.FINISHED ? 1 : 0) + completedSubtasks;
+ const totalStructuralItems = 1 + subtasks.length;
+ const structuralProgress = Math.round((completedStructuralItems / totalStructuralItems) * 100);
+ const isFinished = task.status === StatusType.FINISHED;
+
+ return (
+ <Link
+ key={task.id}
+ href={`/task/${task.id}`}
+ className="group rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2"
+ style={{
+ border: 'var(--tn-line)',
+ background: 'var(--tn-card)',
+ '--tw-ring-color': 'var(--tn-accent)',
+ } as React.CSSProperties}
+ >
+ <div className="mb-3 flex items-start justify-between gap-3">
+ <div className="min-w-0">
+ <h3 className={`truncate text-base font-semibold ${isFinished ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+ {task.title}
+ </h3>
+ {task.description && (
+ <p className="mt-1 line-clamp-2 text-sm text-muted-foreground dark:text-muted-foreground">
+ {stripMarkdown(task.description)}
+ </p>
+ )}
+ </div>
+ <span
+ className="shrink-0 rounded-full px-2 py-1 text-xs font-medium"
+ style={{
+ background: isFinished
+ ? 'color-mix(in srgb, var(--tn-good, #2f7d50) 14%, var(--tn-card))'
+ : 'var(--tn-hover)',
+ color: isFinished ? 'var(--tn-good, #2f7d50)' : 'var(--tn-fg-muted)',
+ }}
+ >
+ {STATUS_LABELS[task.status]}
+ </span>
+ </div>
+
+ <div className="mb-2 flex items-center justify-between gap-3 text-xs">
+ <span className="font-medium text-foreground">Structural</span>
+ <span className="text-muted-foreground dark:text-muted-foreground">{structuralProgress}%</span>
+ </div>
+ <div className="mb-3 h-2 overflow-hidden rounded-full" style={{ background: 'var(--tn-hover)' }}>
+ <div
+ className="h-full rounded-full transition-[width]"
+ style={{ width: `${structuralProgress}%`, background: 'var(--tn-accent)' }}
+ />
+ </div>
+
+ <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground dark:text-muted-foreground">
+ <span>{task.kind === 'challenge' ? 'Challenge' : 'Project task'}</span>
+ <span>{completedSubtasks}/{subtasks.length} subtasks</span>
+ {task.due_date && <span>Due {formatDate(task.due_date)}</span>}
+ <span className="ml-auto font-medium transition-colors group-hover:text-foreground">Open task →</span>
+ </div>
+ </Link>
+ );
+ })}
+ </div>
+ )}
+ </section>
  );
 };
 

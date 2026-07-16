@@ -1,31 +1,44 @@
 'use client';
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { userPrefsApi } from '@/lib/api';
 
 interface PinnedGoalsStore {
  pinned: string[];
  toggle: (goalId: string) => void;
  isPinned: (goalId: string) => boolean;
  clear: () => void;
+ hydrate: (goalIds: string[]) => void;
 }
 
-// Local"favourites" /"pinned" set for goals. Stored in localStorage so it
-// survives reloads. Order is the insertion order — the most recently pinned
-// goal lands at the bottom.
+const readLegacyPinned = (): string[] => {
+ if (typeof window === 'undefined') return [];
+ try {
+ const value = JSON.parse(window.localStorage.getItem('tasknest:pinned-goals') || 'null');
+ return Array.isArray(value?.state?.pinned) ? value.state.pinned : [];
+ } catch { return []; }
+};
+
 export const usePinnedGoals = create<PinnedGoalsStore>()(
- persist(
  (set, get) => ({
- pinned: [],
- toggle: (goalId) =>
- set((state) =>
- state.pinned.includes(goalId)
- ? { pinned: state.pinned.filter((id) => id !== goalId) }
- : { pinned: [...state.pinned, goalId] }
- ),
- isPinned: (goalId) => get().pinned.includes(goalId),
- clear: () => set({ pinned: [] }),
+ pinned: readLegacyPinned(),
+ toggle: (goalId) => set((state) => {
+ const previous = state.pinned;
+ const pinned = previous.includes(goalId)
+ ? previous.filter((id) => id !== goalId)
+ : [...previous, goalId];
+ void userPrefsApi.updateMe({ pinned_goal_ids: pinned }).catch(() => set({ pinned: previous }));
+ return { pinned };
  }),
- { name: 'tasknest:pinned-goals' }
- )
+ isPinned: (goalId) => get().pinned.includes(goalId),
+ clear: () => set((state) => {
+ const previous = state.pinned;
+ void userPrefsApi.updateMe({ pinned_goal_ids: [] }).catch(() => set({ pinned: previous }));
+ return { pinned: [] };
+ }),
+ hydrate: (pinned) => {
+ set({ pinned });
+ try { window.localStorage.removeItem('tasknest:pinned-goals'); } catch { /* ignore */ }
+ },
+ })
 );

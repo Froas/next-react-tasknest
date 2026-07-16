@@ -14,7 +14,9 @@ interface ProgressCount {
  completed: number;
 }
 
-const isFinished = (status: StatusType) => status === StatusType.FINISHED;
+const isFinished = (status: StatusType) => (
+ status === StatusType.FINISHED || status === StatusType.CLOSED
+);
 
 const isStructuralTask = (task: Task) => task.kind !== 'routine';
 
@@ -128,26 +130,29 @@ const consistencyLaneFromRule = (entity: Goal | Milestone | Task, rule: Completi
 // This intentionally ignores TodoDefinitions: recurring todos are daily
 // consistency facts through TodoOccurrence, not one-off structural work.
 export const calculateStructuralMilestoneProgress = (milestone: Milestone): number => {
+ if (isFinished(milestone.status)) return 100;
  const taskCount = countTasksStructure(milestone.tasks || []);
- if (taskCount.total === 0) return isFinished(milestone.status) ? 100 : 0;
+ if (taskCount.total === 0) return 0;
  return (taskCount.completed / taskCount.total) * 100;
 };
 
 export const calculateStructuralTaskProgress = (task: Task): number => {
+ if (isFinished(task.status)) return 100;
  const subtasks = task.subtasks || [];
- if (subtasks.length === 0) return isFinished(task.status) ? 100 : 0;
+ if (subtasks.length === 0) return 0;
  return (subtasks.filter((subtask) => isFinished(subtask.status)).length / subtasks.length) * 100;
 };
 
 // Structural progress for a goal. Milestones count as milestone-progress lanes;
 // goal-scope project/challenge tasks count as structural task units.
 export const calculateStructuralGoalProgress = (goal: Goal): number => {
+ if (isFinished(goal.status)) return 100;
  const milestones = goal.milestones || [];
  const goalTaskCount = countTasksStructure(goal.tasks || []);
  const milestoneProgress = milestones.reduce((acc, milestone) => acc + (calculateStructuralMilestoneProgress(milestone) / 100), 0);
  const totalWeight = milestones.length + goalTaskCount.total;
  const completedWeight = milestoneProgress + goalTaskCount.completed;
- if (totalWeight === 0) return isFinished(goal.status) ? 100 : 0;
+ if (totalWeight === 0) return 0;
  return (completedWeight / totalWeight) * 100;
 };
 

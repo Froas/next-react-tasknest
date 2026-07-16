@@ -2,6 +2,11 @@ import { CompletionRule, GoalItem as Goal, MilestoneItem as Milestone, TaskItem 
 import type { ExportPayload } from './exportImport';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+let memoryAccessToken: string | undefined;
+
+export const setApiAccessToken = (token?: string) => {
+ memoryAccessToken = token;
+};
 
 // Function to handle session expiration.
 // Throttled so a wave of 401s from concurrent requests doesn't spam
@@ -13,9 +18,6 @@ const handleSessionExpiration = () => {
  const now = Date.now();
  if (now - _expirationHandledAt < 3000) return; // throttle: 3s
  _expirationHandledAt = now;
-
- // Clear localStorage regardless.
- try { localStorage.removeItem('access_token'); } catch { /* ignore */ }
 
  const onAuthPage =
  window.location.pathname === '/login' ||
@@ -38,9 +40,15 @@ const handleSessionExpiration = () => {
 // can no-op gracefully. Throwing here used to bubble an uncaught Error to
 // React's dev overlay (the giant dark "Error: ..." block in the middle of
 // the page) every time the user lacked a token.
-const getAuthHeaders = (): { Authorization: string; 'Content-Type': string } | null => {
+const getAuthHeaders = async (): Promise<{ Authorization: string; 'Content-Type': string } | null> => {
  if (typeof window === 'undefined') return null;
- const token = localStorage.getItem('access_token');
+ let token = memoryAccessToken;
+ if (!token) {
+ const { getSession } = await import('next-auth/react');
+ const session = await getSession();
+ token = session?.accessToken;
+ memoryAccessToken = token;
+ }
  if (!token) {
  handleSessionExpiration();
  return null;
@@ -61,7 +69,7 @@ type RequestOptions = {
 
 async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
  const { method = 'GET', body, errorMessage } = options;
- const headers = getAuthHeaders();
+ const headers = await getAuthHeaders();
 
  // No token → don't fire the request, throw a friendly typed error that
  // callers can recognise and ignore.
@@ -375,9 +383,21 @@ export interface NoteItem {
  source?: string | null;
  goal_id?: string | null;
  task_id?: string | null;
+ signal_domain?: SignalDomain | null;
+ signal_stake?: SignalStake | null;
+ signal_decision?: SignalDecision | null;
+ next_action?: string | null;
+ review_date?: string | null;
+ deadline?: string | null;
+ outcome?: string | null;
+ resolved_at?: string | null;
  created_at: string;
  updated_at: string;
 }
+
+export type SignalDomain = 'work' | 'money' | 'account' | 'health' | 'relationship' | 'game' | 'opportunity' | 'learning' | 'other';
+export type SignalStake = 'none' | 'low' | 'medium' | 'high';
+export type SignalDecision = 'ignore' | 'watch' | 'test' | 'act';
 
 type NotePayload = {
  title: string;
@@ -388,6 +408,14 @@ type NotePayload = {
  source?: string | null;
  goal_id?: string | null;
  task_id?: string | null;
+ signal_domain?: SignalDomain | null;
+ signal_stake?: SignalStake | null;
+ signal_decision?: SignalDecision | null;
+ next_action?: string | null;
+ review_date?: string | null;
+ deadline?: string | null;
+ outcome?: string | null;
+ resolved_at?: string | null;
 };
 
 export const notesApi = {
@@ -528,6 +556,7 @@ export interface TodoOccurrenceItem {
  value?: string | null;
  note?: string | null;
  completed_at?: string | null;
+ is_focus?: boolean;
  todo_id: string;
  daily_log_id?: string | null;
  created_at: string;
@@ -578,7 +607,7 @@ export const todoOccurrencesApi = {
  });
  },
 
- update: (data: { id: string; status?: TodoOccurrenceStatus; value?: string | null; note?: string | null }) =>
+ update: (data: { id: string; status?: TodoOccurrenceStatus; value?: string | null; note?: string | null; is_focus?: boolean }) =>
  apiRequest<TodoOccurrenceItem>('/user/todo-occurrences/update', {
  method: 'PATCH',
  body: data,
@@ -849,6 +878,13 @@ export const backupApi = {
 // User preferences (preferred_theme, etc.)
 // ============================================================
 export const userPrefsApi = {
- updateMe: (data: { preferred_theme?: string | null }) =>
+ updateMe: (data: {
+ preferred_theme?: string | null;
+ nav_preferences?: unknown;
+ dashboard_preferences?: unknown;
+ pinned_goal_ids?: string[];
+ recent_goal_ids?: string[];
+ goal_color_overrides?: Record<string, string>;
+ }) =>
  apiRequest<User>('/users/me', { method: 'PATCH', body: data, errorMessage: 'Failed to update profile' }),
 };

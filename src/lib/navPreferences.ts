@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState, type SetStateAction } from 'react';
+import { AuthRequiredError, userPrefsApi, usersApi } from '@/lib/api';
 
 export type NavItemId =
  | 'today'
@@ -10,7 +11,10 @@ export type NavItemId =
  | 'todos'
  | 'events'
  | 'calendar'
+ | 'attention'
  | 'notes'
+ | 'radar'
+ | 'graph'
  | 'tags'
  | 'review'
  | 'visualization'
@@ -33,7 +37,10 @@ export const NAV_ITEMS: NavItem[] = [
  { id: 'todos', name: 'Todos', href: '/todo' },
  { id: 'events', name: 'Events', href: '/event' },
  { id: 'calendar', name: 'Calendar', href: '/calendar' },
+ { id: 'attention', name: 'Attention', href: '/attention' },
  { id: 'notes', name: 'Notes', href: '/notes' },
+ { id: 'radar', name: 'Radar', href: '/radar' },
+ { id: 'graph', name: 'Graph', href: '/graph' },
  { id: 'tags', name: 'Tags', href: '/tags' },
  { id: 'review', name: 'Review', href: '/review' },
  { id: 'visualization', name: 'Visualization', href: '/visualization' },
@@ -124,11 +131,29 @@ export function useNavPreferences() {
  const [preferences, setPreferencesState] = useState<NavPreferences>(DEFAULT_NAV_PREFERENCES);
 
  useEffect(() => {
- setPreferencesState(readPreferences());
+ const local = readPreferences();
+ setPreferencesState(local);
+ let cancelled = false;
+ (async () => {
+ try {
+ const user = await usersApi.me();
+ if (cancelled) return;
+ if (user.nav_preferences) {
+ const remote = normalizeNavPreferences(user.nav_preferences);
+ writePreferences(remote);
+ setPreferencesState(remote);
+ } else {
+ await userPrefsApi.updateMe({ nav_preferences: local });
+ }
+ } catch (caught) {
+ if (!(caught instanceof AuthRequiredError)) console.warn('Failed to sync navigation preferences:', caught);
+ }
+ })();
  const sync = () => setPreferencesState(readPreferences());
  window.addEventListener(NAV_EVENT, sync);
  window.addEventListener('storage', sync);
  return () => {
+ cancelled = true;
  window.removeEventListener(NAV_EVENT, sync);
  window.removeEventListener('storage', sync);
  };
@@ -140,6 +165,9 @@ export function useNavPreferences() {
  typeof next === 'function' ? (next as (value: NavPreferences) => NavPreferences)(current) : next
  );
  writePreferences(resolved);
+ void userPrefsApi.updateMe({ nav_preferences: resolved }).catch((caught) => {
+ if (!(caught instanceof AuthRequiredError)) console.warn('Failed to save navigation preferences:', caught);
+ });
  return resolved;
  });
  }, []);

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Activity, CheckCircle2, Circle, Flag, Plus, RefreshCw, Target, Zap } from 'lucide-react';
+import { Activity, CheckCircle2, Circle, Flag, Plus, RefreshCw, Star, Target, Zap } from 'lucide-react';
 import {
  AuthRequiredError,
  DailyLogColor,
@@ -18,6 +18,7 @@ import { Modal } from '@/components/ui/Modal';
 import { toast } from '@/store/useToast';
 import { notifyTodayDataChanged } from '@/lib/todaySync';
 import { useStore } from '@/store/useStore';
+import { useTodoStreaks } from '@/store/useTodoStreaks';
 
 type DailyLogDraft = {
  color: DailyLogColor | null;
@@ -96,10 +97,7 @@ const parseMetricNumber = (value: string) => {
  return Number.isFinite(numeric) ? numeric : null;
 };
 
-const scrollToDraft = () => {
- if (typeof document === 'undefined') return;
- document.getElementById('daily-draft')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-};
+const isCompletedOccurrence = (status: TodoOccurrenceStatus) => status === 'done' || status === 'minimum';
 
 export const DailyLogPanel: React.FC = () => {
  const fetchGoals = useStore((state) => state.fetchGoals);
@@ -113,6 +111,7 @@ export const DailyLogPanel: React.FC = () => {
  const [endDayOpen, setEndDayOpen] = useState(false);
  const [busyOccurrenceId, setBusyOccurrenceId] = useState<string | null>(null);
  const [savingMetricId, setSavingMetricId] = useState<string | null>(null);
+ const [selectedGoalKey, setSelectedGoalKey] = useState<string>('focus');
 
  const loadToday = async () => {
  setLoading(true);
@@ -164,7 +163,16 @@ export const DailyLogPanel: React.FC = () => {
  return Array.from(map.values()).sort((a, b) => a.title.localeCompare(b.title));
  }, [metrics, occurrences]);
 
- const completedCount = occurrences.filter((item) => item.status === 'done' || item.status === 'minimum').length;
+ const completedCount = occurrences.filter((item) => isCompletedOccurrence(item.status)).length;
+ const selectedGroup = groups.find((group) => group.key === selectedGoalKey) ?? null;
+ const focusGroups = useMemo(
+ () => groups
+ .map((group) => ({ ...group, todos: group.todos.filter((item) => item.is_focus) }))
+ .filter((group) => group.todos.length > 0),
+ [groups]
+ );
+ const focusedOccurrences = focusGroups.flatMap((group) => group.todos);
+ const focusedCompletedCount = focusedOccurrences.filter((item) => isCompletedOccurrence(item.status)).length;
 
  const updateDraft = (patch: Partial<DailyLogDraft>) => {
  setDraft((current) => ({ ...current, ...patch }));
@@ -207,26 +215,48 @@ export const DailyLogPanel: React.FC = () => {
  void saveDraft(nextDraft, 'Bad day logged. That still counts.');
  };
 
- const toggleOccurrence = async (occurrence: TodoOccurrenceItem) => {
- const nextStatus: TodoOccurrenceStatus = occurrence.status === 'done' || occurrence.status === 'minimum' ? 'open' : 'done';
+ const updateOccurrenceStatus = async (occurrence: TodoOccurrenceItem, nextStatus: TodoOccurrenceStatus) => {
  const previous = occurrences;
  setBusyOccurrenceId(occurrence.id);
  setOccurrences((current) =>
  current.map((item) => (
  item.id === occurrence.id
- ? { ...item, status: nextStatus, completed_at: nextStatus === 'done' ? new Date().toISOString() : null }
+ ? { ...item, status: nextStatus, completed_at: isCompletedOccurrence(nextStatus) ? new Date().toISOString() : null }
  : item
  ))
  );
  try {
  const updated = await todoOccurrencesApi.update({ id: occurrence.id, status: nextStatus });
  setOccurrences((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+ void useTodoStreaks.getState().hydrate(true).catch(() => undefined);
  notifyTodayDataChanged();
  void fetchGoals({ force: true, silent: true });
  } catch (error) {
  setOccurrences(previous);
  console.error('Failed to update todo occurrence:', error);
  toast.error('Failed to update todo');
+ } finally {
+ setBusyOccurrenceId(null);
+ }
+ };
+
+ const toggleOccurrence = (occurrence: TodoOccurrenceItem) => {
+ const nextStatus: TodoOccurrenceStatus = isCompletedOccurrence(occurrence.status) ? 'open' : 'done';
+ void updateOccurrenceStatus(occurrence, nextStatus);
+ };
+
+ const toggleOccurrenceFocus = async (occurrence: TodoOccurrenceItem) => {
+ const previous = occurrences;
+ const isFocus = !occurrence.is_focus;
+ setBusyOccurrenceId(occurrence.id);
+ setOccurrences((current) => current.map((item) => (item.id === occurrence.id ? { ...item, is_focus: isFocus } : item)));
+ try {
+ const updated = await todoOccurrencesApi.update({ id: occurrence.id, is_focus: isFocus });
+ setOccurrences((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+ } catch (error) {
+ setOccurrences(previous);
+ console.error('Failed to update routine focus:', error);
+ toast.error('Failed to update routine focus');
  } finally {
  setBusyOccurrenceId(null);
  }
@@ -362,7 +392,7 @@ export const DailyLogPanel: React.FC = () => {
  <div className="mb-2 flex flex-wrap items-end justify-between gap-2">
  <div>
  <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:text-muted-foreground">
- Today from active goals
+ Routines &amp; metrics
  </div>
  <div className="text-xs text-muted-foreground dark:text-muted-foreground">
  {loading
@@ -377,20 +407,82 @@ export const DailyLogPanel: React.FC = () => {
  Building today from active goals…
  </div>
  ) : groups.length > 0 ? (
- <div className="space-y-3">
+ <>
+ <div
+ className="mb-3 flex gap-2 overflow-x-auto pb-1"
+ aria-label="Filter routines and metrics by goal"
+ >
+ <GoalScopeTab
+ active={selectedGoalKey === 'focus'}
+ label="Focus"
+ detail={`${focusedCompletedCount}/${focusedOccurrences.length}`}
+ onClick={() => setSelectedGoalKey('focus')}
+ />
+ <GoalScopeTab
+ active={selectedGoalKey === 'all'}
+ label="All"
+ detail={`${completedCount}/${occurrences.length}`}
+ onClick={() => setSelectedGoalKey('all')}
+ />
  {groups.map((group) => (
+ <GoalScopeTab
+ key={group.key}
+ active={selectedGoalKey === group.key}
+ label={group.title}
+ detail={`${group.todos.filter((item) => isCompletedOccurrence(item.status)).length}/${group.todos.length}`}
+ onClick={() => setSelectedGoalKey(group.key)}
+ />
+ ))}
+ </div>
+
+ {selectedGoalKey === 'focus' ? (
+ focusGroups.length > 0 ? (
+ <div className="space-y-3">
+ {focusGroups.map((group) => (
  <GoalTodayCard
  key={group.key}
- group={group}
+ group={{ ...group, metrics: [] }}
  busyOccurrenceId={busyOccurrenceId}
  savingMetricId={savingMetricId}
  onToggleOccurrence={toggleOccurrence}
+ onOccurrenceStatusChange={updateOccurrenceStatus}
+ onToggleFocus={toggleOccurrenceFocus}
  onMetricChange={setMetricValue}
  onMetricBlur={saveMetric}
  onBooleanMetricToggle={toggleBooleanMetric}
  />
  ))}
  </div>
+ ) : (
+ <div className="rounded-2xl border p-4 text-sm" style={{ border: 'var(--tn-line)', background: 'var(--tn-card)', color: 'var(--tn-fg-muted)' }}>
+ <p className="font-semibold" style={{ color: 'var(--tn-fg)' }}>No routines in focus yet</p>
+ <p className="mt-1">Open a goal and use the star beside a routine to add it here for today.</p>
+ </div>
+ )
+ ) : selectedGoalKey === 'all' ? (
+ <div className="grid gap-2 md:grid-cols-2">
+ {groups.map((group) => (
+ <GoalTodayOverviewCard
+ key={group.key}
+ group={group}
+ onSelect={() => setSelectedGoalKey(group.key)}
+ />
+ ))}
+ </div>
+ ) : selectedGroup ? (
+ <GoalTodayCard
+ group={selectedGroup}
+ busyOccurrenceId={busyOccurrenceId}
+ savingMetricId={savingMetricId}
+ onToggleOccurrence={toggleOccurrence}
+ onOccurrenceStatusChange={updateOccurrenceStatus}
+ onToggleFocus={toggleOccurrenceFocus}
+ onMetricChange={setMetricValue}
+ onMetricBlur={saveMetric}
+ onBooleanMetricToggle={toggleBooleanMetric}
+ />
+ ) : null}
+ </>
  ) : (
  <div
  className="rounded-2xl border p-4"
@@ -408,10 +500,6 @@ export const DailyLogPanel: React.FC = () => {
  <Plus className="h-4 w-4" />
  <span>Create goal</span>
  </Link>
- <button type="button" onClick={scrollToDraft} className="btn btn-secondary !px-3 !py-2 text-xs">
- <Plus className="h-4 w-4" />
- <span>Add draft</span>
- </button>
  <button type="button" onClick={() => setEndDayOpen(true)} className="btn btn-secondary !px-3 !py-2 text-xs">
  <Flag className="h-4 w-4" />
  <span>Log day anyway</span>
@@ -430,14 +518,6 @@ export const DailyLogPanel: React.FC = () => {
  >
  <Zap className="h-4 w-4" />
  <span>Log bad day</span>
- </button>
- <button
- type="button"
- onClick={scrollToDraft}
- className="btn btn-secondary !px-3 !py-2 text-xs"
- >
- <Plus className="h-4 w-4" />
- <span>Add draft</span>
  </button>
  <button
  type="button"
@@ -552,16 +632,81 @@ interface GoalTodayCardProps {
  busyOccurrenceId: string | null;
  savingMetricId: string | null;
  onToggleOccurrence: (occurrence: TodoOccurrenceItem) => void;
+ onOccurrenceStatusChange: (occurrence: TodoOccurrenceItem, status: TodoOccurrenceStatus) => void;
+ onToggleFocus: (occurrence: TodoOccurrenceItem) => void;
  onMetricChange: (metricId: string, value: string) => void;
  onMetricBlur: (metric: TodayMetricItem, rawValue: string) => void;
  onBooleanMetricToggle: (metric: TodayMetricItem) => void;
 }
+
+const GoalScopeTab: React.FC<{
+ active: boolean;
+ label: string;
+ detail: string;
+ onClick: () => void;
+}> = ({ active, label, detail, onClick }) => (
+ <button
+ type="button"
+ onClick={onClick}
+ className="flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs transition-colors"
+ style={{
+ border: active ? 'var(--tn-line)' : '1px solid color-mix(in srgb, var(--tn-fg-muted) 30%, transparent)',
+ background: active ? 'var(--tn-active)' : 'var(--tn-card)',
+ color: 'var(--tn-fg)',
+ boxShadow: active ? 'var(--tn-shadow)' : undefined,
+ }}
+ >
+ <span className="max-w-36 truncate font-semibold">{label}</span>
+ <span
+ className="rounded-full px-1.5 py-0.5 text-[11px] font-semibold"
+ style={{
+ background: active ? 'var(--tn-accent)' : 'var(--tn-hover)',
+ color: active ? 'var(--tn-on-accent, var(--tn-fg))' : 'var(--tn-fg-muted)',
+ }}
+ >
+ {detail}
+ </span>
+ </button>
+);
+
+const GoalTodayOverviewCard: React.FC<{
+ group: TodayGroup;
+ onSelect: () => void;
+}> = ({ group, onSelect }) => {
+ const completed = group.todos.filter((item) => isCompletedOccurrence(item.status)).length;
+ const total = group.todos.length;
+ const percent = total > 0 ? (completed / total) * 100 : 0;
+
+ return (
+ <button
+ type="button"
+ onClick={onSelect}
+ className="rounded-2xl border p-3 text-left transition-transform hover:-translate-y-0.5"
+ style={{ border: 'var(--tn-line)', background: 'var(--tn-card)', color: 'var(--tn-fg)' }}
+ >
+ <div className="mb-2 flex items-start justify-between gap-3">
+ <div className="min-w-0">
+ <span className="block truncate text-sm font-semibold">{group.title}</span>
+ <span className="text-xs text-muted-foreground dark:text-muted-foreground">
+ {total} routine{total === 1 ? '' : 's'} · {group.metrics.length} metric{group.metrics.length === 1 ? '' : 's'}
+ </span>
+ </div>
+ <span className="shrink-0 text-sm font-semibold">{completed}/{total}</span>
+ </div>
+ <div className="h-1.5 overflow-hidden rounded-full" style={{ background: 'var(--tn-bar-bg, var(--tn-hover))' }}>
+ <div className="h-full rounded-full" style={{ width: `${percent}%`, background: 'var(--tn-good, var(--tn-accent))' }} />
+ </div>
+ </button>
+ );
+};
 
 const GoalTodayCard: React.FC<GoalTodayCardProps> = ({
  group,
  busyOccurrenceId,
  savingMetricId,
  onToggleOccurrence,
+ onOccurrenceStatusChange,
+ onToggleFocus,
  onMetricChange,
  onMetricBlur,
  onBooleanMetricToggle,
@@ -590,17 +735,20 @@ const GoalTodayCard: React.FC<GoalTodayCardProps> = ({
  {group.todos.length > 0 && (
  <div className="mb-3 space-y-1">
  {group.todos.map((occurrence) => {
- const done = occurrence.status === 'done' || occurrence.status === 'minimum';
+ const done = isCompletedOccurrence(occurrence.status);
  return (
- <button
+ <div
  key={occurrence.id}
- type="button"
- onClick={() => onToggleOccurrence(occurrence)}
- disabled={busyOccurrenceId === occurrence.id}
- className="flex w-full items-start gap-2 rounded-xl px-2 py-2 text-left transition-colors disabled:opacity-60"
+ className="flex items-center gap-2 rounded-xl px-2 py-2 transition-colors"
  style={{
  background: done ? 'color-mix(in srgb, var(--tn-good, #2f7d50) 10%, var(--tn-card))' : 'var(--tn-hover)',
  }}
+ >
+ <button
+ type="button"
+ onClick={() => onToggleOccurrence(occurrence)}
+ disabled={busyOccurrenceId === occurrence.id}
+ className="flex min-w-0 flex-1 items-start gap-2 text-left disabled:opacity-60"
  >
  <span
  className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full"
@@ -619,6 +767,40 @@ const GoalTodayCard: React.FC<GoalTodayCardProps> = ({
  )}
  </span>
  </button>
+ <button
+ type="button"
+ onClick={() => onToggleFocus(occurrence)}
+ disabled={busyOccurrenceId === occurrence.id}
+ aria-label={occurrence.is_focus ? `Remove ${occurrence.todo_title} from focus` : `Add ${occurrence.todo_title} to focus`}
+ title={occurrence.is_focus ? 'Remove from focus' : 'Add to focus'}
+ className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg disabled:opacity-60"
+ style={{
+ background: occurrence.is_focus ? 'var(--tn-accent)' : 'var(--tn-card)',
+ color: occurrence.is_focus ? 'var(--tn-on-accent, var(--tn-fg))' : 'var(--tn-fg-muted)',
+ border: occurrence.is_focus ? 'var(--tn-line)' : '1px solid color-mix(in srgb, var(--tn-fg-muted) 30%, transparent)',
+ }}
+ >
+ <Star className="h-4 w-4" fill={occurrence.is_focus ? 'currentColor' : 'none'} />
+ </button>
+ <select
+ aria-label={`Status for ${occurrence.todo_title}`}
+ value={occurrence.status}
+ onChange={(event) => void onOccurrenceStatusChange(occurrence, event.target.value as TodoOccurrenceStatus)}
+ disabled={busyOccurrenceId === occurrence.id}
+ className="shrink-0 rounded-lg border px-2 py-1 text-xs font-medium outline-none disabled:opacity-60"
+ style={{
+ border: 'var(--tn-line)',
+ background: 'var(--tn-card)',
+ color: 'var(--tn-fg)',
+ }}
+ >
+ <option value="open">Open</option>
+ <option value="done">Done</option>
+ <option value="minimum">Minimum</option>
+ <option value="skipped">Skip today</option>
+ <option value="excused">Excused</option>
+ </select>
+ </div>
  );
  })}
  </div>

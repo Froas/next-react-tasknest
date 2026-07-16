@@ -1,43 +1,81 @@
 .mapShell {
-  --viz-sky-top: var(--tn-viz-sky-top, color-mix(in srgb, var(--tn-accent) 14%, var(--tn-card)));
-  --viz-sky-bottom: var(--tn-viz-sky-bottom, color-mix(in srgb, var(--tn-good, #2f7d50) 10%, var(--tn-card)));
-  --viz-mountain-distant: var(--tn-viz-mountain-distant, color-mix(in srgb, var(--tn-fg) 20%, var(--tn-card)));
-  --viz-mountain-far: var(--tn-viz-mountain-far, color-mix(in srgb, var(--tn-fg) 32%, var(--tn-card)));
-  --viz-mountain-main: var(--tn-viz-mountain-main, color-mix(in srgb, var(--tn-fg) 58%, var(--tn-card)));
-  --viz-mountain-outline: var(--tn-viz-mountain-outline, color-mix(in srgb, var(--tn-fg) 78%, transparent));
-  --viz-snow: var(--tn-viz-snow, color-mix(in srgb, white 76%, var(--tn-card)));
-  --viz-ground: var(--tn-viz-ground, color-mix(in srgb, var(--tn-good, #2f7d50) 32%, var(--tn-card)));
-  --viz-sun: var(--tn-viz-sun, color-mix(in srgb, var(--tn-warn, #f1c75b) 76%, white));
-  --viz-moon: var(--tn-viz-moon, #f3f0df);
-  --viz-moon-shadow: var(--tn-viz-moon-shadow, var(--viz-sky-top));
-  --viz-sun-display: var(--tn-viz-sun-display, block);
-  --viz-moon-display: var(--tn-viz-moon-display, none);
-  --viz-star: var(--tn-viz-star, var(--tn-fg));
-  --viz-route: var(--tn-viz-route, color-mix(in srgb, var(--tn-fg) 32%, transparent));
+  --viz-route: var(--tn-viz-route, color-mix(in srgb, var(--tn-fg) 28%, transparent));
   --viz-completed: var(--tn-viz-completed, var(--tn-good, #2f7d50));
   --viz-current: var(--tn-viz-current, var(--tn-accent));
   --viz-available: var(--tn-viz-available, var(--tn-warn, #c8932a));
   --viz-locked: var(--tn-viz-locked, var(--tn-fg-muted));
   --viz-marker-surface: var(--tn-viz-marker-surface, var(--tn-card));
-  --viz-label: var(--tn-viz-label, var(--tn-fg));
-  --viz-label-muted: var(--tn-viz-label-muted, var(--tn-fg-muted));
-  --viz-label-halo: var(--tn-viz-label-halo, var(--tn-card));
   --viz-character-outline: var(--tn-viz-character-outline, var(--tn-fg));
   position: relative;
   overflow: hidden;
   border: var(--tn-line);
   border-radius: var(--tn-r-lg, 20px);
   background: var(--tn-card);
-  box-shadow: var(--tn-shadow);
+}
+
+.mapHeader {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 15px 18px;
+  border-bottom: var(--tn-line);
+  background: color-mix(in srgb, var(--tn-card) 94%, var(--tn-bg));
+}
+
+.mapHeaderIcon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: var(--tn-r-md, 14px);
+  background: color-mix(in srgb, var(--tn-accent) 12%, var(--tn-card));
+  color: var(--tn-accent);
+}
+
+.mapHeaderTitle,
+.mapHeaderProgress {
+  min-width: 0;
+}
+
+.mapHeaderTitle strong,
+.mapHeaderTitle small,
+.mapHeaderProgress strong,
+.mapHeaderProgress small {
+  display: block;
+}
+
+.mapHeaderTitle strong {
+  color: var(--tn-fg);
+  font-size: 16px;
+}
+
+.mapHeaderTitle small,
+.mapHeaderProgress small {
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--tn-fg-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mapHeaderProgress {
+  text-align: right;
+}
+
+.mapHeaderProgress strong {
+  color: var(--tn-fg);
+  font-size: 19px;
 }
 
 .mapViewport {
   position: relative;
   width: 100%;
+  min-height: 430px;
   aspect-ratio: 5 / 3;
-  min-height: 420px;
   overflow: hidden;
-  background: linear-gradient(180deg, var(--viz-sky-top), var(--viz-sky-bottom));
+  background: var(--tn-bg);
 }
 
 .mapSvg {
@@ -46,23 +84,52 @@
   height: 100%;
 }
 
-.sun { display: var(--viz-sun-display); }
-.moon { display: var(--viz-moon-display); }
-
-.route {
-  fill: none;
-  stroke: var(--viz-route);
-  stroke-width: 7;
-  stroke-linecap: round;
-  stroke-dasharray: 2 14;
+.environment {
+  pointer-events: none;
 }
 
-.routeProgress {
+.environmentCloud {
+  fill: color-mix(in srgb, #fff 82%, transparent);
+  shape-rendering: crispEdges;
+}
+
+.environmentWash {
+  fill: color-mix(in srgb, var(--tn-card) 5%, transparent);
+  pointer-events: none;
+}
+
+.decoration {
+  pointer-events: none;
+}
+
+.routeSegment,
+.routeCompleted,
+.routeCurrent {
   fill: none;
-  stroke: var(--viz-current);
-  stroke-width: 8;
+  stroke-width: 5;
   stroke-linecap: round;
-  filter: drop-shadow(0 3px 8px color-mix(in srgb, var(--viz-current) 35%, transparent));
+  stroke-linejoin: round;
+}
+
+.routeSegment {
+  stroke: var(--viz-route);
+  opacity: .48;
+}
+
+.routeCompleted {
+  stroke: var(--viz-completed);
+  stroke-width: 4.5;
+}
+
+.routeCurrent {
+  stroke: var(--viz-current);
+  stroke-width: 6;
+  filter: drop-shadow(0 3px 7px color-mix(in srgb, var(--viz-current) 32%, transparent));
+}
+
+.mapShell[data-density='dense'] .routeSegment,
+.mapShell[data-density='clustered'] .routeSegment {
+  opacity: .36;
 }
 
 .checkpointLink {
@@ -71,8 +138,8 @@
 }
 
 .checkpointLink:focus-visible .checkpointRing {
-  stroke: var(--viz-label);
-  stroke-width: 5;
+  stroke: var(--tn-fg);
+  stroke-width: 6;
 }
 
 .checkpointRing {
@@ -83,25 +150,48 @@
   r: 17px;
 }
 
-.label {
-  fill: var(--viz-label);
-  font-family: var(--tn-font-sans);
-  font-size: 13px;
-  font-weight: 700;
-  paint-order: stroke;
-  stroke: var(--viz-label-halo);
-  stroke-width: 5px;
-  stroke-linejoin: round;
+.checkpointLabel {
+  overflow: visible;
+  pointer-events: none;
 }
 
-.labelMeta {
-  fill: var(--viz-label-muted);
+.checkpointCard {
+  box-sizing: border-box;
+  width: 100%;
+  height: 58px;
+  padding: 9px 11px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--tn-fg) 13%, transparent);
+  border-left: 4px solid var(--viz-locked);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--tn-card) 94%, transparent);
+  color: var(--tn-fg);
   font-family: var(--tn-font-sans);
-  font-size: 10px;
+}
+
+.checkpointCard[data-state='completed'] { border-left-color: var(--viz-completed); }
+.checkpointCard[data-state='current'] { border-left-color: var(--viz-current); }
+.checkpointCard[data-state='available'] { border-left-color: var(--viz-available); }
+
+.checkpointCard strong,
+.checkpointCard span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.checkpointCard strong {
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.checkpointCard span {
+  margin-top: 4px;
+  color: var(--tn-fg-muted);
+  font-size: 9px;
   font-weight: 600;
-  paint-order: stroke;
-  stroke: var(--viz-label-halo);
-  stroke-width: 4px;
+  text-transform: capitalize;
 }
 
 .taskStep {
@@ -109,42 +199,57 @@
 }
 
 .taskStep:hover {
-  r: 7px;
+  r: 6px;
 }
 
-.mapFooter {
+.journeySummary {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 16px;
-  align-items: center;
-  padding: 16px 18px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   border-top: var(--tn-line);
-  background: color-mix(in srgb, var(--tn-card) 94%, var(--tn-bg));
+  background: color-mix(in srgb, var(--tn-card) 95%, var(--tn-bg));
 }
 
-.legend {
+.summaryItem {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px 14px;
-  color: var(--tn-fg-muted);
-  font-size: 12px;
-}
-
-.legendItem {
-  display: inline-flex;
+  min-width: 0;
+  gap: 10px;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  padding: 14px 12px;
+  color: var(--tn-fg-muted);
 }
 
-.legendDot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
+.summaryItem + .summaryItem {
+  border-left: var(--tn-line);
+}
+
+.summaryItem > span {
+  min-width: 0;
+}
+
+.summaryItem strong,
+.summaryItem small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.summaryItem strong {
+  color: var(--tn-fg);
+  font-size: 13px;
+}
+
+.summaryItem small {
+  margin-top: 2px;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
 }
 
 .campStrip {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+  display: none;
+  grid-template-columns: 1fr;
   gap: 1px;
   border-top: var(--tn-line);
   background: color-mix(in srgb, var(--tn-fg) 12%, transparent);
@@ -198,29 +303,63 @@
 }
 
 .campText strong { font-size: 12px; }
-.campText small { margin-top: 2px; color: var(--tn-fg-muted); font-size: 10px; text-transform: capitalize; }
+.campText small {
+  margin-top: 2px;
+  color: var(--tn-fg-muted);
+  font-size: 10px;
+  text-transform: capitalize;
+}
 
 @media (max-width: 760px) {
+  .mapHeader {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .mapHeaderProgress {
+    grid-column: 2;
+    text-align: left;
+  }
+
+  .mapHeaderProgress strong,
+  .mapHeaderProgress small {
+    display: inline;
+  }
+
+  .mapHeaderProgress small {
+    margin-left: 7px;
+  }
+
   .mapViewport {
-    min-height: 250px;
-    aspect-ratio: 5 / 3;
+    min-height: 300px;
+    aspect-ratio: 4 / 3;
   }
 
-  .mapFooter {
-    grid-template-columns: 1fr;
-  }
-
-  .label {
+  .checkpointLabel {
     display: none;
   }
 
-  .labelMeta {
-    display: none;
+  .journeySummary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .summaryItem:nth-child(3) {
+    border-left: 0;
+    border-top: var(--tn-line);
+  }
+
+  .summaryItem:nth-child(4) {
+    border-top: var(--tn-line);
+  }
+
+  .campStrip {
+    display: grid;
+    max-height: 420px;
+    overflow-y: auto;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .routeProgress,
+  .routeCurrent,
   .checkpointRing {
     animation: none !important;
     transition: none !important;

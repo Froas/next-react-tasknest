@@ -20,8 +20,32 @@ import { StatusType, type GoalItem, type TaskItem } from '@/lib/types';
 import { useDocumentTitle } from '@/lib/useDocumentTitle';
 import { useStore } from '@/store/useStore';
 import { buildCalendarItems, calendarDateKey, calendarItemHref, isCalendarItemActionable, parseCalendarDate } from '@/lib/calendarItems';
+import { isRadarDue, radarBucket } from '@/lib/radar';
+import {
+ BriefcaseBusiness,
+ CircleGauge,
+ Radar,
+ Repeat2,
+ Target,
+ type LucideIcon,
+} from 'lucide-react';
 
 const REVIEW_WINDOW_DAYS = 14;
+
+type ReviewView = 'overview' | 'goals' | 'consistency' | 'workload' | 'radar';
+
+const REVIEW_VIEWS: Array<{
+ id: ReviewView;
+ label: string;
+ description: string;
+ icon: LucideIcon;
+}> = [
+ { id: 'overview', label: 'Overview', description: 'System snapshot', icon: CircleGauge },
+ { id: 'goals', label: 'Goals', description: 'Progress health', icon: Target },
+ { id: 'consistency', label: 'Consistency', description: 'Routines and logs', icon: Repeat2 },
+ { id: 'workload', label: 'Workload', description: 'Due and overdue', icon: BriefcaseBusiness },
+ { id: 'radar', label: 'Radar', description: 'Signals and patterns', icon: Radar },
+];
 
 const pad = (value: number) => String(value).padStart(2, '0');
 
@@ -106,6 +130,7 @@ const ReviewPage: React.FC = () => {
  const [loading, setLoading] = useState(true);
  const [reviewLoading, setReviewLoading] = useState(true);
  const [error, setError] = useState<string | null>(null);
+ const [activeView, setActiveView] = useState<ReviewView>('overview');
 
  const today = useMemo(() => new Date(), []);
  const todayKey = dateKey(today);
@@ -197,6 +222,12 @@ const ReviewPage: React.FC = () => {
  });
  const linkedSignals = signals.filter((note) => note.goal_id || note.task_id).length;
  const recentSignals = signals.slice(0, 12);
+ const radarCounts = signals.reduce<Record<string, number>>((acc, signal) => {
+ const bucket = radarBucket(signal);
+ acc[bucket] = (acc[bucket] ?? 0) + 1;
+ return acc;
+ }, {});
+ const dueSignals = signals.filter((signal) => isRadarDue(signal, todayKey));
  const allTasks = useMemo(() => flattenGoalTasks(goals), [goals]);
  const allTodos = useMemo(() => flattenGoalTodos(allTasks), [allTasks]);
  const activeGoals = goals.filter(isActive);
@@ -256,31 +287,81 @@ const ReviewPage: React.FC = () => {
  </div>
  )}
 
+ <nav className="mb-6 overflow-x-auto pb-1" aria-label="Review sections">
+ <div
+ className="flex min-w-max gap-2 rounded-2xl border p-2"
+ style={{ border: 'var(--tn-line)', background: 'var(--tn-card)' }}
+ >
+ {REVIEW_VIEWS.map((view) => {
+ const Icon = view.icon;
+ const active = activeView === view.id;
+ return (
+ <button
+ key={view.id}
+ type="button"
+ onClick={() => setActiveView(view.id)}
+ aria-current={active ? 'page' : undefined}
+ className="flex min-w-[148px] items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors"
+ style={{
+ border: active ? 'var(--tn-line-strong, var(--tn-line))' : '1px solid transparent',
+ background: active ? 'var(--tn-accent)' : 'transparent',
+ color: active ? 'var(--tn-on-accent)' : 'var(--tn-fg)',
+ }}
+ >
+ <Icon className="h-4 w-4 shrink-0" style={{ color: active ? 'var(--tn-on-accent)' : 'var(--tn-fg-muted)' }} />
+ <span>
+ <span className="block text-sm font-semibold">{view.label}</span>
+ <span
+ className="block text-xs"
+ style={{ color: active ? 'var(--tn-on-accent)' : 'var(--tn-fg-muted)', opacity: active ? 0.78 : 1 }}
+ >
+ {view.description}
+ </span>
+ </span>
+ </button>
+ );
+ })}
+ </div>
+ </nav>
+
+ {activeView === 'radar' && (
+ <div className="section">
+ <div className="section-head">
+ <h2>Radar Workflow</h2>
+ <Link href="/radar" className="btn btn-secondary !px-3 !py-2 text-xs">
+ Open Radar
+ </Link>
+ </div>
+ <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+ {[
+ ['Inbox', radarCounts.inbox ?? 0],
+ ['Watch', radarCounts.watch ?? 0],
+ ['Test', radarCounts.test ?? 0],
+ ['Act', radarCounts.act ?? 0],
+ ['Due', dueSignals.length],
+ ['Done', (radarCounts.done ?? 0) + (radarCounts.ignored ?? 0)],
+ ].map(([label, value]) => (
+ <div key={String(label)} className="card !p-4">
+ <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
+ <div className="mt-1 text-2xl font-bold text-foreground">{value}</div>
+ </div>
+ ))}
+ </div>
+ </div>
+ )}
+
+ {activeView === 'overview' && (
  <div className="section">
  <div className="stats">
- <div className="stat">
- <div className="s-label">Active Goals</div>
- <div className="s-value">{reviewLoading ? '…' : activeGoals.length}</div>
- <div className="s-delta">{goals.length} total goals</div>
- </div>
- <div className="stat">
- <div className="s-label">Avg Progress</div>
- <div className="s-value">{reviewLoading ? '…' : formatPercent(averageGoalProgress)}</div>
- <div className="s-delta">structural progress</div>
- </div>
- <div className="stat">
- <div className="s-label">Routines Today</div>
- <div className="s-value">{reviewLoading ? '…' : `${completedTodayOccurrences.length}/${todayOccurrences.length}`}</div>
- <div className="s-delta">{routineTasks.length} routine tasks · {recurringTodos.length} definitions</div>
- </div>
- <div className="stat">
- <div className="s-label">Due Work</div>
- <div className="s-value">{reviewLoading ? '…' : overdueWork.length}</div>
- <div className="s-delta">{todayWork.length} today · {upcomingEvents} events soon</div>
+ <ReviewSummaryStat label="Active goals" value={reviewLoading ? '…' : activeGoals.length} detail={`${goals.length} total goals`} />
+ <ReviewSummaryStat label="Avg progress" value={reviewLoading ? '…' : formatPercent(averageGoalProgress)} detail="structural progress" />
+ <ReviewSummaryStat label="Routines today" value={reviewLoading ? '…' : `${completedTodayOccurrences.length}/${todayOccurrences.length}`} detail={`${routineTasks.length} routine tasks · ${recurringTodos.length} definitions`} />
+ <ReviewSummaryStat label="Due work" value={reviewLoading ? '…' : overdueWork.length} detail={`${todayWork.length} today · ${upcomingEvents} events soon`} />
  </div>
  </div>
- </div>
+ )}
 
+ {activeView === 'consistency' && (
  <div className="section">
  <div className="section-head">
  <h2>General Review</h2>
@@ -307,7 +388,9 @@ const ReviewPage: React.FC = () => {
  />
  </div>
  </div>
+ )}
 
+ {activeView === 'goals' && (
  <div className="section">
  <div className="section-head">
  <h2>Goal Health</h2>
@@ -325,7 +408,9 @@ const ReviewPage: React.FC = () => {
  </div>
  )}
  </div>
+ )}
 
+ {activeView === 'workload' && (
  <div className="section">
  <div className="section-head">
  <h2>Work Pressure</h2>
@@ -333,42 +418,31 @@ const ReviewPage: React.FC = () => {
  Open Today
  </Link>
  </div>
- <div className="grid gap-4 lg:grid-cols-2">
+ <div className="grid items-start gap-4 lg:grid-cols-2">
  <DueWorkCard title="Overdue" rows={overdueWork.slice(0, 8)} empty="No overdue work. Nice." />
  <DueWorkCard title="Due today" rows={todayWork.slice(0, 8)} empty="Nothing due today." />
  </div>
  </div>
+ )}
 
+ {activeView === 'radar' && (
  <div className="section">
  <div className="stats">
- <div className="stat">
- <div className="s-label">Signals</div>
- <div className="s-value">{loading ? '…' : signals.length}</div>
- <div className="s-delta">captured radar items</div>
- </div>
- <div className="stat">
- <div className="s-label">Linked</div>
- <div className="s-value">{loading ? '…' : linkedSignals}</div>
- <div className="s-delta">connected to goal/task</div>
- </div>
- <div className="stat">
- <div className="s-label">Sources</div>
- <div className="s-value">{loading ? '…' : sourceCounts.length}</div>
- <div className="s-delta">places signal came from</div>
- </div>
- <div className="stat">
- <div className="s-label">Notes</div>
- <div className="s-value">{loading ? '…' : regularNotes.length}</div>
- <div className="s-delta">non-signal notes</div>
+ <ReviewSummaryStat label="Signals" value={loading ? '…' : signals.length} detail="captured radar items" />
+ <ReviewSummaryStat label="Linked" value={loading ? '…' : linkedSignals} detail="connected to goal/task" />
+ <ReviewSummaryStat label="Sources" value={loading ? '…' : sourceCounts.length} detail="places signals came from" />
+ <ReviewSummaryStat label="Notes" value={loading ? '…' : regularNotes.length} detail="non-signal notes" />
  </div>
  </div>
- </div>
+ )}
 
+ {activeView === 'radar' && (
+ <>
  <div className="section">
  <div className="section-head">
  <h2>Radar Map</h2>
- <Link href={notesFilterHref({})} className="btn btn-secondary !px-3 !py-2 text-xs">
- Signals only
+ <Link href="/radar" className="btn btn-secondary !px-3 !py-2 text-xs">
+ Open Radar
  </Link>
  </div>
  <RadarGraph sourceCounts={sourceCounts} tagCounts={tagCounts} relationCounts={relationCounts} />
@@ -449,8 +523,8 @@ const ReviewPage: React.FC = () => {
  ) : (
  <span className="text-muted-foreground">No linked goal/task</span>
  )}
- <Link href={notesFilterHref({ noteId: signal.id })} className="hover:underline" style={{ color: 'var(--tn-accent)' }}>
- Edit in notes →
+ <Link href={`/radar?view=${radarBucket(signal)}&signal=${signal.id}`} className="hover:underline" style={{ color: 'var(--tn-accent)' }}>
+ Process signal →
  </Link>
  </div>
  </article>
@@ -459,9 +533,23 @@ const ReviewPage: React.FC = () => {
  </div>
  )}
  </div>
+ </>
+ )}
  </div>
  );
 };
+
+const ReviewSummaryStat: React.FC<{
+ label: string;
+ value: React.ReactNode;
+ detail: string;
+}> = ({ label, value, detail }) => (
+ <div className="stat">
+ <div className="s-label">{label}</div>
+ <div className="s-value">{value}</div>
+ <div className="s-delta">{detail}</div>
+ </div>
+);
 
 const RadarGraph: React.FC<{
  sourceCounts: Array<{ label: string; count: number }>;
@@ -682,7 +770,7 @@ const DueWorkCard: React.FC<{
  key={`${row.kind}:${row.id}`}
  href={row.href}
  className="flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-sm hover:shadow-sm"
- style={{ border: 'var(--tn-line)', background: 'var(--tn-active)', color: 'var(--tn-fg)' }}
+ style={{ border: 'var(--tn-line)', background: 'var(--tn-surface-2, var(--tn-card))', color: 'var(--tn-fg)' }}
  >
  <span className="min-w-0">
  <span className="block truncate font-medium">{row.title}</span>

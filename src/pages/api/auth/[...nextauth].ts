@@ -5,7 +5,10 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import axios from "axios";
 
 const API_BASE_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const SESSION_TTL_SECONDS = 60 * 60 * 4;
+const configuredSessionTtl = Number(process.env.NEXTAUTH_SESSION_TTL_SECONDS);
+const SESSION_TTL_SECONDS = Number.isFinite(configuredSessionTtl) && configuredSessionTtl > 0
+ ? configuredSessionTtl
+ : 60 * 60 * 24;
 
 export default NextAuth({
  providers: [

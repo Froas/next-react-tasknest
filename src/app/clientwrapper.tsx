@@ -7,6 +7,10 @@ import { RouteBoundary } from '../components/ui/RouteBoundary';
 import { AppShell } from '@/components/design/AppShell';
 import { usePathname, useRouter } from 'next/navigation';
 import React, { createContext, useContext, useEffect, useRef } from 'react';
+import { setApiAccessToken, usersApi, userPrefsApi } from '@/lib/api';
+import { usePinnedGoals } from '@/store/usePinnedGoals';
+import { useRecentGoals } from '@/store/useRecentGoals';
+import { useGoalColors } from '@/store/useGoalColors';
 
 const SessionContext = createContext<Session | null>(null);
 
@@ -14,18 +18,44 @@ function SessionPasser({ children }: { children: React.ReactNode }) {
  const { data: session, status } = useSession();
  const router = useRouter();
  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+ useEffect(() => {
+ setApiAccessToken(session?.accessToken);
+ }, [session?.accessToken]);
  
- // Save access token to localStorage when session is available.
- // Skip while NextAuth is still loading — otherwise the initial null session
- // would wipe the token in a window where API requests can fire unauthenticated.
- React.useEffect(() => {
- if (status === 'loading') return;
- if (session?.accessToken) {
- localStorage.setItem('access_token', session.accessToken);
- } else if (status === 'unauthenticated') {
- localStorage.removeItem('access_token');
+ // Hydrate account-level preferences once per authenticated session. Existing
+ // local-only values are uploaded the first time so the migration is lossless.
+ useEffect(() => {
+ if (status !== 'authenticated') return;
+ let cancelled = false;
+ void (async () => {
+ try {
+ const user = await usersApi.me();
+ if (cancelled) return;
+ const pinned = user.pinned_goal_ids ?? usePinnedGoals.getState().pinned;
+ const recent = user.recent_goal_ids ?? useRecentGoals.getState().ids;
+ const colors = user.goal_color_overrides ?? useGoalColors.getState().overrides;
+ if (
+ user.pinned_goal_ids == null ||
+ user.recent_goal_ids == null ||
+ user.goal_color_overrides == null
+ ) {
+ await userPrefsApi.updateMe({
+ pinned_goal_ids: pinned,
+ recent_goal_ids: recent,
+ goal_color_overrides: colors,
+ });
  }
- }, [session, status]);
+ if (cancelled) return;
+ usePinnedGoals.getState().hydrate(pinned);
+ useRecentGoals.getState().hydrate(recent);
+ useGoalColors.getState().hydrate(colors);
+ } catch (error) {
+ console.warn('Failed to sync cross-platform preferences:', error);
+ }
+ })();
+ return () => { cancelled = true; };
+ }, [status]);
 
  // Session expiration monitoring
  useEffect(() => {
@@ -37,15 +67,11 @@ function SessionPasser({ children }: { children: React.ReactNode }) {
  // Don't do anything while loading
  if (status === 'loading') return;
 
- // Only redirect to login if we're definitely unauthenticated AND have finished loading
- // AND we don't have a token in localStorage (to avoid redirect loops during page refresh)
+ // Only redirect after NextAuth has definitively resolved the session.
  if (status === 'unauthenticated') {
  const currentPath = window.location.pathname;
- const hasStoredToken = localStorage.getItem('access_token');
- 
- // Only redirect if we're not on login/signup pages AND we don't have a stored token
- if (!['/login', '/signup'].includes(currentPath) && !hasStoredToken) {
- console.log('No session and no stored token, redirecting to login');
+ if (!['/login', '/signup'].includes(currentPath)) {
+ console.log('No session, redirecting to login');
  router.push('/login');
  }
  return;

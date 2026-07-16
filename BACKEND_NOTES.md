@@ -35,19 +35,16 @@ For a user with 30 goals, that's 31 round-trips on every dashboard load.
 returning the full nested structure in one call. Frontend will switch to
 that immediately.
 
-## 3. Cookie-based auth instead of `localStorage` JWT
+## 3. Move API auth behind a BFF (optional hardening)
 
-**Why**: Tokens stored in `localStorage` are readable by any XSS payload.
-The current login → NextAuth → token in localStorage flow is the standard
-"how to leak everything" path.
+**Current mitigation**: the FastAPI access token is no longer persisted in
+`localStorage`. It is kept inside the HttpOnly NextAuth session cookie and
+copied only to in-memory request state while the page is open.
 
-**Backend fix**: issue an `httpOnly; SameSite=Lax; Secure` cookie on
-`/users/token`. The browser sends it automatically on subsequent requests
-to the same origin. Frontend stops touching the token at all — `apiRequest`
-just calls `fetch(url, { credentials: 'include' })`.
-
-This is the highest-impact security change. Pair with CSRF tokens for
-state-mutating endpoints.
+**Remaining hardening**: proxy FastAPI calls through a same-origin Next.js
+BFF so the browser never receives the backend bearer token at all. The BFF
+reads the NextAuth session server-side and forwards requests to FastAPI.
+This also gives one place to apply CSRF protection and token refresh.
 
 ## 4. `BaseEntity` needs `created_at`
 

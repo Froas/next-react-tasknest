@@ -1,5 +1,6 @@
 import { GoalItem as Goal, StatusType } from './types';
 import { ActivityKind } from './recentActivity';
+import type { TodoOccurrenceItem } from './api';
 
 export interface DayBucket {
  date: Date;
@@ -28,16 +29,22 @@ interface BucketAccumulator {
 // Walk the entire goal-tree, picking up every entity that has
 // status=FINISHED and an end_datetime, and tally them by day. Keyed by
 // YYYY-MM-DD so the heatmap can render a year-long grid in O(items + days).
-export const buildActivityCounts = (goals: Goal[]): Map<string, BucketAccumulator> => {
+export const buildActivityCounts = (
+ goals: Goal[],
+ occurrences: TodoOccurrenceItem[] = [],
+): Map<string, BucketAccumulator> => {
  const counts = new Map<string, BucketAccumulator>();
 
- const bump = (entity: { status: StatusType; end_datetime?: string }, kind: ActivityKind) => {
- if (entity.status !== StatusType.FINISHED || !entity.end_datetime) return;
- const key = dateKey(new Date(entity.end_datetime));
+ const bumpKey = (key: string, kind: ActivityKind) => {
  const slot = counts.get(key) ?? { count: 0, byKind: {} };
  slot.count += 1;
  slot.byKind[kind] = (slot.byKind[kind] ?? 0) + 1;
  counts.set(key, slot);
+ };
+
+ const bump = (entity: { status: StatusType; end_datetime?: string }, kind: ActivityKind) => {
+ if (entity.status !== StatusType.FINISHED || !entity.end_datetime) return;
+ bumpKey(dateKey(new Date(entity.end_datetime)), kind);
  };
 
  goals.forEach((goal) => {
@@ -52,6 +59,13 @@ export const buildActivityCounts = (goals: Goal[]): Map<string, BucketAccumulato
  });
  });
 
+ occurrences.forEach((occurrence) => {
+ if (occurrence.status !== 'done' && occurrence.status !== 'minimum') return;
+ // Occurrence.date is the logical day the routine belongs to. Using it
+ // avoids shifting a late-night completion across days because of timezone.
+ bumpKey(occurrence.date, 'Routine');
+ });
+
  return counts;
 };
 
@@ -64,8 +78,12 @@ export interface HeatmapGrid {
 
 // Build a `weeks × 7` grid ending on the current week's Saturday so columns
 // align to Sun-Sat weeks. Default window is 53 weeks ≈ 1 year.
-export const buildHeatmapGrid = (goals: Goal[], weeks = 53): HeatmapGrid => {
- const counts = buildActivityCounts(goals);
+export const buildHeatmapGrid = (
+ goals: Goal[],
+ weeks = 53,
+ occurrences: TodoOccurrenceItem[] = [],
+): HeatmapGrid => {
+ const counts = buildActivityCounts(goals, occurrences);
  const today = startOfDay(new Date());
  // Anchor: this week's Saturday (last column).
  const anchor = new Date(today);
@@ -124,6 +142,27 @@ export const longestStreak = (counts: Map<string, BucketAccumulator>): number =>
  }
  }
  return longest;
+};
+
+// Current streak across every completion source. A completion yesterday is
+// allowed to keep the streak alive until the user records today's work.
+export const currentStreak = (counts: Map<string, BucketAccumulator>): number => {
+ if (counts.size === 0) return 0;
+ const today = startOfDay(new Date());
+ const yesterday = new Date(today);
+ yesterday.setDate(yesterday.getDate() - 1);
+
+ let cursor: Date;
+ if (counts.has(dateKey(today))) cursor = today;
+ else if (counts.has(dateKey(yesterday))) cursor = yesterday;
+ else return 0;
+
+ let streak = 0;
+ while (counts.has(dateKey(cursor))) {
+ streak += 1;
+ cursor.setDate(cursor.getDate() - 1);
+ }
+ return streak;
 };
 
 // Count of unique active days within window covered by the grid.

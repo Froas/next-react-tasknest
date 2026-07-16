@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { CSSProperties } from 'react';
 import {
  AnimalId,
  getAnimalConfig,
  JourneyAnimationState,
 } from '@/lib/journeyAnimals';
+import styles from './AnimalSprite.module.css';
 
 interface AnimalSpriteProps {
  animalId: AnimalId;
@@ -23,56 +24,41 @@ export const AnimalSprite: React.FC<AnimalSpriteProps> = ({
  const animal = getAnimalConfig(animalId);
  const animation = animal.animations[state];
  const direction = (facingLeft ? -1 : 1) * (animal.mirrorX ? -1 : 1);
- const [frame, setFrame] = useState(animation.frameStart);
-
- useEffect(() => {
- setFrame(animation.frameStart);
- if (reducedMotion) return;
-
- const frameDuration = (animation.durationSeconds * 1000) / animation.frameCount;
- const timer = window.setInterval(() => {
- setFrame((currentFrame) => {
- const nextFrame = currentFrame + 1;
- return nextFrame >= animation.frameStart + animation.frameCount
- ? animation.frameStart
- : nextFrame;
- });
- }, frameDuration);
-
- return () => window.clearInterval(timer);
- }, [animation.durationSeconds, animation.frameCount, animation.frameStart, reducedMotion]);
-
- const viewBoxX = frame * animal.frameWidth;
- const viewBoxY = animation.row * animal.frameHeight;
  const scaleX = direction * animal.scaleX * animal.scale;
  const scaleY = animal.scaleY * animal.scale;
+ const spriteStyle = {
+ '--frame-width': `${animal.frameWidth}px`,
+ '--frame-height': `${animal.frameHeight}px`,
+ '--sheet-width': `${animal.frameWidth * animal.sheetColumns}px`,
+ '--sheet-height': `${animal.frameHeight * animal.sheetRows}px`,
+ '--sprite-url': `url(/${animal.assetPath})`,
+ '--sprite-start-x': `${-(animation.frameStart * animal.frameWidth)}px`,
+ '--sprite-end-x': `${-((animation.frameStart + animation.frameCount) * animal.frameWidth)}px`,
+ '--sprite-row-y': `${-(animation.row * animal.frameHeight)}px`,
+ '--sprite-offset-x': `${animal.offsetX}px`,
+ '--sprite-offset-y': `${animal.offsetY}px`,
+ '--sprite-scale-x': String(scaleX),
+ '--sprite-scale-y': String(scaleY),
+ '--sprite-scale': '1',
+ '--animation-speed': `${animation.durationSeconds}s`,
+ '--frame-count': String(animation.frameCount),
+ } as CSSProperties;
 
  return (
- <g
+ <foreignObject
  role="img"
  aria-label={`${animal.name} ${state}`}
- transform={`translate(${animal.offsetX} ${animal.offsetY}) scale(${scaleX} ${scaleY})`}
- style={{
- filter: 'drop-shadow(1px 0 0 var(--viz-character-outline, white)) drop-shadow(-1px 0 0 var(--viz-character-outline, white)) drop-shadow(0 1px 0 var(--viz-character-outline, white)) drop-shadow(0 -1px 0 var(--viz-character-outline, white)) drop-shadow(0 7px 7px rgba(0, 0, 0, 0.28))',
- }}
- >
- <svg
  x={-animal.frameWidth / 2}
  y={-animal.frameHeight / 2}
  width={animal.frameWidth}
  height={animal.frameHeight}
- viewBox={`${viewBoxX} ${viewBoxY} ${animal.frameWidth} ${animal.frameHeight}`}
- overflow="hidden"
- aria-hidden="true"
+ overflow="visible"
  >
- <image
- href={`/${animal.assetPath}`}
- width={animal.frameWidth * animal.sheetColumns}
- height={animal.frameHeight * animal.sheetRows}
- preserveAspectRatio="none"
- style={{ imageRendering: 'pixelated' }}
+ <div
+ className={`${styles.sprite}${animal.outlineMode === 'native' ? ` ${styles.nativeOutline}` : ''}${reducedMotion ? ` ${styles.reducedMotion}` : ''}`}
+ style={spriteStyle}
+ aria-hidden="true"
  />
- </svg>
- </g>
+ </foreignObject>
  );
 };

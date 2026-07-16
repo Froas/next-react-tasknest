@@ -26,7 +26,11 @@ const sortDraftTodos = (items: DailyDraftTodoItem[]) =>
  return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
  });
 
-export const DailyDraftTodos: React.FC = () => {
+interface DailyDraftTodosProps {
+ embedded?: boolean;
+}
+
+export const DailyDraftTodos: React.FC<DailyDraftTodosProps> = ({ embedded = false }) => {
  const [items, setItems] = useState<DailyDraftTodoItem[]>([]);
  const [draft, setDraft] = useState('');
  const [loading, setLoading] = useState(true);
@@ -177,20 +181,24 @@ export const DailyDraftTodos: React.FC = () => {
  return (
  <section
  id="daily-draft"
- className="mb-4 rounded-2xl border p-3"
- style={{
+ className={embedded ? '' : 'mb-4 rounded-2xl border p-4'}
+ style={embedded ? undefined : {
  border: 'var(--tn-line)',
  background: 'color-mix(in srgb, var(--tn-card) 86%, var(--tn-bg))',
  }}
  >
  <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
  <div>
- <h4 className="text-sm font-semibold text-foreground">Scratch Todos</h4>
- <p className="text-xs text-muted-foreground dark:text-muted-foreground">
+ {embedded ? (
+ <h4 className="text-sm font-semibold text-foreground">Today&apos;s scratch list</h4>
+ ) : (
+ <h3 className="text-lg font-semibold text-foreground">Scratch Todos</h3>
+ )}
+ <p className={embedded ? 'text-xs text-muted-foreground dark:text-muted-foreground' : 'text-sm text-muted-foreground dark:text-muted-foreground'}>
  Standalone todos for today. Unfinished items carry over until done.
  </p>
  </div>
- <div className="flex items-center gap-2 text-xs text-muted-foreground dark:text-muted-foreground">
+ <div className={embedded ? 'flex items-center gap-2 text-xs text-muted-foreground dark:text-muted-foreground' : 'flex items-center gap-2 text-sm text-muted-foreground dark:text-muted-foreground'}>
  <span>
  {counts.open} open · {counts.done} done{counts.carryover > 0 ? ` · ${counts.carryover} carried` : ''}
  </span>

@@ -5,7 +5,6 @@ import { MilestoneItem as Milestone, TaskItem as Task, TodoItem as Todo, StatusT
 import { useStore } from '@/store/useStore';
 import { useShallow } from 'zustand/react/shallow';
 import { toast } from '@/store/useToast';
-import { useTodoStreaks } from '@/store/useTodoStreaks';
 import { formatDate } from '@/lib/utils';
 import { calculateMilestoneProgress } from '@/lib/progress';
 import { tasksApi, todosApi, subtasksApi, milestonesApi } from '@/lib/api';
@@ -269,12 +268,6 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
  const updatedTodo = await todosApi.update({ id: itemId, status: newStatus, ...endDatetimePatch });
  if (isLatest()) {
  updateTodoInGoals({ ...updatedTodo, end_datetime: updatedTodo.end_datetime ?? localStamp });
- // Streak tracking: completed = log today, un-completed = pop last.
- if (newStatus === StatusType.FINISHED) {
- useTodoStreaks.getState().recordCompletion(itemId);
- } else {
- useTodoStreaks.getState().removeLastCompletion(itemId);
- }
  }
  break;
  }

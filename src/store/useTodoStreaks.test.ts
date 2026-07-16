@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { getStreak, useTodoStreaks } from './useTodoStreaks';
+import { todoOccurrencesApi } from '@/lib/api';
 
 const dateKey = (d: Date) => {
  const y = d.getFullYear();
@@ -44,24 +45,22 @@ describe('getStreak', () => {
 
 describe('useTodoStreaks store', () => {
  beforeEach(() => {
- useTodoStreaks.setState({ completions: {} });
+ useTodoStreaks.setState({ completions: {}, hydrated: false, loading: false });
+ vi.restoreAllMocks();
  });
 
- it('records a completion', () => {
- useTodoStreaks.getState().recordCompletion('t1');
- const completions = useTodoStreaks.getState().completions['t1'];
- expect(completions).toHaveLength(1);
- });
+ it('hydrates completion dates from backend occurrences without duplicates', async () => {
+ vi.spyOn(todoOccurrencesApi, 'history').mockResolvedValue([
+ { id: 'o1', todo_id: 't1', date: '2026-07-14', status: 'done', created_at: '', updated_at: '', todo_title: 'One' },
+ { id: 'o2', todo_id: 't1', date: '2026-07-14', status: 'minimum', created_at: '', updated_at: '', todo_title: 'One' },
+ { id: 'o3', todo_id: 't1', date: '2026-07-15', status: 'done', created_at: '', updated_at: '', todo_title: 'One' },
+ ]);
 
- it('does not duplicate same-day completion', () => {
- useTodoStreaks.getState().recordCompletion('t1');
- useTodoStreaks.getState().recordCompletion('t1');
- expect(useTodoStreaks.getState().completions['t1']).toHaveLength(1);
- });
+ await useTodoStreaks.getState().hydrate(true);
 
- it('removes last completion', () => {
- useTodoStreaks.getState().recordCompletion('t1');
- useTodoStreaks.getState().removeLastCompletion('t1');
- expect(useTodoStreaks.getState().completions['t1']).toHaveLength(0);
+ expect(useTodoStreaks.getState().completions).toEqual({
+ t1: ['2026-07-14', '2026-07-15'],
+ });
+ expect(useTodoStreaks.getState().hydrated).toBe(true);
  });
 });

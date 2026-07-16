@@ -20,6 +20,8 @@ export const duplicateGoal = async (source: Goal): Promise<DuplicationResult> =>
  priority: source.priority,
  start_datetime: new Date().toISOString(),
  end_datetime: source.end_datetime ?? new Date(Date.now() + 30 * 86_400_000).toISOString(),
+ journey_theme_id: source.journey_theme_id ?? 'mountain',
+ journey_character_id: source.journey_character_id ?? 'bat',
  });
 
  const newMilestones: Milestone[] = [];

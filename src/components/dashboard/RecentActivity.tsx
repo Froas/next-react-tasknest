@@ -1,8 +1,16 @@
 'use client';
 
-import React, { type CSSProperties, useMemo } from 'react';
+import React, { type CSSProperties, useEffect, useMemo, useState } from 'react';
 import { useStore } from '@/store/useStore';
-import { collectRecentActivity, calculateActivityStreak, ActivityKind } from '@/lib/recentActivity';
+import {
+ ActivityItem,
+ ActivityKind,
+ calculateActivityStreak,
+ collectRecentActivity,
+ collectRecentRoutineActivity,
+} from '@/lib/recentActivity';
+import { AuthRequiredError, todoOccurrencesApi } from '@/lib/api';
+import { TODAY_DATA_CHANGED_EVENT } from '@/lib/todaySync';
 import { CheckCircle2, Flame } from 'lucide-react';
 
 const KIND_TONE: Record<ActivityKind, string> = {
@@ -11,7 +19,11 @@ const KIND_TONE: Record<ActivityKind, string> = {
  Task: 'var(--tn-good, #2f7d50)',
  Subtask: 'var(--tn-slate, #5a6f8c)',
  Todo: 'var(--tn-warn, var(--tn-accent-2, var(--tn-accent)))',
+ Routine: 'var(--tn-good, #2f7d50)',
 };
+
+const INITIAL_VISIBLE_ITEMS = 5;
+const RECENT_ACTIVITY_WINDOW_MS = 12 * 60 * 60 * 1000;
 
 const badgeStyle = (kind: ActivityKind): CSSProperties => {
  const tone = KIND_TONE[kind];
@@ -36,24 +48,63 @@ const formatRelative = (iso: string): string => {
 
 export const RecentActivity: React.FC = () => {
  const goals = useStore((s) => s.goals);
+ const [routineItems, setRoutineItems] = useState<ActivityItem[]>([]);
+ const [routineLoading, setRoutineLoading] = useState(true);
+ const [showAllItems, setShowAllItems] = useState(false);
+ const [now, setNow] = useState(() => Date.now());
+
+ useEffect(() => {
+ const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+ return () => window.clearInterval(timer);
+ }, []);
+
+ useEffect(() => {
+ let cancelled = false;
+ const loadRoutineActivity = async () => {
+ try {
+ const rows = await todoOccurrencesApi.history({ statuses: ['done', 'minimum'] });
+ if (!cancelled) setRoutineItems(collectRecentRoutineActivity(rows, 8));
+ } catch (error) {
+ if (!(error instanceof AuthRequiredError)) console.error('Failed to load recent routine activity:', error);
+ } finally {
+ if (!cancelled) setRoutineLoading(false);
+ }
+ };
+
+ void loadRoutineActivity();
+ window.addEventListener(TODAY_DATA_CHANGED_EVENT, loadRoutineActivity);
+ return () => {
+ cancelled = true;
+ window.removeEventListener(TODAY_DATA_CHANGED_EVENT, loadRoutineActivity);
+ };
+ }, []);
 
  const { items, streak } = useMemo(
  () => ({
- items: collectRecentActivity(goals, 8),
+ items: [...collectRecentActivity(goals, 8), ...routineItems]
+ .filter((item) => {
+ const age = now - new Date(item.finishedAt).getTime();
+ return age >= 0 && age <= RECENT_ACTIVITY_WINDOW_MS;
+ })
+ .sort((a, b) => new Date(b.finishedAt).getTime() - new Date(a.finishedAt).getTime())
+ .slice(0, 8),
  streak: calculateActivityStreak(goals),
  }),
- [goals]
+ [goals, now, routineItems]
  );
 
+ const visibleItems = showAllItems ? items : items.slice(0, INITIAL_VISIBLE_ITEMS);
+ const hiddenItemsCount = items.length - INITIAL_VISIBLE_ITEMS;
+
  return (
- <div className="card mb-6">
+ <div className="card">
  <div className="flex items-center justify-between mb-4">
  <div>
  <h3 className="text-lg font-semibold text-foreground">Recently finished</h3>
- <p className="text-sm text-foreground dark:text-muted-foreground">
+ <p className="mt-1 text-sm text-muted-foreground">
  {items.length === 0
- ? 'Mark something done to see it here.'
- : 'Your most recent wins across the tree.'}
+ ? 'Nothing finished in the last 12 hours.'
+ : 'Wins from the last 12 hours across the tree.'}
  </p>
  </div>
  {streak >= 2 && (
@@ -69,12 +120,12 @@ export const RecentActivity: React.FC = () => {
  </div>
 
  {items.length === 0 ? (
- <div className="text-sm text-muted-foreground dark:text-muted-foreground text-center py-6">
- No completions yet.
+ <div className="py-[9px] text-center text-sm text-muted-foreground dark:text-muted-foreground">
+ {routineLoading ? 'Loading activity…' : 'No recent completions.'}
  </div>
  ) : (
  <ul className="space-y-2">
- {items.map((item) => (
+ {visibleItems.map((item) => (
  <li
  key={`${item.kind}-${item.id}`}
  className="flex items-center justify-between px-3 py-2 rounded-lg"
@@ -106,6 +157,22 @@ export const RecentActivity: React.FC = () => {
  </div>
  </li>
  ))}
+ {hiddenItemsCount > 0 && (
+ <li>
+ <button
+ type="button"
+ onClick={() => setShowAllItems((current) => !current)}
+ className="w-full rounded-lg px-3 py-2 text-sm font-medium"
+ style={{
+ border: 'var(--tn-line)',
+ background: 'transparent',
+ color: 'var(--tn-accent)',
+ }}
+ >
+ {showAllItems ? 'Show less' : `Show +${hiddenItemsCount} more`}
+ </button>
+ </li>
+ )}
  </ul>
  )}
  </div>

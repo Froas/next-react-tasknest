@@ -10,6 +10,7 @@ import { ActivityHeatmap } from '@/components/dashboard/ActivityHeatmap';
 import { collectRecentActivity, ActivityKind } from '@/lib/recentActivity';
 import { AuthRequiredError, TodoOccurrenceItem, TodoOccurrenceStatus, todoOccurrencesApi } from '@/lib/api';
 import { toast } from '@/store/useToast';
+import { useTodoStreaks } from '@/store/useTodoStreaks';
 import { AlertCircle, CheckCircle2, CircleDashed, ShieldCheck } from 'lucide-react';
 
 const KIND_TONES: Record<ActivityKind, string> = {
@@ -18,6 +19,7 @@ const KIND_TONES: Record<ActivityKind, string> = {
  Task: 'var(--tn-good, #2f7d50)',
  Subtask: 'var(--tn-slate, #5a6f8c)',
  Todo: 'var(--tn-warn, #c8932a)',
+ Routine: 'var(--tn-good, #2f7d50)',
 };
 
 const badgeStyle = (kind: ActivityKind): CSSProperties => {
@@ -74,6 +76,7 @@ const ActivityPage: React.FC = () => {
  const [historyStart, setHistoryStart] = useState(defaultHistoryStart);
  const [historyEnd, setHistoryEnd] = useState(() => toDateInput(new Date()));
  const [busyOccurrenceId, setBusyOccurrenceId] = useState<string | null>(null);
+ const [busyHistoryDay, setBusyHistoryDay] = useState<string | null>(null);
 
  useEffect(() => {
  fetchGoals();
@@ -99,6 +102,7 @@ const ActivityPage: React.FC = () => {
  if (!cancelled) setHistoryLoading(false);
  }
  };
+
  void loadHistory();
  return () => {
  cancelled = true;
@@ -137,6 +141,7 @@ const ActivityPage: React.FC = () => {
  const updated = await todoOccurrencesApi.update({ id: item.id, status });
  setHistory((current) => current.map((row) => (row.id === updated.id ? updated : row)));
  void fetchGoals({ force: true, silent: true });
+ void useTodoStreaks.getState().hydrate(true).catch(() => undefined);
  toast.success(status === 'excused' ? 'Marked as excused' : 'Routine history updated');
  } catch (error) {
  setHistory(previous);
@@ -144,6 +149,43 @@ const ActivityPage: React.FC = () => {
  toast.error('Failed to update routine history');
  } finally {
  setBusyOccurrenceId(null);
+ }
+ };
+
+ const markDayExcused = async (day: string, items: TodoOccurrenceItem[]) => {
+ const missed = items.filter((item) => item.status === 'missed');
+ if (missed.length === 0 || busyHistoryDay) return;
+ const missedIds = new Set(missed.map((item) => item.id));
+ const previousById = new Map(missed.map((item) => [item.id, item]));
+
+ setBusyHistoryDay(day);
+ setHistory((current) => current.map((item) => (
+ missedIds.has(item.id) ? { ...item, status: 'excused' as const } : item
+ )));
+
+ try {
+ const results = await Promise.allSettled(
+ missed.map((item) => todoOccurrencesApi.update({ id: item.id, status: 'excused' })),
+ );
+ void useTodoStreaks.getState().hydrate(true).catch(() => undefined);
+ const saved = new Map<string, TodoOccurrenceItem>();
+ let failed = 0;
+ results.forEach((result, index) => {
+ if (result.status === 'fulfilled') saved.set(result.value.id, result.value);
+ else {
+ failed += 1;
+ console.error(`Failed to excuse routine ${missed[index].id}:`, result.reason);
+ }
+ });
+ setHistory((current) => current.map((item) => {
+ if (!missedIds.has(item.id)) return item;
+ return saved.get(item.id) ?? previousById.get(item.id) ?? item;
+ }));
+ if (saved.size > 0) void fetchGoals({ force: true, silent: true });
+ if (failed > 0) toast.error(`${failed} routine${failed === 1 ? '' : 's'} could not be updated`);
+ else toast.success(`${saved.size} missed routine${saved.size === 1 ? '' : 's'} marked as excused`);
+ } finally {
+ setBusyHistoryDay(null);
  }
  };
 
@@ -214,11 +256,25 @@ const ActivityPage: React.FC = () => {
  </div>
  ) : (
  <ol className="space-y-5">
- {historyByDay.map(([day, items]) => (
+ {historyByDay.map(([day, items]) => {
+ const missedCount = items.filter((item) => item.status === 'missed').length;
+ return (
  <li key={day}>
- <div className="mb-2 flex items-center justify-between text-sm font-semibold text-foreground">
+ <div className="mb-2 flex flex-col gap-2 text-sm font-semibold text-foreground sm:flex-row sm:items-center sm:justify-between">
  <span>{new Date(`${day}T00:00:00`).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span>
+ <div className="flex flex-wrap items-center gap-2">
  <span className="text-xs text-muted-foreground dark:text-muted-foreground">{items.length} routine{items.length === 1 ? '' : 's'}</span>
+ {missedCount > 0 && (
+ <button
+ type="button"
+ onClick={() => void markDayExcused(day, items)}
+ disabled={busyHistoryDay !== null || busyOccurrenceId !== null}
+ className="btn btn-secondary !px-3 !py-1.5 text-xs disabled:opacity-50"
+ >
+ {busyHistoryDay === day ? 'Marking…' : `Mark all excused (${missedCount})`}
+ </button>
+ )}
+ </div>
  </div>
  <ul className="space-y-1.5">
  {items.map((item) => {
@@ -251,7 +307,7 @@ const ActivityPage: React.FC = () => {
  <button
  type="button"
  onClick={() => void updateOccurrenceStatus(item, 'excused')}
- disabled={busyOccurrenceId === item.id}
+ disabled={busyOccurrenceId === item.id || busyHistoryDay === day}
  className="rounded-full border border-border px-3 py-1 text-xs font-medium text-foreground hover:bg-background disabled:opacity-50"
  >
  Mark excused
@@ -261,7 +317,7 @@ const ActivityPage: React.FC = () => {
  <button
  type="button"
  onClick={() => void updateOccurrenceStatus(item, 'missed')}
- disabled={busyOccurrenceId === item.id}
+ disabled={busyOccurrenceId === item.id || busyHistoryDay === day}
  className="rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-background disabled:opacity-50"
  >
  Undo excuse
@@ -273,7 +329,8 @@ const ActivityPage: React.FC = () => {
  })}
  </ul>
  </li>
- ))}
+ );
+ })}
  </ol>
  )}
  </div>

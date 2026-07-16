@@ -1,6 +1,7 @@
 import { GoalItem as Goal, MilestoneItem as Milestone, TaskItem as Task, TodoItem as Todo, SubtaskItem as Subtask, StatusType } from './types';
+import type { TodoOccurrenceItem } from './api';
 
-export type ActivityKind = 'Goal' | 'Milestone' | 'Task' | 'Subtask' | 'Todo';
+export type ActivityKind = 'Goal' | 'Milestone' | 'Task' | 'Subtask' | 'Todo' | 'Routine';
 
 export interface ActivityItem {
  id: string;
@@ -57,6 +58,26 @@ export const collectRecentActivity = (goals: Goal[], limit = 10): ActivityItem[]
  items.sort((a, b) => new Date(b.finishedAt).getTime() - new Date(a.finishedAt).getTime());
  return items.slice(0, limit);
 };
+
+// Daily routines are completion facts stored as TodoOccurrences rather than
+// finished nodes in the goal tree. Convert them into the same activity shape
+// so dashboard consumers can present one chronological completion stream.
+export const collectRecentRoutineActivity = (
+ occurrences: TodoOccurrenceItem[],
+ limit = 10,
+): ActivityItem[] => occurrences
+ .filter((occurrence) => occurrence.status === 'done' || occurrence.status === 'minimum')
+ .map((occurrence) => ({
+ id: occurrence.id,
+ kind: 'Routine' as const,
+ title: occurrence.todo_title,
+ finishedAt: occurrence.completed_at ?? occurrence.updated_at,
+ goalTitle: occurrence.goal_title ?? undefined,
+ milestoneTitle: occurrence.milestone_title ?? undefined,
+ taskTitle: occurrence.task_title ?? undefined,
+ }))
+ .sort((a, b) => new Date(b.finishedAt).getTime() - new Date(a.finishedAt).getTime())
+ .slice(0, limit);
 
 // Build a per-day completion count for a single goal across the last `days`
 // days, ending today. Used by the sparkline on goal cards.

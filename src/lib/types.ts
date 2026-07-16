@@ -1,3 +1,5 @@
+import type { AnimalId } from './journeyAnimals';
+
 // Enums to match backend
 export enum StatusType {
  OUTSTANDING ="outstanding",
@@ -17,6 +19,7 @@ export enum PriorityType {
 
 export type TaskKind = 'project' | 'routine' | 'challenge';
 export type TaskScope = 'goal' | 'milestone';
+export type JourneyThemeId = 'mountain' | 'world-tree' | 'cosmic' | 'volcano' | 'ocean' | 'castle';
 
 export type CompletionRule =
  | { type: 'structural'; auto_completed?: boolean }
@@ -69,6 +72,8 @@ export interface GoalEntity {
  status: StatusType;
  position?: number;
  completion_rule?: CompletionRule | null;
+ journey_theme_id?: JourneyThemeId;
+ journey_character_id?: AnimalId;
 }
 
 // Task related types
@@ -122,6 +127,9 @@ export interface MilestoneItem extends BaseEntity {
 export interface GoalItem extends BaseEntity {
  position?: number;
  completion_rule?: CompletionRule | null;
+ enforce_sequential_milestones?: boolean;
+ journey_theme_id?: JourneyThemeId;
+ journey_character_id?: AnimalId;
  tasks?: TaskItem[];
  milestones: MilestoneItem[];
 }
@@ -186,6 +194,8 @@ export interface GoalUpdate {
  start_datetime?: string;
  end_datetime?: string;
  completion_rule?: CompletionRule | null;
+ journey_theme_id?: JourneyThemeId;
+ journey_character_id?: AnimalId;
 }
 
 export interface MilestoneUpdate {
@@ -262,6 +272,11 @@ export interface User {
  username: string;
  email: string;
  preferred_theme?: string | null;
+ nav_preferences?: unknown;
+ dashboard_preferences?: unknown;
+ pinned_goal_ids?: string[] | null;
+ recent_goal_ids?: string[] | null;
+ goal_color_overrides?: Record<string, string> | null;
  full_name?: string;
  created_at?: string;
  updated_at?: string;
@@ -274,4 +289,10 @@ export interface Tag {
  description?: string;
  created_at?: string;
  updated_at?: string;
+ goal_id?: string | null;
+ milestone_id?: string | null;
+ task_id?: string | null;
+ subtask_id?: string | null;
+ todo_id?: string | null;
+ event_id?: string | null;
 }

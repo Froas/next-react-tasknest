@@ -15,8 +15,92 @@ import {
 import { useStore } from '@/store/useStore';
 import { useShallow } from 'zustand/react/shallow';
 import { toast } from '@/store/useToast';
+import {
+ Activity,
+ BookOpen,
+ Brain,
+ Briefcase,
+ Compass,
+ Dumbbell,
+ FileText,
+ FolderArchive,
+ Heart,
+ Home,
+ Languages,
+ LayoutTemplate,
+ MessageCircle,
+ Moon,
+ Network,
+ PenLine,
+ Radio,
+ Rocket,
+ Scale,
+ Users,
+ Utensils,
+ Wallet,
+ type LucideIcon,
+} from 'lucide-react';
 
 const TAG_PILL_KNOWN = ['brand', 'run', 'read', 'work', 'life', 'health', 'daily', 'metrics', 'sleep', 'product', 'radar', 'notes'];
+
+const TEMPLATE_ICON_BY_ID: Record<string, LucideIcon> = {
+ 'weight-loss-system': Scale,
+ 'recovery-os': Moon,
+ 'tracker-mvp': Compass,
+ 'professional-radar': Radio,
+ 'deep-work-system': Brain,
+ 'japanese-n3-path': Languages,
+ 'english-fluency-maintenance': MessageCircle,
+ 'run-5k': Activity,
+ 'strength-foundation': Dumbbell,
+ 'personal-finance-reset': Wallet,
+ 'read-12-books': BookOpen,
+ 'side-project-launch': Rocket,
+ 'home-reset': Home,
+ 'meal-prep-system': Utensils,
+ 'mindfulness-calm': Heart,
+ 'portfolio-career-switch': Briefcase,
+ 'knowledge-base-obsidian': Network,
+ 'digital-declutter': FolderArchive,
+ 'social-reconnection': Users,
+ 'writing-habit': PenLine,
+};
+
+const TEMPLATE_ICON_BY_TAG: Record<string, LucideIcon> = {
+ health: Heart,
+ sleep: Moon,
+ work: Briefcase,
+ product: Rocket,
+ radar: Radio,
+ notes: FileText,
+ language: Languages,
+ fitness: Activity,
+ finance: Wallet,
+ reading: BookOpen,
+ home: Home,
+ food: Utensils,
+ social: Users,
+ writing: PenLine,
+};
+
+const TemplateIcon: React.FC<{ id: string; tags?: string[] | null }> = ({ id, tags }) => {
+ const Icon = TEMPLATE_ICON_BY_ID[id]
+ ?? (tags ?? []).map((tag) => TEMPLATE_ICON_BY_TAG[tag]).find(Boolean)
+ ?? LayoutTemplate;
+ return (
+ <span
+ className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border"
+ style={{
+ border: 'var(--tn-line)',
+ background: 'var(--tn-hover)',
+ color: 'var(--tn-accent)',
+ }}
+ aria-hidden="true"
+ >
+ <Icon className="h-5 w-5" strokeWidth={1.8} />
+ </span>
+ );
+};
 
 const TemplatesPage: React.FC = () => {
  const router = useRouter();
@@ -66,7 +150,6 @@ const TemplatesPage: React.FC = () => {
  const goal = await templatesApi.instantiateBlueprint({
  title: template.title,
  description: template.description,
- emoji: template.emoji,
  tags: template.tags,
  blueprint: template.blueprint,
  });
@@ -156,9 +239,7 @@ const TemplatesPage: React.FC = () => {
  }}
  >
  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
- <div className="gc-ico" style={{ width: 40, height: 40, fontSize: 20 }}>
- {t.emoji}
- </div>
+ <TemplateIcon id={t.id} tags={t.tags} />
  <h3 style={{ fontSize: 15, fontWeight: 600 }}>{t.title}</h3>
  </div>
  <p
@@ -227,12 +308,7 @@ const TemplatesPage: React.FC = () => {
  <div
  style={{ display: 'flex', alignItems: 'center', gap: 10 }}
  >
- <div
- className="gc-ico"
- style={{ width: 40, height: 40, fontSize: 20 }}
- >
- {t.emoji || '◯'}
- </div>
+ <TemplateIcon id={t.id} tags={t.tags} />
  <h3 style={{ fontSize: 15, fontWeight: 600 }}>{t.title}</h3>
  </div>
  {t.description && (

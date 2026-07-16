@@ -170,20 +170,8 @@ export function DesignThemeProvider({ children }: { children: React.ReactNode })
  // Account-level theme follow. Lazy import to avoid pulling api.ts into
  // SSR bundle / circular deps with the auth flow.
  //
- // IMPORTANT: only call usersApi.me() when a token actually exists.
- // `getAuthHeaders()` in api.ts triggers `signOut → /login?expired=1`
- // on a missing token (not a thrown error we can swallow), which would
- // put the login page itself into an infinite redirect loop because
- // this provider wraps every route.
  useEffect(() => {
  let cancelled = false;
- let token: string | null = null;
- try {
- token = window.localStorage.getItem('access_token');
- } catch {
- // private mode / SSR — skip
- }
- if (!token) return;
  (async () => {
  try {
  const { usersApi } = await import('@/lib/api');
@@ -231,17 +219,7 @@ export function DesignThemeProvider({ children }: { children: React.ReactNode })
  } catch {
  // ignore
  }
- // Best-effort push to server — only if we actually have a token.
- // Skipping the call when logged out avoids triggering the
- // signOut-on-missing-token path in api.ts (which would force a
- // /login?expired=1 redirect even for guest theme tweaks).
- let token: string | null = null;
- try {
- token = window.localStorage.getItem('access_token');
- } catch {
- /* ignore */
- }
- if (!token) return;
+ // Best-effort push to the account when an authenticated session exists.
  (async () => {
  try {
  const { userPrefsApi } = await import('@/lib/api');

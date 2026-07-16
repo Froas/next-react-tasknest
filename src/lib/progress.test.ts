@@ -4,6 +4,7 @@ import {
  calculateGoalProgressLanes,
  calculateMilestoneProgress,
  calculateMilestoneProgressLanes,
+ calculateStructuralTaskProgress,
  calculateTaskProgressLanes,
 } from './progress';
 import { StatusType, PriorityType, MilestoneItem, GoalItem, TaskItem } from './types';
@@ -46,6 +47,38 @@ describe('calculateMilestoneProgress', () => {
  tasks: [],
  };
  expect(calculateMilestoneProgress(m)).toBe(100);
+ });
+
+ it('treats CLOSED as completed structural work', () => {
+ const g: GoalItem = {
+ ...baseEntity,
+ id: 'closed-goal',
+ title: 'closed-goal',
+ status: StatusType.CLOSED,
+ milestones: [{
+ ...baseEntity,
+ id: 'closed-milestone',
+ title: 'closed-milestone',
+ status: StatusType.CLOSED,
+ tasks: [makeTask('closed-task', StatusType.CLOSED)],
+ }],
+ };
+
+ expect(calculateGoalProgress(g)).toBe(100);
+ });
+
+ it('keeps completed parent entities at 100 even when descendants remain open', () => {
+ const task = makeTask('closed-parent', StatusType.CLOSED, { subtasks: 2, subtasksDone: 0 });
+ const milestone: MilestoneItem = {
+ ...baseEntity,
+ id: 'closed-parent-milestone',
+ title: 'closed-parent-milestone',
+ status: StatusType.CLOSED,
+ tasks: [makeTask('open-child', StatusType.OUTSTANDING)],
+ };
+
+ expect(calculateStructuralTaskProgress(task as TaskItem)).toBe(100);
+ expect(calculateMilestoneProgress(milestone)).toBe(100);
  });
 
  it('returns 0 for milestone with no tasks and not finished', () => {

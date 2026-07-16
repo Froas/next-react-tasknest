@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1220" viewBox="0 0 1600 1220">
+  <style>
+    .bg { fill:#f6f5f1 } .panel { fill:#fff; stroke:#dedbd3; stroke-width:2 } .card { fill:#fff; stroke:#dedbd3; stroke-width:1.5 }
+    .soft { fill:#f6f7f3 } .muted { fill:#69706a; font: 16px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif } .small { fill:#69706a; font: 14px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif }
+    .title { fill:#1e2520; font: 700 25px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif } .h { fill:#1e2520; font: 700 19px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif } .txt { fill:#1e2520; font: 16px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif }
+    .chip { font: 700 14px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif } .line { stroke:#e9e6df; stroke-width:1.5 }
+  </style>
+  <rect class="bg" width="1600" height="1220"/>
+  <text x="60" y="56" class="title">Daily Log — 4 более понятных компоновки</text>
+  <text x="60" y="84" class="muted">Одни и те же данные: статус дня, рутины, метрики и рефлексия.</text>
+
+  <!-- 1 -->
+  <rect x="60" y="120" width="710" height="500" rx="22" class="panel"/>
+  <text x="92" y="164" class="title">1. Быстрый daily check-in</text>
+  <text x="92" y="192" class="muted">Один экран: статус → что осталось → закрыть день</text>
+  <rect x="92" y="218" width="646" height="68" rx="14" class="soft"/>
+  <text x="112" y="260" class="h">Сегодня, вторник</text>
+  <rect x="330" y="232" width="112" height="40" rx="20" fill="#e8f2e9"/><text x="352" y="257" fill="#2f7d50" class="chip">● Хорошо</text>
+  <rect x="454" y="232" width="124" height="40" rx="20" fill="#fff4df"/><text x="474" y="257" fill="#a96f06" class="chip">○ Минимум</text>
+  <rect x="590" y="232" width="116" height="40" rx="20" fill="#fbe9ea"/><text x="609" y="257" fill="#b3444d" class="chip">× Плохой</text>
+  <text x="92" y="324" class="h">Осталось на сегодня</text><text x="590" y="324" class="muted">2 из 5 сделано</text>
+  <rect x="92" y="342" width="646" height="154" rx="14" class="card"/>
+  <circle cx="118" cy="376" r="11" fill="#2f7d50"/><text x="113" y="382" fill="#fff" class="chip">✓</text><text x="146" y="382" class="txt">Утренняя прогулка</text><text x="606" y="382" class="small">Здоровье</text>
+  <line x1="108" y1="404" x2="720" y2="404" class="line"/>
+  <circle cx="118" cy="432" r="11" fill="#fff" stroke="#aeb4ad"/><text x="146" y="438" class="txt">Чтение 20 минут</text><text x="607" y="438" class="small">Учёба</text>
+  <line x1="108" y1="458" x2="720" y2="458" class="line"/>
+  <circle cx="118" cy="484" r="11" fill="#fff" stroke="#aeb4ad"/><text x="146" y="490" class="txt">Вес</text><rect x="520" y="466" width="92" height="34" rx="8" fill="#f6f7f3"/><text x="542" y="488" class="txt">72.4</text><text x="624" y="488" class="small">кг</text>
+  <rect x="548" y="524" width="190" height="56" rx="12" fill="#2f7d50"/><text x="584" y="559" fill="#fff" class="h">Закрыть день →</text>
+
+  <!-- 2 -->
+  <rect x="830" y="120" width="710" height="500" rx="22" class="panel"/>
+  <text x="862" y="164" class="title">2. По целям</text>
+  <text x="862" y="192" class="muted">Все действия лежат внутри контекста цели</text>
+  <rect x="862" y="218" width="646" height="48" rx="12" class="soft"/>
+  <text x="884" y="249" class="h">Сегодня</text><text x="1240" y="249" class="muted">● Хорошо · 2/5</text>
+  <rect x="862" y="288" width="646" height="132" rx="14" class="card"/>
+  <text x="886" y="322" class="h">Здоровье</text><text x="1380" y="322" class="small">1 / 2</text>
+  <circle cx="894" cy="352" r="10" fill="#2f7d50"/><text x="889" y="358" fill="#fff" class="chip">✓</text><text x="922" y="358" class="txt">Прогулка 8k шагов</text>
+  <circle cx="894" cy="389" r="10" fill="#fff" stroke="#aeb4ad"/><text x="922" y="395" class="txt">Вода</text><rect x="1306" y="371" width="126" height="32" rx="8" fill="#f6f7f3"/><text x="1327" y="393" class="txt">1.2 л</text>
+  <rect x="862" y="438" width="646" height="132" rx="14" class="card"/>
+  <text x="886" y="472" class="h">Учёба</text><text x="1380" y="472" class="small">1 / 3</text>
+  <circle cx="894" cy="502" r="10" fill="#2f7d50"/><text x="889" y="508" fill="#fff" class="chip">✓</text><text x="922" y="508" class="txt">Повторить заметки</text>
+  <circle cx="894" cy="539" r="10" fill="#fff" stroke="#aeb4ad"/><text x="922" y="545" class="txt">Фокус</text><rect x="1306" y="521" width="126" height="32" rx="8" fill="#f6f7f3"/><text x="1327" y="543" class="txt">45 мин</text>
+
+  <!-- 3 -->
+  <rect x="60" y="670" width="710" height="500" rx="22" class="panel"/>
+  <text x="92" y="714" class="title">3. Очередь действий</text>
+  <text x="92" y="742" class="muted">Показываем только то, что ещё нужно сделать</text>
+  <rect x="92" y="770" width="646" height="52" rx="12" class="soft"/>
+  <text x="114" y="803" class="h">Осталось 3 действия</text><rect x="590" y="781" width="126" height="30" rx="15" fill="#e8f2e9"/><text x="608" y="802" fill="#2f7d50" class="chip">● Хорошо⌄</text>
+  <rect x="92" y="842" width="646" height="62" rx="12" class="card"/>
+  <circle cx="122" cy="873" r="12" fill="#fff" stroke="#9ca49c"/><text x="154" y="879" class="h">Чтение 20 минут</text><text x="610" y="879" class="small">Учёба</text>
+  <rect x="92" y="914" width="646" height="62" rx="12" class="card"/>
+  <circle cx="122" cy="945" r="12" fill="#fff" stroke="#9ca49c"/><text x="154" y="951" class="h">Внести вес</text><rect x="519" y="928" width="90" height="34" rx="8" fill="#f6f7f3"/><text x="539" y="950" class="txt">72.4</text><text x="624" y="951" class="small">Здоровье</text>
+  <rect x="92" y="986" width="646" height="62" rx="12" class="card"/>
+  <circle cx="122" cy="1017" r="12" fill="#fff" stroke="#9ca49c"/><text x="154" y="1023" class="h">Подготовить план на завтра</text><text x="604" y="1023" class="small">Личное</text>
+  <text x="92" y="1104" class="muted">Сделанные пункты скрыты в «Выполнено (2)»</text>
+
+  <!-- 4 -->
+  <rect x="830" y="670" width="710" height="500" rx="22" class="panel"/>
+  <text x="862" y="714" class="title">4. Checkout только в конце дня</text>
+  <text x="862" y="742" class="muted">Рефлексия не мешает дневному списку</text>
+  <rect x="862" y="770" width="646" height="320" rx="14" class="card"/>
+  <text x="886" y="806" class="h">Как прошёл день?</text>
+  <rect x="886" y="824" width="116" height="38" rx="19" fill="#e8f2e9"/><text x="905" y="849" fill="#2f7d50" class="chip">● Хорошо</text>
+  <rect x="1016" y="824" width="128" height="38" rx="19" fill="#fff4df"/><text x="1034" y="849" fill="#a96f06" class="chip">○ Минимум</text>
+  <rect x="1158" y="824" width="118" height="38" rx="19" fill="#fbe9ea"/><text x="1176" y="849" fill="#b3444d" class="chip">× Плохой</text>
+  <text x="886" y="902" class="h">Что произошло? <tspan class="small">необязательно</tspan></text>
+  <rect x="886" y="916" width="588" height="52" rx="9" fill="#f6f7f3"/><text x="904" y="948" class="muted">Одна короткая мысль о дне…</text>
+  <text x="886" y="1006" class="h">Минимум на завтра</text>
+  <rect x="886" y="1020" width="588" height="52" rx="9" fill="#f6f7f3"/><text x="904" y="1052" class="muted">Самое маленькое полезное действие…</text>
+  <rect x="1284" y="1108" width="190" height="48" rx="12" fill="#2f7d50"/><text x="1325" y="1139" fill="#fff" class="h">Сохранить</text>
+</svg>

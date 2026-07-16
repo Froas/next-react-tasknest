@@ -7,6 +7,7 @@ import { toDateInput } from '@/lib/utils';
 import { USER_FACING_STATUSES, STATUS_LABELS } from '@/lib/sort';
 import { useFormDraft } from '@/lib/useFormDraft';
 import { MarkdownEditor } from '@/components/ui/MarkdownEditor';
+import { JourneyThemeSelector } from '@/components/visualization/JourneyThemeSelector';
 
 interface GoalFormProps {
  goal?: Goal;
@@ -32,6 +33,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
  priority: goal?.priority || PriorityType.MEDIUM,
  start_datetime: toDateInput(goal?.start_datetime),
  end_datetime: toDateInput(goal?.end_datetime),
+ journey_theme_id: goal?.journey_theme_id ?? 'mountain',
  });
 
  const [isSubmitting, setIsSubmitting] = useState(false);
@@ -121,6 +123,12 @@ export const GoalForm: React.FC<GoalFormProps> = ({
  rows={4}
  />
  </div>
+
+ <JourneyThemeSelector
+ value={formData.journey_theme_id}
+ onChange={(journeyThemeId) => setFormData((prev) => ({ ...prev, journey_theme_id: journeyThemeId }))}
+ showLivePreview
+ />
 
  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
  <div>

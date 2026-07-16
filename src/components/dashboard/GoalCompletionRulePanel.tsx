@@ -147,7 +147,7 @@ export const CompletionRulePanel: React.FC<CompletionRulePanelProps> = ({ entity
  </div>
 
  <div className="grid max-w-5xl min-w-0 gap-3 md:grid-cols-[minmax(180px,240px)_minmax(0,1fr)] md:items-center">
- <select value={ruleType} onChange={(event) => setRuleType(event.target.value as RuleType)} className="filter-input min-w-0">
+ <select value={ruleType} onChange={(event) => setRuleType(event.target.value as RuleType)} className="filter-input h-10 min-h-10 w-full min-w-0 self-start">
  <option value="structural">Structural</option>
  <option value="metric_target">Outcome metric</option>
  <option value="consistency">Consistency</option>
@@ -163,24 +163,24 @@ export const CompletionRulePanel: React.FC<CompletionRulePanelProps> = ({ entity
 
  {showOutcome && (
  <div className="mt-4 grid max-w-5xl min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">
- <label className="flex min-w-0 flex-col gap-1.5 text-xs text-muted-foreground">
+ <label className="grid min-w-0 content-start gap-1.5 text-xs text-muted-foreground">
  Metric
- <select value={metricName} onChange={(event) => setMetricName(event.target.value)} className="filter-input min-w-0">
+ <select value={metricName} onChange={(event) => setMetricName(event.target.value)} className="filter-input h-10 min-h-10 w-full min-w-0 self-start">
  <option value="">Choose metric</option>
  {metricOptions.map((name) => <option key={name} value={name}>{name}</option>)}
  </select>
  </label>
- <label className="flex min-w-0 flex-col gap-1.5 text-xs text-muted-foreground">
+ <label className="grid min-w-0 content-start gap-1.5 text-xs text-muted-foreground">
  Start
- <input type="number" value={startValue} onChange={(event) => setStartValue(event.target.value)} className="filter-input min-w-0" />
+ <input type="number" value={startValue} onChange={(event) => setStartValue(event.target.value)} className="filter-input h-10 min-h-10 w-full min-w-0 self-start" />
  </label>
- <label className="flex min-w-0 flex-col gap-1.5 text-xs text-muted-foreground">
+ <label className="grid min-w-0 content-start gap-1.5 text-xs text-muted-foreground">
  Target
- <input type="number" value={targetValue} onChange={(event) => setTargetValue(event.target.value)} className="filter-input min-w-0" />
+ <input type="number" value={targetValue} onChange={(event) => setTargetValue(event.target.value)} className="filter-input h-10 min-h-10 w-full min-w-0 self-start" />
  </label>
- <label className="flex min-w-0 flex-col gap-1.5 text-xs text-muted-foreground">
+ <label className="grid min-w-0 content-start gap-1.5 text-xs text-muted-foreground">
  Direction
- <select value={direction} onChange={(event) => setDirection(event.target.value as NonNullable<MetricRule['direction']>)} className="filter-input min-w-0">
+ <select value={direction} onChange={(event) => setDirection(event.target.value as NonNullable<MetricRule['direction']>)} className="filter-input h-10 min-h-10 w-full min-w-0 self-start">
  <option value="at_least">At least</option>
  <option value="at_most">At most</option>
  <option value="increase">Increase</option>
@@ -192,13 +192,13 @@ export const CompletionRulePanel: React.FC<CompletionRulePanelProps> = ({ entity
 
  {showConsistency && (
  <div className="mt-4 grid max-w-3xl min-w-0 gap-3 sm:grid-cols-2">
- <label className="flex min-w-0 flex-col gap-1.5 text-xs text-muted-foreground">
+ <label className="grid min-w-0 content-start gap-1.5 text-xs text-muted-foreground">
  Required completed occurrences
- <input type="number" min="1" value={requiredDone} onChange={(event) => setRequiredDone(event.target.value)} className="filter-input min-w-0" />
+ <input type="number" min="1" value={requiredDone} onChange={(event) => setRequiredDone(event.target.value)} className="filter-input h-10 min-h-10 w-full min-w-0 self-start" />
  </label>
- <label className="flex min-w-0 flex-col gap-1.5 text-xs text-muted-foreground">
+ <label className="grid min-w-0 content-start gap-1.5 text-xs text-muted-foreground">
  Window in days
- <input type="number" min="1" value={windowDays} onChange={(event) => setWindowDays(event.target.value)} className="filter-input min-w-0" />
+ <input type="number" min="1" value={windowDays} onChange={(event) => setWindowDays(event.target.value)} className="filter-input h-10 min-h-10 w-full min-w-0 self-start" />
  </label>
  </div>
  )}
@@ -210,14 +210,14 @@ export const CompletionRulePanel: React.FC<CompletionRulePanelProps> = ({ entity
  ['Outcome weight', outcomeWeight, setOutcomeWeight],
  ['Consistency weight', consistencyWeight, setConsistencyWeight],
  ].map(([label, value, setter]) => (
- <label key={label as string} className="flex min-w-0 flex-col gap-1.5 text-xs text-muted-foreground">
+ <label key={label as string} className="grid min-w-0 content-start gap-1.5 text-xs text-muted-foreground">
  {label as string}
  <input
  type="number"
  min="0"
  value={value as string}
  onChange={(event) => (setter as React.Dispatch<React.SetStateAction<string>>)(event.target.value)}
- className="filter-input min-w-0"
+ className="filter-input h-10 min-h-10 w-full min-w-0 self-start"
  />
  </label>
  ))}

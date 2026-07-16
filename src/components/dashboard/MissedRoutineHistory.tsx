@@ -10,6 +10,7 @@ import {
 } from '@/lib/api';
 import { toast } from '@/store/useToast';
 import { useStore } from '@/store/useStore';
+import { useTodoStreaks } from '@/store/useTodoStreaks';
 
 const HISTORY_STATUSES: TodoOccurrenceStatus[] = ['missed', 'skipped', 'excused'];
 
@@ -104,6 +105,7 @@ export const MissedRoutineHistory: React.FC = () => {
  current.map((candidate) => (candidate.id === updated.id ? updated : candidate))
  );
  void fetchGoals({ force: true, silent: true });
+ void useTodoStreaks.getState().hydrate(true).catch(() => undefined);
  toast.success(status === 'excused' ? 'Routine excused' : 'Routine marked done');
  } catch (error) {
  setItems(previous);

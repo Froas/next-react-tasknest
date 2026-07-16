@@ -1,16 +1,18 @@
 'use client';
 
-import React, { useMemo, useState, type CSSProperties } from 'react';
+import React, { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useStore } from '@/store/useStore';
 import {
  buildActivityCounts,
  buildHeatmapGrid,
  longestStreak,
+ currentStreak,
  activeDays,
  busiestDay,
  DayBucket,
 } from '@/lib/activityHeatmap';
-import { calculateActivityStreak } from '@/lib/recentActivity';
+import { AuthRequiredError, TodoOccurrenceItem, todoOccurrencesApi } from '@/lib/api';
+import { TODAY_DATA_CHANGED_EVENT } from '@/lib/todaySync';
 
 interface ActivityHeatmapProps {
  weeks?: number;
@@ -23,19 +25,58 @@ interface ActivityHeatmapProps {
 export const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ weeks = 53, compact = false }) => {
  const goals = useStore((s) => s.goals);
  const [hover, setHover] = useState<DayBucket | null>(null);
+ const [routineOccurrences, setRoutineOccurrences] = useState<TodoOccurrenceItem[]>([]);
+ const [routineLoading, setRoutineLoading] = useState(true);
 
- const grid = useMemo(() => buildHeatmapGrid(goals, weeks), [goals, weeks]);
+ useEffect(() => {
+ let cancelled = false;
+ const loadRoutineActivity = async () => {
+ const end = new Date();
+ const start = new Date(end);
+ start.setDate(start.getDate() - weeks * 7);
+ const localDate = (date: Date) => {
+ const year = date.getFullYear();
+ const month = String(date.getMonth() + 1).padStart(2, '0');
+ const day = String(date.getDate()).padStart(2, '0');
+ return `${year}-${month}-${day}`;
+ };
+ try {
+ const rows = await todoOccurrencesApi.history({
+ startDate: localDate(start),
+ endDate: localDate(end),
+ statuses: ['done', 'minimum'],
+ });
+ if (!cancelled) setRoutineOccurrences(rows);
+ } catch (error) {
+ if (!(error instanceof AuthRequiredError)) console.error('Failed to load routine heatmap activity:', error);
+ } finally {
+ if (!cancelled) setRoutineLoading(false);
+ }
+ };
+
+ void loadRoutineActivity();
+ window.addEventListener(TODAY_DATA_CHANGED_EVENT, loadRoutineActivity);
+ return () => {
+ cancelled = true;
+ window.removeEventListener(TODAY_DATA_CHANGED_EVENT, loadRoutineActivity);
+ };
+ }, [weeks]);
+
+ const grid = useMemo(
+ () => buildHeatmapGrid(goals, weeks, routineOccurrences),
+ [goals, routineOccurrences, weeks],
+ );
  const stats = useMemo(() => {
- const counts = buildActivityCounts(goals);
+ const counts = buildActivityCounts(goals, routineOccurrences);
  const longest = longestStreak(counts);
- const current = calculateActivityStreak(goals);
+ const current = currentStreak(counts);
  return {
  longest,
  current,
  active: activeDays(grid),
  busiest: busiestDay(grid),
  };
- }, [goals, grid]);
+ }, [goals, grid, routineOccurrences]);
 
  const cellSize = compact ? 'w-2.5 h-2.5' : 'w-3 h-3';
  const minCellWidth = compact ? '8px' : '8px';
@@ -72,7 +113,9 @@ export const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ weeks = 53, co
  <div>
  <h3 className="text-lg font-semibold text-foreground">Activity</h3>
  <p className="text-sm text-foreground dark:text-muted-foreground">
- {grid.total} completion{grid.total === 1 ? '' : 's'} in the last {weeks} weeks
+ {routineLoading && grid.total === 0
+ ? 'Loading activity…'
+ : `${grid.total} completion${grid.total === 1 ? '' : 's'} in the last ${weeks} weeks`}
  </p>
  </div>
  <div className="flex flex-wrap gap-4 text-xs">

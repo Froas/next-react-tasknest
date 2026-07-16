@@ -63,6 +63,10 @@ const TodosPage: React.FC = () => {
 
  const completionsMap = useTodoStreaks((s) => s.completions);
 
+ useEffect(() => {
+ void useTodoStreaks.getState().hydrate().catch(() => toast.error('Failed to load routine history'));
+ }, []);
+
  const handleToggle = async (item: KanbanItem) => {
  const newStatus = item.status === StatusType.FINISHED ? StatusType.OUTSTANDING : StatusType.FINISHED;
  const localStamp = newStatus === StatusType.FINISHED ? new Date().toISOString() : undefined;
@@ -76,11 +80,6 @@ const TodosPage: React.FC = () => {
  if (item.type === 'todo') {
  const updated = await todosApi.update(patch);
  updateTodoInGoals({ ...updated, end_datetime: updated.end_datetime ?? localStamp });
- if (newStatus === StatusType.FINISHED) {
- useTodoStreaks.getState().recordCompletion(item.id);
- } else {
- useTodoStreaks.getState().removeLastCompletion(item.id);
- }
  } else if (item.type === 'subtask') {
  const updated = await subtasksApi.update(patch);
  updateSubtaskInGoals({ ...updated, end_datetime: updated.end_datetime ?? localStamp });
@@ -369,11 +368,6 @@ const TodosPage: React.FC = () => {
  if (draggingItem.type === 'todo') {
  const updated = await todosApi.update(patch);
  updateTodoInGoals({ ...updated, end_datetime: updated.end_datetime ?? finishedAt });
- if (nextStatus === StatusType.FINISHED) {
- useTodoStreaks.getState().recordCompletion(draggingItem.id);
- } else if (draggingItem.status === StatusType.FINISHED) {
- useTodoStreaks.getState().removeLastCompletion(draggingItem.id);
- }
  } else if (draggingItem.type === 'subtask') {
  const updated = await subtasksApi.update(patch);
  updateSubtaskInGoals({ ...updated, end_datetime: updated.end_datetime ?? finishedAt });

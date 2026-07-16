@@ -35,6 +35,7 @@ const Header = () => {
  { href: '/todo', label: 'Todos' },
  { href: '/event', label: 'Events' },
  { href: '/calendar', label: 'Calendar' },
+ { href: '/attention', label: 'Attention' },
  { href: '/visualization', label: 'Visualization' },
  { href: '/activity', label: 'Activity' },
  ];

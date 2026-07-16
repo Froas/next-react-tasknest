@@ -446,15 +446,15 @@ export function AppShell({ children }: AppShellProps) {
  white-space: nowrap;
  }
  :global(.tn-shell-icon) {
- width: 30px !important;
- height: 30px !important;
+ width: 44px !important;
+ height: 44px !important;
  }
  :global(.tn-shell-icon-optional) {
  display: none !important;
  }
  :global(.tn-shell-hamburger) {
- width: 30px !important;
- height: 30px !important;
+ width: 44px !important;
+ height: 44px !important;
  }
  :global(.tn-shell-main) {
  padding: 12px !important;

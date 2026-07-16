@@ -62,7 +62,6 @@ export interface GoalTemplateBlueprint {
 
 export interface GoalTemplate {
  id: string;
- emoji: string;
  title: string;
  description: string;
  durationDays: number;
@@ -226,6 +225,58 @@ const startedBlueprint = (
  milestones,
 });
 
+const buildScalingTestTemplate = (
+ milestoneCount: number,
+ tasksPerMilestone: number,
+): GoalTemplate => {
+ const durationDays = milestoneCount * 7;
+ const scaleLabel = `${milestoneCount} × ${tasksPerMilestone}`;
+
+ return {
+ id: `test-scale-${milestoneCount}x${tasksPerMilestone}`,
+ title: `[Test] Scale ${scaleLabel}`,
+ description: `Generated test tree with ${milestoneCount} milestones and ${tasksPerMilestone} tasks in each milestone.`,
+ durationDays,
+ priority: PriorityType.LOW,
+ tags: ['testing', 'scale'],
+ blueprint: startedBlueprint(
+ durationDays,
+ PriorityType.LOW,
+ structuralRule,
+ [numberMetric('Test progress', 'items')],
+ [routineTask('Test routine', 'A goal-level routine so the generated tree also exercises Today.', ['Log test run'])],
+ Array.from({ length: milestoneCount }, (_, milestoneIndex) =>
+ milestone(
+ `Test milestone ${milestoneIndex + 1}`,
+ `Generated milestone ${milestoneIndex + 1} of ${milestoneCount}.`,
+ Math.max(1, Math.round(((milestoneIndex + 1) / milestoneCount) * durationDays)),
+ Array.from({ length: tasksPerMilestone }, (_, taskIndex) =>
+ projectTask(
+ `Test task ${milestoneIndex + 1}.${taskIndex + 1}`,
+ 'Generated task for testing dense milestone and task layouts.',
+ [`Complete test step ${milestoneIndex + 1}.${taskIndex + 1}`],
+ Math.max(1, Math.round(((milestoneIndex + 1) / milestoneCount) * durationDays)),
+ PriorityType.LOW,
+ ),
+ ),
+ PriorityType.LOW,
+ milestoneIndex === 0 ? StatusType.STARTED : StatusType.OUTSTANDING,
+ ),
+ ),
+ ),
+ };
+};
+
+const SCALING_TEST_TEMPLATES: GoalTemplate[] = [
+ [1, 2],
+ [2, 4],
+ [4, 8],
+ [8, 16],
+ [16, 32],
+].map(([milestoneCount, tasksPerMilestone]) =>
+ buildScalingTestTemplate(milestoneCount, tasksPerMilestone),
+);
+
 export const countTemplateTasks = (template: GoalTemplate) =>
  (template.blueprint.goal_tasks?.length ?? 0) +
  template.blueprint.milestones.reduce((sum, milestoneItem) => sum + milestoneItem.tasks.length, 0);
@@ -257,7 +308,6 @@ export const countTemplateMetrics = (template: GoalTemplate) => {
 export const GOAL_TEMPLATES: GoalTemplate[] = [
  {
  id: 'weight-loss-system',
- emoji: '⚖️',
  title: 'Weight Loss 105 → 90',
  description: 'Metric-based weight loss with nutrition routines, movement, and honest daily logging.',
  durationDays: 120,
@@ -296,7 +346,6 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
  },
  {
  id: 'recovery-os',
- emoji: '🌙',
  title: 'Recovery OS',
  description: 'Sleep, shutdown, and nervous-system recovery without turning evenings into homework.',
  durationDays: 90,
@@ -335,7 +384,6 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
  },
  {
  id: 'tracker-mvp',
- emoji: '🧭',
  title: 'Tracker MVP',
  description: 'Finish a reliable web MVP before mobile apps and integrations.',
  durationDays: 45,
@@ -380,7 +428,6 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
  },
  {
  id: 'professional-radar',
- emoji: '📡',
  title: 'Professional Radar',
  description: 'Capture weak signals, connect patterns, and review opportunities intentionally.',
  durationDays: 120,
@@ -411,7 +458,6 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
  },
  {
  id: 'deep-work-system',
- emoji: '🧠',
  title: 'Deep Work System',
  description: 'Build a repeatable focus system with blocks, shutdown, and attention hygiene.',
  durationDays: 60,
@@ -442,7 +488,6 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
  },
  {
  id: 'japanese-n3-path',
- emoji: '🇯🇵',
  title: 'Japanese N3 Path',
  description: 'A balanced Japanese study plan for kanji, listening, grammar, and review.',
  durationDays: 180,
@@ -479,7 +524,6 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
  },
  {
  id: 'english-fluency-maintenance',
- emoji: '🗣️',
  title: 'English Fluency Maintenance',
  description: 'Maintain speaking, vocabulary, and writing fluency through tiny daily loops.',
  durationDays: 90,
@@ -508,7 +552,6 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
  },
  {
  id: 'run-5k',
- emoji: '🏃',
  title: 'Run a 5K',
  description: 'Build from couch to running 5km without stopping.',
  durationDays: 56,
@@ -537,7 +580,6 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
  },
  {
  id: 'strength-foundation',
- emoji: '💪',
  title: 'Strength Foundation',
  description: 'Build a basic lifting habit around form, progressive overload, and recovery.',
  durationDays: 84,
@@ -568,7 +610,6 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
  },
  {
  id: 'personal-finance-reset',
- emoji: '💸',
  title: 'Personal Finance Reset',
  description: 'Make money visible, reduce leaks, and build a simple monthly operating system.',
  durationDays: 60,
@@ -599,7 +640,6 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
  },
  {
  id: 'read-12-books',
- emoji: '📚',
  title: 'Read 12 Books This Year',
  description: 'A book-a-month system with notes, pacing, and a visible reading queue.',
  durationDays: 365,
@@ -628,7 +668,6 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
  },
  {
  id: 'side-project-launch',
- emoji: '🚀',
  title: 'Ship a Side Project',
  description: 'Move from idea to launched-and-used in 90 days.',
  durationDays: 90,
@@ -659,7 +698,6 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
  },
  {
  id: 'home-reset',
- emoji: '🏠',
  title: 'Home Reset',
  description: 'Reset space, chores, and visual friction with a simple household system.',
  durationDays: 45,
@@ -688,7 +726,6 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
  },
  {
  id: 'meal-prep-system',
- emoji: '🥗',
  title: 'Meal Prep System',
  description: 'Create repeatable meals, shopping, and prep routines that support health goals.',
  durationDays: 60,
@@ -717,7 +754,6 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
  },
  {
  id: 'mindfulness-calm',
- emoji: '🧘',
  title: 'Mindfulness Calm',
  description: 'Build emotional regulation through tiny practices, reflection, and low-pressure consistency.',
  durationDays: 60,
@@ -746,7 +782,6 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
  },
  {
  id: 'portfolio-career-switch',
- emoji: '💼',
  title: 'Portfolio Career Switch',
  description: 'Build a portfolio, proof of work, and outreach loop for a role transition.',
  durationDays: 120,
@@ -783,7 +818,6 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
  },
  {
  id: 'knowledge-base-obsidian',
- emoji: '🕸️',
  title: 'Obsidian Knowledge Base',
  description: 'Build a connected note system with capture, review, and graph-friendly structure.',
  durationDays: 75,
@@ -812,7 +846,6 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
  },
  {
  id: 'digital-declutter',
- emoji: '🧹',
  title: 'Digital Declutter',
  description: 'Clean files, inboxes, apps, and notification surfaces without making it a giant project.',
  durationDays: 45,
@@ -841,7 +874,6 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
  },
  {
  id: 'social-reconnection',
- emoji: '🤝',
  title: 'Social Reconnection',
  description: 'Rebuild social energy through tiny outreach, plans, and honest follow-through.',
  durationDays: 60,
@@ -870,7 +902,6 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
  },
  {
  id: 'writing-habit',
- emoji: '✍️',
  title: 'Writing Habit',
  description: 'Build a sustainable writing loop from raw notes to published pieces.',
  durationDays: 90,
@@ -897,4 +928,5 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
  ],
  ),
  },
+ ...SCALING_TEST_TEMPLATES,
 ];

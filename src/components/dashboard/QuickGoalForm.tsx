@@ -1,9 +1,10 @@
 "use client";
 import React, { useState } from 'react';
-import { GoalItem as Goal, StatusType, PriorityType } from '@/lib/types';
+import { GoalItem as Goal, JourneyThemeId, StatusType, PriorityType } from '@/lib/types';
 import { goalsApi } from '@/lib/api';
 import { useAppSession } from '../../app/clientwrapper';
 import { useStore } from '@/store/useStore';
+import { JourneyThemeSelector } from '@/components/visualization/JourneyThemeSelector';
 
 interface QuickGoalFormProps {
  onSuccess: (goal: Goal) => void;
@@ -14,12 +15,20 @@ export const QuickGoalForm: React.FC<QuickGoalFormProps> = ({ onSuccess, onCance
  const session = useAppSession();
  const addGoal = useStore((s) => s.addGoal);
  const today = new Date().toISOString().split('T')[0];
- const [formData, setFormData] = useState({
+ const [formData, setFormData] = useState<{
+ title: string;
+ description: string;
+ status: StatusType;
+ priority: PriorityType;
+ end_datetime: string;
+ journey_theme_id: JourneyThemeId;
+ }>({
  title: '',
  description: '',
  status: StatusType.OUTSTANDING,
  priority: PriorityType.MEDIUM,
  end_datetime: today,
+ journey_theme_id: 'mountain',
  });
 
  const [isSubmitting, setIsSubmitting] = useState(false);
@@ -93,6 +102,12 @@ export const QuickGoalForm: React.FC<QuickGoalFormProps> = ({ onSuccess, onCance
  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
  />
  </div>
+
+ <JourneyThemeSelector
+ value={formData.journey_theme_id}
+ onChange={(journeyThemeId) => setFormData((prev) => ({ ...prev, journey_theme_id: journeyThemeId }))}
+ showLivePreview={false}
+ />
 
  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
  <div>

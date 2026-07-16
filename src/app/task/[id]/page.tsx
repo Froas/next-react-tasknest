@@ -13,7 +13,7 @@ import { toast } from '@/store/useToast';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useDocumentTitle } from '@/lib/useDocumentTitle';
 import { Markdown } from '@/components/ui/Markdown';
-import { ChevronLeft, Target, Flag, CheckCircle2, Circle, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Target, Flag, CheckCircle2, Circle, Trash2 } from 'lucide-react';
 import { calculateTaskProgressLanes } from '@/lib/progress';
 import { CompletionRulePanel } from '@/components/dashboard/GoalCompletionRulePanel';
 import { ProgressLanes } from '@/components/dashboard/ProgressLanes';
@@ -51,6 +51,9 @@ const TaskDetailPage: React.FC = () => {
  const [isLoading, setIsLoading] = useState(!ctx.task);
  const [confirmDelete, setConfirmDelete] = useState(false);
  const [isDeleting, setIsDeleting] = useState(false);
+ const [expandedSubtaskId, setExpandedSubtaskId] = useState<string | null>(null);
+ const [loadingSubtaskId, setLoadingSubtaskId] = useState<string | null>(null);
+ const [subtaskDetails, setSubtaskDetails] = useState<Record<string, Subtask>>({});
  useDocumentTitle(ctx.task?.title);
 
  useEffect(() => {
@@ -113,7 +116,9 @@ const TaskDetailPage: React.FC = () => {
  try {
  if (kind === 'subtask') {
  const updated = await subtasksApi.update(patch);
- updateSubtaskInGoals({ ...updated, end_datetime: updated.end_datetime ?? localStamp });
+ const resolved = { ...updated, end_datetime: updated.end_datetime ?? localStamp };
+ updateSubtaskInGoals(resolved);
+ setSubtaskDetails((current) => current[child.id] ? { ...current, [child.id]: resolved } : current);
  } else {
  const updated = await todosApi.update(patch);
  updateTodoInGoals({ ...updated, end_datetime: updated.end_datetime ?? localStamp });
@@ -122,6 +127,26 @@ const TaskDetailPage: React.FC = () => {
  } catch (err) {
  console.error(err);
  toast.error(`Failed to update ${kind}`);
+ }
+ };
+
+ const toggleSubtaskDetails = async (subtask: Subtask) => {
+ if (expandedSubtaskId === subtask.id) {
+ setExpandedSubtaskId(null);
+ return;
+ }
+ setExpandedSubtaskId(subtask.id);
+ if (subtaskDetails[subtask.id]) return;
+
+ setLoadingSubtaskId(subtask.id);
+ try {
+ const fresh = await subtasksApi.getById(subtask.id);
+ setSubtaskDetails((current) => ({ ...current, [subtask.id]: fresh }));
+ } catch (error) {
+ console.error('Failed to load subtask details:', error);
+ toast.error('Failed to load subtask details');
+ } finally {
+ setLoadingSubtaskId((current) => current === subtask.id ? null : current);
  }
  };
 
@@ -256,7 +281,14 @@ const TaskDetailPage: React.FC = () => {
  description={s.description}
  done={s.status === StatusType.FINISHED}
  onToggle={() => toggleChild('subtask', s)}
+ onOpen={() => void toggleSubtaskDetails(s)}
+ expanded={expandedSubtaskId === s.id}
+ >
+ <SubtaskDetails
+ subtask={subtaskDetails[s.id] ?? s}
+ loading={loadingSubtaskId === s.id}
  />
+ </ChildRow>
  ))}
  </Section>
  )}
@@ -305,27 +337,105 @@ const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title
  </div>
 );
 
-const ChildRow: React.FC<{ title: string; description?: string; done: boolean; onToggle: () => void }> = ({
- title,
- description,
- done,
- onToggle,
-}) => (
- <li className="flex items-start space-x-3 px-3 py-2 rounded-lg" style={{ transition: 'background .15s' }}>
- <button onClick={onToggle} aria-label={done ? 'Mark as outstanding' : 'Mark as finished'} className="mt-0.5 flex-shrink-0">
- {done ? <CheckCircle2 className="w-5 h-5" style={{ color: 'var(--tn-good, #2f7d50)' }} /> : <Circle className="w-5 h-5 text-muted-foreground hover:text-foreground" />}
+const ChildRow: React.FC<{
+ title: string;
+ description?: string;
+ done: boolean;
+ onToggle: () => void;
+ onOpen?: () => void;
+ expanded?: boolean;
+ children?: React.ReactNode;
+}> = ({ title, description, done, onToggle, onOpen, expanded = false, children }) => (
+ <li
+ className="rounded-xl px-3 py-2"
+ style={{ transition: 'background .15s', background: expanded ? 'var(--tn-hover)' : 'transparent' }}
+ >
+ <div className="flex items-start gap-3">
+ <button
+ type="button"
+ onClick={onToggle}
+ aria-label={done ? 'Mark as outstanding' : 'Mark as finished'}
+ className="mt-0.5 flex-shrink-0"
+ >
+ {done
+ ? <CheckCircle2 className="h-5 w-5" style={{ color: 'var(--tn-good, #2f7d50)' }} />
+ : <Circle className="h-5 w-5 text-muted-foreground hover:text-foreground" />}
  </button>
- <div className="flex-1 min-w-0">
- <div className={`text-sm font-medium truncate ${done ? 'line-through text-muted-foreground dark:text-muted-foreground' : 'text-foreground'}`}>
+
+ {onOpen ? (
+ <button
+ type="button"
+ onClick={onOpen}
+ aria-expanded={expanded}
+ className="flex min-w-0 flex-1 items-start gap-3 text-left"
+ >
+ <div className="min-w-0 flex-1">
+ <div className={`truncate text-sm font-medium ${done ? 'line-through text-muted-foreground dark:text-muted-foreground' : 'text-foreground'}`}>
  {title}
  </div>
- {description && (
- <div className={`text-xs truncate ${done ? 'text-muted-foreground dark:text-muted-foreground' : 'text-muted-foreground dark:text-muted-foreground'}`}>
- {description}
+ {description && <div className="truncate text-xs text-muted-foreground">{description}</div>}
+ </div>
+ {expanded
+ ? <ChevronDown className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+ : <ChevronRight className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />}
+ </button>
+ ) : (
+ <div className="min-w-0 flex-1">
+ <div className={`truncate text-sm font-medium ${done ? 'line-through text-muted-foreground dark:text-muted-foreground' : 'text-foreground'}`}>
+ {title}
+ </div>
+ {description && <div className="truncate text-xs text-muted-foreground">{description}</div>}
  </div>
  )}
  </div>
+ {expanded && children}
  </li>
+);
+
+const SubtaskDetails: React.FC<{ subtask: Subtask; loading: boolean }> = ({ subtask, loading }) => (
+ <div
+ className="ml-8 mt-3 rounded-xl border p-4"
+ style={{ border: 'var(--tn-line)', background: 'var(--tn-card)' }}
+ >
+ {loading ? (
+ <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+ <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />
+ Loading subtask…
+ </div>
+ ) : (
+ <>
+ <div className="mb-3 flex flex-wrap items-center gap-2">
+ <span
+ className="rounded-full px-2.5 py-1 text-xs font-medium"
+ style={{ background: 'var(--tn-chip)', color: 'var(--tn-fg-muted)' }}
+ >
+ Subtask
+ </span>
+ <span className="text-xs capitalize text-muted-foreground">{subtask.status}</span>
+ </div>
+
+ {subtask.description ? (
+ <Markdown source={subtask.description} className="mb-4 text-sm text-foreground" />
+ ) : (
+ <p className="mb-4 text-sm text-muted-foreground">No description.</p>
+ )}
+
+ <dl className="grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
+ <EntityDetail label="Priority" value={subtask.priority} />
+ <EntityDetail label="Due" value={subtask.due_date ? formatDate(subtask.due_date) : '—'} />
+ <EntityDetail label="Started" value={subtask.start_datetime ? formatDate(subtask.start_datetime) : '—'} />
+ <EntityDetail label="Completed" value={subtask.end_datetime ? formatDate(subtask.end_datetime) : '—'} />
+ </dl>
+ </>
+ )}
+ </div>
+);
+
+const EntityDetail: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+ <div className="min-w-0">
+ <dt className="mb-1 uppercase tracking-wide text-muted-foreground">{label}</dt>
+ <dd className="truncate font-medium capitalize text-foreground" title={value}>{value}</dd>
+ </div>
 );
 
 export default withAuth(TaskDetailPage);

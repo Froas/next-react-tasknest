@@ -3,10 +3,12 @@ import {
  buildActivityCounts,
  buildHeatmapGrid,
  longestStreak,
+ currentStreak,
  activeDays,
  busiestDay,
 } from './activityHeatmap';
 import { GoalItem, StatusType, PriorityType } from './types';
+import type { TodoOccurrenceItem } from './api';
 
 const baseEntity = {
  description: '',
@@ -25,6 +27,17 @@ const yesterday = new Date(today);
 yesterday.setDate(yesterday.getDate() - 1);
 const twoDaysAgo = new Date(today);
 twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+const routineOccurrence: TodoOccurrenceItem = {
+ id: 'routine-today',
+ date: today.toISOString().slice(0, 10),
+ status: 'done',
+ completed_at: today.toISOString(),
+ todo_id: 'todo-routine',
+ created_at: today.toISOString(),
+ updated_at: today.toISOString(),
+ todo_title: 'Daily routine',
+};
 
 const sampleGoal: GoalItem = {
  ...baseEntity,
@@ -98,6 +111,13 @@ describe('buildActivityCounts', () => {
  const counts = buildActivityCounts([goal]);
  expect(counts.size).toBe(0);
  });
+
+ it('adds completed routine occurrences to the same daily bucket', () => {
+ const counts = buildActivityCounts([sampleGoal], [routineOccurrence]);
+ const todayKey = today.toISOString().slice(0, 10);
+ expect(counts.get(todayKey)?.count).toBe(3);
+ expect(counts.get(todayKey)?.byKind.Routine).toBe(1);
+ });
 });
 
 describe('buildHeatmapGrid', () => {
@@ -131,6 +151,13 @@ describe('longestStreak', () => {
  ['2026-01-05', { count: 1, byKind: {} }],
  ]);
  expect(longestStreak(map)).toBe(3);
+ });
+});
+
+describe('currentStreak', () => {
+ it('counts a completion on the current logical day', () => {
+ const key = today.toISOString().slice(0, 10);
+ expect(currentStreak(new Map([[key, { count: 1, byKind: { Routine: 1 } }]]))).toBe(1);
  });
 });
 

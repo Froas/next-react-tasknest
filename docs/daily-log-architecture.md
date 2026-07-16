@@ -389,7 +389,7 @@ Status: implemented as dynamic metrics.
 
 ### Phase 5 — automatic daily finalizer
 
-Status: planned.
+Status: implemented.
 
 - Add `finalized_at` and `finalized_by` to `DailyLog`.
 - Use user timezone and `dayBoundaryHour`, default `04:00`.
@@ -447,9 +447,15 @@ Status: implemented for goals, milestones, and tasks.
 
 ### Phase 10 — Radar integration
 
-- Add `Signal`.
-- Optionally link signals to `DailyLog`.
-- Show due/review signals on Today.
+Status: workflow MVP implemented.
+
+- Reuse `Note(kind="signal")` as the capture record instead of maintaining a
+  competing Signal table.
+- Persist domain, stake, decision, next action, review date, deadline, outcome,
+  and resolution time.
+- Show due/review and undecided inbox signals on Today.
+- Keep DailyLog linkage as a later optional relationship; Goal/Task links are
+  already supported.
 
 ## What to pause
 

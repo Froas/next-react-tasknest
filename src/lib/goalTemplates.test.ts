@@ -9,7 +9,14 @@ import {
 
 describe('starter goal templates', () => {
  it('ships a full starter catalog', () => {
- expect(GOAL_TEMPLATES).toHaveLength(20);
+ expect(GOAL_TEMPLATES).toHaveLength(25);
+ });
+
+ it('includes exponentially scaled templates for dense-tree testing', () => {
+ const scalingTemplates = GOAL_TEMPLATES.filter((template) => template.id.startsWith('test-scale-'));
+
+ expect(scalingTemplates.map((template) => template.blueprint.milestones.length)).toEqual([1, 2, 4, 8, 16]);
+ expect(scalingTemplates.map((template) => countTemplateTasks(template))).toEqual([3, 9, 33, 129, 513]);
  });
 
  it('ship goal-level routines for Today instead of only milestone work', () => {

@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { useAppSession } from "../clientwrapper";
-import { Button } from "@/components/ui/button";
 import { backupApi, usersApi } from "@/lib/api";
 import { useStore } from "@/store/useStore";
 import { useShallow } from "zustand/react/shallow";
@@ -11,6 +10,78 @@ import { buildIcs, downloadIcsFile } from "@/lib/icsExport";
 import { toast } from "@/store/useToast";
 import { useNotifications } from "@/store/useNotifications";
 import { NAV_ITEMS, NavItemId, useNavPreferences } from "@/lib/navPreferences";
+import { useDashboardPreferences } from '@/lib/dashboardPreferences';
+import { DashboardWidgetSettings } from '@/components/dashboard/DashboardWidgetSettings';
+import {
+ Bell,
+ BellOff,
+ Bot,
+ CalendarDays,
+ ChevronDown,
+ ChevronUp,
+ DatabaseBackup,
+ Download,
+ ExternalLink,
+ LayoutDashboard,
+ Navigation,
+ Palette,
+ Plug,
+ RotateCcw,
+ Save,
+ Upload,
+ UserRound,
+ type LucideIcon,
+} from 'lucide-react';
+
+const SettingsSection: React.FC<{
+ id?: string;
+ icon: LucideIcon;
+ title: string;
+ description?: string;
+ action?: React.ReactNode;
+ children: React.ReactNode;
+}> = ({ id, icon: Icon, title, description, action, children }) => (
+ <section id={id} className="card scroll-mt-20 !p-5 sm:!p-6">
+ <header className="mb-5 flex flex-wrap items-start gap-3">
+ <span
+ className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border"
+ style={{ border: 'var(--tn-line)', background: 'var(--tn-hover)', color: 'var(--tn-accent)' }}
+ >
+ <Icon className="h-5 w-5" strokeWidth={1.8} />
+ </span>
+ <div className="min-w-0 flex-1">
+ <h2 className="text-base font-semibold" style={{ color: 'var(--tn-fg)' }}>{title}</h2>
+ {description && <p className="mt-1 text-sm" style={{ color: 'var(--tn-fg-muted)' }}>{description}</p>}
+ </div>
+ {action}
+ </header>
+ {children}
+ </section>
+);
+
+const IntegrationTile: React.FC<{
+ icon: LucideIcon;
+ title: string;
+ detail: string;
+ onClick?: () => void;
+ disabled?: boolean;
+}> = ({ icon: Icon, title, detail, onClick, disabled = false }) => (
+ <button
+ type="button"
+ onClick={onClick}
+ disabled={disabled}
+ className="flex min-w-0 items-start gap-3 rounded-xl border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+ style={{ border: 'var(--tn-line)', background: 'var(--tn-surface-2, var(--tn-hover))' }}
+ >
+ <span className="mt-0.5" style={{ color: 'var(--tn-accent)' }}>
+ <Icon className="h-5 w-5" strokeWidth={1.8} />
+ </span>
+ <span className="min-w-0">
+ <span className="block text-sm font-semibold" style={{ color: 'var(--tn-fg)' }}>{title}</span>
+ <span className="mt-1 block text-xs" style={{ color: 'var(--tn-fg-muted)' }}>{detail}</span>
+ </span>
+ </button>
+);
 
 const ProfilePage = () => {
  const session = useAppSession();
@@ -26,6 +97,11 @@ const ProfilePage = () => {
  const [importing, setImporting] = useState(false);
  const fileInputRef = useRef<HTMLInputElement | null>(null);
  const { preferences, setPreferences, resetPreferences } = useNavPreferences();
+ const {
+ preferences: dashboardPreferences,
+ setPreferences: setDashboardPreferences,
+ resetPreferences: resetDashboardPreferences,
+ } = useDashboardPreferences();
 
  const goals = useStore((s) => s.goals);
  const milestones = useStore((s) => s.milestones);
@@ -189,19 +265,12 @@ const ProfilePage = () => {
  });
  };
 
- // Theme-aware field renderer (uses --tn-* tokens so it reads on every theme).
  const renderField = (label: string, value: string, field: string, editable = true) => (
- <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0' }}>
- <span
- style={{
- color: 'var(--tn-fg-muted)',
- width: 96,
- fontSize: 13,
- fontWeight: 500,
- }}
+ <div
+ className="grid min-w-0 gap-2 rounded-xl border px-4 py-3 sm:grid-cols-[120px_minmax(0,1fr)] sm:items-center"
+ style={{ border: 'var(--tn-line)', background: 'var(--tn-surface-2, var(--tn-hover))' }}
  >
- {label}
- </span>
+ <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
  {editField === field && editable ? (
  <input
  autoFocus
@@ -215,62 +284,39 @@ const ProfilePage = () => {
  onBlur={() => setEditField(null)}
  onKeyDown={e => {
  if (e.key ==="Enter") setEditField(null);
+ if (e.key ==="Escape") setEditField(null);
  }}
- style={{
- borderBottom: '1px solid var(--tn-fg-muted)',
- background: 'transparent',
- padding: '2px 4px',
- color: 'var(--tn-fg)',
- outline: 'none',
- fontSize: 14,
- minWidth: 160,
- }}
+ className="filter-input h-10 w-full min-w-0"
  />
- ) : (
- <span
- onClick={() => editable && setEditField(field)}
- style={{
- fontSize: 14,
- color: 'var(--tn-fg)',
- cursor: editable ? 'pointer' : 'default',
- padding: '2px 6px',
- borderRadius: 4,
- }}
+ ) : editable ? (
+ <button
+ type="button"
+ onClick={() => setEditField(field)}
+ className="min-h-10 min-w-0 rounded-lg px-3 py-2 text-left text-sm font-medium text-foreground hover:bg-background"
+ title={`Edit ${label.toLowerCase()}`}
  >
- {value || <span style={{ color: 'var(--tn-fg-dim, var(--tn-fg-muted))' }}>Click to set</span>}
+ {value || <span className="text-muted-foreground">Click to set</span>}
+ </button>
+ ) : (
+ <span className="min-w-0 truncate px-3 py-2 text-sm font-medium text-foreground">
+ {value || <span className="text-muted-foreground">Not set</span>}
  </span>
  )}
  </div>
  );
 
- // Theme-aware button (replaces shadcn Button which uses hardcoded gray fallbacks).
  const TButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'ghost' | 'danger' }> = ({
  variant = 'ghost',
  style,
+ className,
  children,
  ...rest
  }) => (
  <button
  {...rest}
+ className={`${variant === 'primary' ? 'btn btn-primary' : 'btn btn-secondary'} justify-center ${className ?? ''}`}
  style={{
- padding: '8px 14px',
- fontSize: 13,
- fontWeight: 500,
- border: 'var(--tn-line)',
- background:
- variant === 'primary'
- ? 'var(--tn-accent)'
- : variant === 'danger'
- ? 'transparent'
- : 'transparent',
- color:
- variant === 'primary'
- ? 'var(--tn-on-accent)'
- : variant === 'danger'
- ? 'var(--tn-bad, #c25d63)'
- : 'var(--tn-fg)',
- borderRadius: 'var(--tn-r-md, 6px)',
- cursor: rest.disabled ? 'not-allowed' : 'pointer',
+ ...(variant === 'danger' ? { color: 'var(--tn-bad)', borderColor: 'var(--tn-bad)' } : {}),
  opacity: rest.disabled ? 0.5 : 1,
  ...style,
  }}
@@ -281,148 +327,111 @@ const ProfilePage = () => {
 
  return (
  <div
+ className="page"
  style={{
- maxWidth: 720,
- margin: '0 auto',
- padding: '32px 24px 80px',
- color: 'var(--tn-fg)',
+ maxWidth: 960,
  }}
  >
- <div style={{ marginBottom: 32 }}>
- <div
- style={{
- fontSize: 11,
- color: 'var(--tn-fg-muted)',
- letterSpacing: '0.1em',
- textTransform: 'uppercase',
- marginBottom: 8,
- }}
- >
- Settings
- </div>
- <h1
- style={{
- fontSize: 32,
- fontWeight: 600,
- letterSpacing: '-0.02em',
- fontFamily: 'var(--tn-font-display, var(--tn-font-sans))',
- }}
- >
- Profile
- </h1>
+ <div className="page-head">
+ <div className="page-eyebrow">Settings</div>
+ <h1 className="page-title">Profile</h1>
+ <p className="page-lede">Manage your identity, workspace layout, integrations, and data.</p>
  </div>
 
  {loading ? (
- <div style={{ color: 'var(--tn-fg-muted)' }}>Loading…</div>
+ <div className="card text-sm text-muted-foreground">Loading profile…</div>
  ) : (
- <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+ <div className="flex flex-col gap-5">
  {/* Identity */}
- <section
- style={{
- background: 'var(--tn-card)',
- border: 'var(--tn-line)',
- borderRadius: 'var(--tn-r-lg, 8px)',
- padding: 20,
- boxShadow: 'var(--tn-shadow)',
- }}
+ <SettingsSection
+ icon={UserRound}
+ title="Identity"
+ description="Your account details. Click the username to edit it."
  >
- <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
- Identity
- </h2>
+ <div className="space-y-2">
  {renderField("Username", username,"username", true)}
  {renderField("Email", email,"email", false)}
+ </div>
  {changed && (
- <div style={{ marginTop: 12 }}>
+ <div className="mt-4 flex justify-end">
  <TButton variant="primary" onClick={handleSave} disabled={saving}>
+ <Save className="h-4 w-4" />
  {saving ?"Saving…" :"Save changes"}
  </TButton>
  </div>
  )}
  {message && (
- <div
- style={{
- fontSize: 13,
- color: 'var(--tn-good, #2f7d50)',
- marginTop: 8,
- }}
- >
+ <div className="mt-3 text-sm" style={{ color: message.startsWith('Failed') ? 'var(--tn-bad)' : 'var(--tn-good)' }}>
  {message}
  </div>
  )}
- </section>
+ </SettingsSection>
 
  {/* Integrations */}
- <section>
- <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
- Integrations
- </h2>
- <p
- style={{
- fontSize: 13,
- color: 'var(--tn-fg-muted)',
- marginBottom: 12,
- }}
+ <SettingsSection
+ icon={Plug}
+ title="Integrations"
+ description="Connect external services and control local browser notifications."
  >
- Connect external calendars and chat bots.
- </p>
- <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
- <TButton onClick={handleGoogleCalendar}>
- Google Calendar Integration
- </TButton>
- <TButton disabled>Telegram Bot Integration</TButton>
- <TButton onClick={handleToggleNotifications}>
- {notificationsEnabled
- ? 'Disable browser notifications'
- : 'Enable browser notifications'}
- </TButton>
+ <div className="grid gap-3 md:grid-cols-3">
+ <IntegrationTile
+ icon={CalendarDays}
+ title="Google Calendar"
+ detail="Connect events and scheduled work."
+ onClick={handleGoogleCalendar}
+ />
+ <IntegrationTile
+ icon={Bot}
+ title="Telegram bot"
+ detail="Not configured yet."
+ disabled
+ />
+ <IntegrationTile
+ icon={notificationsEnabled ? BellOff : Bell}
+ title={notificationsEnabled ? 'Disable notifications' : 'Browser notifications'}
+ detail={notificationsEnabled ? 'Notifications are currently enabled.' : 'Get reminders for overdue work.'}
+ onClick={handleToggleNotifications}
+ />
  </div>
- </section>
+ </SettingsSection>
 
  {/* Appearance */}
- <section>
- <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
- Appearance
- </h2>
- <p
- style={{
- fontSize: 13,
- color: 'var(--tn-fg-muted)',
- marginBottom: 12,
- }}
+ <SettingsSection
+ icon={Palette}
+ title="Appearance"
+ description="Choose a design theme. Every setting on this page follows the active theme tokens."
  >
- Pick a design theme. 13 themes available — Notion, Glass, Bento,
- Pixel, Brutalist, Memphis, Sketchbook, Adventure, Glass Dark,
- Terminal, Solarpunk, Cottagecore, Cyberpunk Neon.
- </p>
  <TButton variant="primary" onClick={() => (window.location.href = '/profile/themes')}>
- Browse themes →
+ Browse themes <ExternalLink className="h-4 w-4" />
  </TButton>
- </section>
+ </SettingsSection>
+
+ {/* Dashboard layout */}
+ <SettingsSection
+ id="dashboard-layout"
+ icon={LayoutDashboard}
+ title="Dashboard layout"
+ description="Choose which dashboard widgets are visible, their order, and their size."
+ >
+ <DashboardWidgetSettings
+ preferences={dashboardPreferences}
+ setPreferences={setDashboardPreferences}
+ onReset={resetDashboardPreferences}
+ />
+ </SettingsSection>
 
  {/* Navigation */}
- <section
+ <SettingsSection
  id="navigation"
- style={{
- background: 'var(--tn-card)',
- border: 'var(--tn-line)',
- borderRadius: 'var(--tn-r-lg, 8px)',
- padding: 20,
- boxShadow: 'var(--tn-shadow)',
- scrollMarginTop: 80,
- }}
+ icon={Navigation}
+ title="Navigation"
+ description="Choose what appears in the top navbar. Everything else stays available under More."
+ action={(
+ <TButton onClick={resetPreferences} className="!px-3 !py-2 text-xs">
+ <RotateCcw className="h-3.5 w-3.5" /> Reset
+ </TButton>
+ )}
  >
- <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
- <div style={{ flex: 1 }}>
- <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
- Navigation
- </h2>
- <p style={{ fontSize: 13, color: 'var(--tn-fg-muted)' }}>
- Choose what appears in the top navbar. Items not pinned to the top stay under More.
- </p>
- </div>
- <TButton onClick={resetPreferences}>Reset</TButton>
- </div>
-
  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
  {preferences.orderedIds.map((id, index) => {
  const item = NAV_ITEMS.find((navItem) => navItem.id === id);
@@ -445,9 +454,9 @@ const ProfilePage = () => {
  opacity: hidden ? 0.7 : 1,
  }}
  >
- <div>
- <div style={{ fontSize: 14, fontWeight: 600 }}>{item.name}</div>
- <div style={{ fontSize: 12, color: 'var(--tn-fg-muted)' }}>{item.href}</div>
+ <div className="min-w-0">
+ <div className="truncate text-sm font-semibold text-foreground">{item.name}</div>
+ <div className="truncate text-xs text-muted-foreground">{item.href}</div>
  </div>
  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--tn-fg-muted)' }}>
  <input
@@ -477,7 +486,7 @@ const ProfilePage = () => {
  style={{ padding: '5px 9px', opacity: index === 0 ? 0.45 : 1 }}
  aria-label={`Move ${item.name} up`}
  >
- ↑
+ <ChevronUp className="h-4 w-4" />
  </button>
  <button
  type="button"
@@ -487,14 +496,14 @@ const ProfilePage = () => {
  style={{ padding: '5px 9px', opacity: index === preferences.orderedIds.length - 1 ? 0.45 : 1 }}
  aria-label={`Move ${item.name} down`}
  >
- ↓
+ <ChevronDown className="h-4 w-4" />
  </button>
  </div>
  </div>
  );
  })}
  </div>
- </section>
+ </SettingsSection>
 
  <style jsx>{`
  @media (max-width: 620px) {
@@ -510,30 +519,24 @@ const ProfilePage = () => {
  `}</style>
 
  {/* Backup */}
- <section>
- <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
- Backup
- </h2>
- <p
- style={{
- fontSize: 13,
- color: 'var(--tn-fg-muted)',
- marginBottom: 12,
- }}
+ <SettingsSection
+ icon={DatabaseBackup}
+ title="Backup and export"
+ description="Export your workspace or import a previously downloaded TaskNest backup."
  >
- Export your full tree (goals, milestones, tasks, subtasks, todos,
- events) from the server as JSON. Import appends items to your account
- and keeps them after reload.
- </p>
- <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+ <div className="flex flex-wrap gap-2">
  <TButton onClick={handleExport} disabled={exporting}>
+ <Download className="h-4 w-4" />
  {exporting ? 'Exporting…' : 'Export JSON'}
  </TButton>
- <TButton onClick={handleIcsExport}>Export .ics (calendar)</TButton>
+ <TButton onClick={handleIcsExport}>
+ <CalendarDays className="h-4 w-4" /> Export .ics
+ </TButton>
  <TButton
  onClick={() => fileInputRef.current?.click()}
  disabled={importing}
  >
+ <Upload className="h-4 w-4" />
  {importing ? 'Importing…' : 'Import JSON'}
  </TButton>
  <input
@@ -544,7 +547,7 @@ const ProfilePage = () => {
  style={{ display: 'none' }}
  />
  </div>
- </section>
+ </SettingsSection>
  </div>
  )}
  </div>

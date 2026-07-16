@@ -58,6 +58,7 @@ const GoalsPage: React.FC = () => {
  priority: goalData.priority || PriorityType.HIGH,
  start_datetime: goalData.start_datetime,
  end_datetime: goalData.end_datetime,
+ journey_theme_id: goalData.journey_theme_id ?? 'mountain',
  });
  addGoal(newGoal);
  setIsCreatingGoal(false);

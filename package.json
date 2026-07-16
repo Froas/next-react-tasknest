@@ -5,10 +5,17 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:pwa": "next build --webpack",
     "start": "next start",
     "lint": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:mobile": "playwright test",
+    "test:mobile:public": "playwright test e2e/mobile-public.spec.ts",
+    "test:mobile:auth": "playwright test e2e/mobile-authenticated.spec.ts",
+    "test:mobile:webkit": "playwright test --project=iphone-webkit",
+    "test:pwa": "playwright test e2e/pwa.spec.ts",
+    "test:mobile:ui": "playwright test --ui"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -33,6 +40,7 @@
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^15.3.4",
+    "@playwright/test": "^1.61.1",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

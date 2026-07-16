@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { FileText, Plus, Radio, Sparkles } from 'lucide-react';
-import { AuthRequiredError, notesApi } from '@/lib/api';
+import { AuthRequiredError, notesApi, type NoteItem } from '@/lib/api';
 import { StatusType } from '@/lib/types';
 import { useStore } from '@/store/useStore';
 import { toast } from '@/store/useToast';
@@ -26,7 +26,12 @@ const noteTitleFromBody = (body: string) => {
  return title.length > 80 ? `${title.slice(0, 77)}…` : title;
 };
 
-export const QuickNoteCapture: React.FC = () => {
+interface QuickNoteCaptureProps {
+ showOpenLink?: boolean;
+ onSaved?: (note: NoteItem) => void;
+}
+
+export const QuickNoteCapture: React.FC<QuickNoteCaptureProps> = ({ showOpenLink = true, onSaved }) => {
  const goals = useStore((state) => state.goals);
  const [body, setBody] = useState('');
  const [kind, setKind] = useState<QuickNoteKind>('note');
@@ -88,8 +93,10 @@ export const QuickNoteCapture: React.FC = () => {
  goal_id: selectedRelation?.goalId ?? null,
  task_id: selectedRelation?.taskId ?? null,
  });
+ onSaved?.(note);
  setSavedTitle(note.title);
  setBody('');
+ if (kind === 'signal') window.dispatchEvent(new Event('tasknest:radar-changed'));
  toast.success(kind === 'signal' ? 'Signal saved' : 'Note saved');
  } catch (error) {
  if (error instanceof AuthRequiredError) return;
@@ -123,9 +130,11 @@ export const QuickNoteCapture: React.FC = () => {
  </p>
  </div>
  </div>
+ {showOpenLink && (
  <Link href="/notes" className="text-xs hover:underline" style={{ color: 'var(--tn-accent)' }}>
  Open notes →
  </Link>
+ )}
  </div>
 
  <form onSubmit={submit} className="min-w-0 space-y-2">

@@ -70,7 +70,14 @@
 .topbar .btn-icon svg { width: 16px; }
 
 /* Page body */
-.page { padding: 32px 48px 80px; max-width: 1200px; width: 100%; margin: 0 auto; }
+.page {
+  /* AppShell already owns the centred desktop container. Keep every route on
+     the same inner grid as Today instead of centring a second, narrower box. */
+  padding: 16px 40px 80px;
+  max-width: none;
+  width: 100%;
+  margin: 0;
+}
 .page-head { padding-bottom: 24px; margin-bottom: 28px; border-bottom: var(--tn-line); }
 .page-head-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .page-head-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
@@ -106,9 +113,11 @@
   outline: none;
 }
 .filter-input {
+  padding: 8px 12px;
+}
+.filter-toolbar > .filter-input {
   flex: 1 1 260px;
   min-width: 220px;
-  padding: 8px 12px;
 }
 .filter-select {
   padding: 8px 34px 8px 12px;
@@ -234,7 +243,7 @@
   .mobile-menu { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 6px; }
   .page { padding: 20px 16px 100px; }
   .filter-toolbar { position: static; padding: 10px; border-radius: var(--tn-r-md, 8px); }
-  .filter-input { flex-basis: 100%; min-width: 0; width: 100%; }
+  .filter-toolbar > .filter-input { flex-basis: 100%; min-width: 0; width: 100%; }
   .filter-select { flex: 1 1 140px; min-width: 0; }
   .stats { grid-template-columns: repeat(2, 1fr) !important; }
   .page-title { font-size: 26px !important; }

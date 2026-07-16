@@ -1,19 +1,54 @@
 'use client';
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-
-// Local-only completion log for recurring todos. Backend doesn't track
-// per-day completions, so we keep a per-todo set of completion dates
-// (YYYY-MM-DD) in localStorage and derive a daily streak from it.
+import { todoOccurrencesApi } from '@/lib/api';
 
 interface TodoStreaksStore {
- // todoId -> array of YYYY-MM-DD strings, sorted ascending
  completions: Record<string, string[]>;
- recordCompletion: (todoId: string, date?: Date) => void;
- removeLastCompletion: (todoId: string) => void;
- clear: (todoId: string) => void;
+ loading: boolean;
+ hydrated: boolean;
+ hydrate: (force?: boolean) => Promise<void>;
+ clear: () => void;
 }
+
+let hydration: Promise<void> | null = null;
+
+// TodoOccurrence is the only source of truth. This store is only an
+// in-memory projection for cards and heatmaps and is never persisted.
+export const useTodoStreaks = create<TodoStreaksStore>()((set, get) => ({
+ completions: {},
+ loading: false,
+ hydrated: false,
+ hydrate: async (force = false) => {
+ if (get().hydrated && !force) return;
+ if (hydration && !force) return hydration;
+ set({ loading: true });
+ hydration = (async () => {
+ try {
+ const occurrences = await todoOccurrencesApi.history({
+ startDate: '1970-01-01',
+ statuses: ['done', 'minimum'],
+ });
+ const completions: Record<string, string[]> = {};
+ for (const occurrence of occurrences) {
+ const dates = completions[occurrence.todo_id] ?? [];
+ if (!dates.includes(occurrence.date)) dates.push(occurrence.date);
+ completions[occurrence.todo_id] = dates;
+ }
+ Object.values(completions).forEach((dates) => dates.sort());
+ set({ completions, loading: false, hydrated: true });
+ try { window.localStorage.removeItem('tasknest:todo-streaks'); } catch { /* ignore */ }
+ } catch (error) {
+ set({ loading: false });
+ throw error;
+ } finally {
+ hydration = null;
+ }
+ })();
+ return hydration;
+ },
+ clear: () => set({ completions: {}, hydrated: false }),
+}));
 
 const dateKey = (d: Date) => {
  const y = d.getFullYear();
@@ -22,54 +57,19 @@ const dateKey = (d: Date) => {
  return `${y}-${m}-${day}`;
 };
 
-export const useTodoStreaks = create<TodoStreaksStore>()(
- persist(
- (set) => ({
- completions: {},
- recordCompletion: (todoId, date = new Date()) => set((state) => {
- const key = dateKey(date);
- const existing = state.completions[todoId] ?? [];
- if (existing.includes(key)) return state;
- const next = [...existing, key].sort();
- return { completions: { ...state.completions, [todoId]: next } };
- }),
- removeLastCompletion: (todoId) => set((state) => {
- const existing = state.completions[todoId] ?? [];
- if (existing.length === 0) return state;
- const next = existing.slice(0, -1);
- return { completions: { ...state.completions, [todoId]: next } };
- }),
- clear: (todoId) => set((state) => {
- const next = { ...state.completions };
- delete next[todoId];
- return { completions: next };
- }),
- }),
- { name: 'tasknest:todo-streaks' }
- )
-);
-
-// Compute a daily streak ending today (or yesterday — grace period of 1 day
-// so the user doesn't lose the streak for not opening the app at midnight).
 export const getStreak = (completions: string[]): number => {
  if (!completions || completions.length === 0) return 0;
- const set = new Set(completions);
+ const dates = new Set(completions);
  const today = new Date();
  today.setHours(0, 0, 0, 0);
-
- // Anchor: today if today's done, else yesterday if yesterday's done.
- const todayKey = dateKey(today);
  const yesterday = new Date(today);
  yesterday.setDate(yesterday.getDate() - 1);
- const yesterdayKey = dateKey(yesterday);
-
  let cursor: Date;
- if (set.has(todayKey)) cursor = today;
- else if (set.has(yesterdayKey)) cursor = yesterday;
+ if (dates.has(dateKey(today))) cursor = today;
+ else if (dates.has(dateKey(yesterday))) cursor = yesterday;
  else return 0;
-
  let streak = 0;
- while (set.has(dateKey(cursor))) {
+ while (dates.has(dateKey(cursor))) {
  streak += 1;
  cursor.setDate(cursor.getDate() - 1);
  }

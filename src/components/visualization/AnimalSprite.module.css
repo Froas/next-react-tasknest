@@ -16,14 +16,17 @@
  transform:
   translate(var(--sprite-offset-x), var(--sprite-offset-y))
   scaleX(var(--sprite-scale-x))
-  scaleY(var(--sprite-scale-y))
-  scale(var(--sprite-scale));
+  scaleY(var(--sprite-scale-y));
  transform-origin: center;
  animation: spriteFrames var(--animation-speed) steps(var(--frame-count)) infinite;
 }
 
 .reducedMotion {
  animation: none;
+}
+
+.nativeOutline {
+ filter: drop-shadow(0 5px 5px rgba(0, 0, 0, 0.3));
 }
 
 @keyframes spriteFrames {

@@ -8,6 +8,7 @@ import { useStore } from '@/store/useStore';
 import { useDocumentTitle } from '@/lib/useDocumentTitle';
 import { Markdown } from '@/components/ui/Markdown';
 import { InlineSelect, InlineText } from '@/components/ui/InlineEdit';
+import { QuickNoteCapture } from '@/components/dashboard/QuickNoteCapture';
 
 const TAG_OPTIONS = ['brand', 'run', 'read', 'work', 'life'] as const;
 type NoteKindFilter = 'all' | 'note' | 'signal';
@@ -213,6 +214,11 @@ const NotesPage: React.FC = () => {
  }
  }
 
+ function handleQuickSaved(note: NoteItem) {
+ setNotes((current) => sortNotes([note, ...current.filter((item) => item.id !== note.id)]));
+ handleSelectNote(note.id);
+ }
+
  return (
  <div
  className="page notes-page"
@@ -222,35 +228,40 @@ const NotesPage: React.FC = () => {
  maxWidth: 1400,
  }}
  >
- <div className="min-w-0">
- <div className="page-eyebrow" style={{ marginBottom: 10 }}>
+ <div className="min-w-0" style={{ gridColumn: '1 / -1' }}>
+ <div className="page-head page-head-row">
+ <div>
+ <div className="page-eyebrow">
  {loading ? 'Loading…' : `${filteredNotes.length} / ${notes.length} notes`}
  </div>
- <h1 className="page-title" style={{ fontSize: 32, marginBottom: 14 }}>
- Notes
- </h1>
+ <h1 className="page-title">Notes</h1>
+ </div>
  <button
- className="btn btn-primary"
- style={{ marginBottom: 18, width: '100%' }}
+ className="btn btn-primary justify-center"
  onClick={handleCreate}
  disabled={creating || loading}
  >
  {creating ? 'Creating…' : '+ New note'}
  </button>
+ </div>
+ <QuickNoteCapture showOpenLink={false} onSaved={handleQuickSaved} />
+ </div>
 
- <div className="filter-toolbar" style={{ position: 'static', marginBottom: 14, padding: 10 }}>
+ <div className="min-w-0">
+ <div className="card mb-4 grid gap-2" style={{ padding: 12 }}>
  <input
  type="search"
  value={search}
  onChange={(event) => setSearch(event.target.value)}
  placeholder="Search notes…"
- className="filter-input"
+ className="filter-input w-full min-w-0"
  aria-label="Search notes"
  />
+ <div className="grid min-w-0 grid-cols-3 gap-2">
  <select
  value={kindFilter}
  onChange={(event) => setKindFilter(event.target.value as NoteKindFilter)}
- className="filter-select"
+ className="filter-input h-10 w-full min-w-0 px-2"
  aria-label="Filter notes by kind"
  >
  <option value="all">All kinds</option>
@@ -260,7 +271,7 @@ const NotesPage: React.FC = () => {
  <select
  value={tagFilter}
  onChange={(event) => setTagFilter(event.target.value)}
- className="filter-select"
+ className="filter-input h-10 w-full min-w-0 px-2"
  aria-label="Filter notes by tag"
  >
  <option value="all">All tags</option>
@@ -271,7 +282,7 @@ const NotesPage: React.FC = () => {
  <select
  value={sourceFilter}
  onChange={(event) => setSourceFilter(event.target.value)}
- className="filter-select"
+ className="filter-input h-10 w-full min-w-0 px-2"
  aria-label="Filter notes by source"
  >
  <option value="all">All sources</option>
@@ -279,6 +290,7 @@ const NotesPage: React.FC = () => {
  <option key={source} value={source}>{source}</option>
  ))}
  </select>
+ </div>
  </div>
 
  {error && (
@@ -326,7 +338,7 @@ const NotesPage: React.FC = () => {
  </div>
  )}
 
- <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+ <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: 8 }}>
  {filteredNotes.map((n) => (
  <div
  key={n.id}

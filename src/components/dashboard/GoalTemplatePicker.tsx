@@ -14,7 +14,7 @@ import { useStore } from '@/store/useStore';
 import { useShallow } from 'zustand/react/shallow';
 import { toast } from '@/store/useToast';
 import { Modal } from '@/components/ui/Modal';
-import { Sparkles } from 'lucide-react';
+import { ArrowRight, LayoutTemplate } from 'lucide-react';
 
 interface GoalTemplatePickerProps {
  open: boolean;
@@ -36,7 +36,6 @@ export const GoalTemplatePicker: React.FC<GoalTemplatePickerProps> = ({ open, on
  const goal = await templatesApi.instantiateBlueprint({
  title: template.title,
  description: template.description,
- emoji: template.emoji,
  tags: template.tags,
  blueprint: template.blueprint,
  });
@@ -63,14 +62,19 @@ export const GoalTemplatePicker: React.FC<GoalTemplatePickerProps> = ({ open, on
  className="flex h-full flex-col border border-border dark:border-border rounded-lg p-4 hover:shadow-md transition-shadow"
  >
  <div className="flex items-start justify-between mb-2">
+ <div className="flex items-center gap-2">
+ <span
+ className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md border border-border bg-muted text-muted-foreground"
+ aria-hidden="true"
+ >
+ <LayoutTemplate className="h-4 w-4" strokeWidth={1.8} />
+ </span>
  <div>
- <h4 className="font-semibold text-foreground">
- <span className="mr-2">{t.emoji}</span>
- {t.title}
- </h4>
+ <h4 className="font-semibold text-foreground">{t.title}</h4>
  <p className="text-xs text-muted-foreground dark:text-muted-foreground">
  {t.blueprint.milestones.length} milestones · {countTemplateTasks(t)} tasks · {countTemplateTodos(t)} routines
  </p>
+ </div>
  </div>
  </div>
  <p className="text-sm text-foreground dark:text-muted-foreground/60 mb-3 flex-1">{t.description}</p>
@@ -82,7 +86,7 @@ export const GoalTemplatePicker: React.FC<GoalTemplatePickerProps> = ({ open, on
  disabled={busyId !== null}
  className="btn btn-primary mt-auto w-full justify-center disabled:opacity-50"
  >
- <Sparkles className="w-4 h-4" />
+ <ArrowRight className="w-4 h-4" />
  <span>{busyId === t.id ? 'Setting up...' : 'Use template'}</span>
  </button>
  </li>

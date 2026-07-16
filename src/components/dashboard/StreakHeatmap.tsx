@@ -1,6 +1,6 @@
 'use client';
 
-import React, { type CSSProperties, useMemo } from 'react';
+import React, { type CSSProperties, useEffect, useMemo } from 'react';
 import { useTodoStreaks } from '@/store/useTodoStreaks';
 
 const WEEKS = 12;
@@ -40,6 +40,10 @@ const cellStyle = (count: number, max: number, isFuture = false): CSSProperties 
 // their consistency over the last quarter.
 export const StreakHeatmap: React.FC = () => {
  const completions = useTodoStreaks((s) => s.completions);
+
+ useEffect(() => {
+ void useTodoStreaks.getState().hydrate().catch(() => undefined);
+ }, []);
 
  const { grid, max, total } = useMemo(() => {
  const counts: Record<string, number> = {};

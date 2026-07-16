@@ -66,6 +66,7 @@ export const CommandPalette: React.FC = () => {
  { id: 'nav-todos', label: 'Go to Todos', group: 'Navigate', run: () => router.push('/todo') },
  { id: 'nav-events', label: 'Go to Events', group: 'Navigate', run: () => router.push('/event') },
  { id: 'nav-calendar', label: 'Go to Calendar', group: 'Navigate', run: () => router.push('/calendar') },
+ { id: 'nav-attention', label: 'Go to Attention', group: 'Navigate', run: () => router.push('/attention') },
  { id: 'nav-viz', label: 'Go to Visualization', group: 'Navigate', run: () => router.push('/visualization') },
  { id: 'nav-activity', label: 'Go to Activity', group: 'Navigate', run: () => router.push('/activity') },
  { id: 'nav-profile', label: 'Go to Profile', group: 'Navigate', run: () => router.push('/profile') },
