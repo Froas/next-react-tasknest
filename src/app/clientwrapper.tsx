@@ -2,7 +2,6 @@
 
 import { SessionProvider, useSession, signOut } from 'next-auth/react';
 import { Session } from 'next-auth';
-import Header from '../components/ui/header';
 import { RouteBoundary } from '../components/ui/RouteBoundary';
 import { AppShell } from '@/components/design/AppShell';
 import { usePathname, useRouter } from 'next/navigation';

@@ -25,11 +25,36 @@ export function PwaBootstrap() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (
-      process.env.NODE_ENV === 'production' &&
-      'serviceWorker' in navigator &&
-      window.isSecureContext
-    ) {
+    if (process.env.NODE_ENV !== 'production') {
+      // A service worker installed by an earlier production/PWA run remains
+      // active when the same hostname is later served by `next dev`. Its
+      // runtime cache can then serve stale dev chunks, causing hydration
+      // mismatches and keeping old NEXT_PUBLIC_* values in the browser.
+      if ('serviceWorker' in navigator) {
+        void navigator.serviceWorker
+          .getRegistrations()
+          .then((registrations) =>
+            Promise.all(registrations.map((registration) => registration.unregister())),
+          )
+          .catch((error) => console.warn('Failed to remove development service worker', error));
+      }
+
+      if ('caches' in window) {
+        void caches
+          .keys()
+          .then((keys) =>
+            Promise.all(
+              keys
+                .filter((key) => key.startsWith('tasknest-pwa-'))
+                .map((key) => caches.delete(key)),
+            ),
+          )
+          .catch((error) => console.warn('Failed to clear development PWA cache', error));
+      }
+      return;
+    }
+
+    if ('serviceWorker' in navigator && window.isSecureContext) {
       const register = () => {
         void navigator.serviceWorker
           .register('/serviceWorker.js', {

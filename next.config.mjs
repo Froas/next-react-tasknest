@@ -11,6 +11,9 @@ const nextConfig = {
   // developer's active `next dev` process without corrupting either cache.
   distDir: process.env.NEXT_DIST_DIR || '.next',
   reactStrictMode: true,
+  // The development server is reached through this Cloudflare hostname.
+  // Next.js blocks cross-origin HMR/dev assets unless the host is explicit.
+  allowedDevOrigins: ['tasknest.froas.dev'],
   async rewrites() {
     // Keep browser API calls same-origin. This is especially important when
     // the frontend is exposed through a tunnel: `localhost:8000` in browser

@@ -14,7 +14,8 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Bell, Search, Settings as Cog, Menu, X, ChevronDown } from 'lucide-react';
+import { signOut } from 'next-auth/react';
+import { Bell, Search, Settings as Cog, Menu, X, ChevronDown, LogOut } from 'lucide-react';
 import { useDesignTheme } from '@/context/DesignThemeContext';
 import { useNavPreferences } from '@/lib/navPreferences';
 
@@ -261,6 +262,13 @@ export function AppShell({ children }: AppShellProps) {
  >
  <Cog size={16} />
  </IconButton>
+ <IconButton
+ onClick={() => void signOut({ callbackUrl: '/login' })}
+ ariaLabel="Sign out"
+ className="tn-shell-icon-optional"
+ >
+ <LogOut size={16} />
+ </IconButton>
  {/* Mobile hamburger */}
  <button
  onClick={() => setMobileOpen(true)}
@@ -404,6 +412,23 @@ export function AppShell({ children }: AppShellProps) {
  >
  Settings
  </Link>
+ <button
+ type="button"
+ onClick={() => void signOut({ callbackUrl: '/login' })}
+ style={{
+ padding: '10px 12px',
+ fontSize: 14,
+ color: 'var(--tn-fg-muted)',
+ background: 'transparent',
+ border: 'none',
+ borderRadius: 'var(--tn-r-md, 6px)',
+ textAlign: 'left',
+ cursor: 'pointer',
+ fontFamily: 'inherit',
+ }}
+ >
+ Sign out
+ </button>
  </div>
  </aside>
  </>
