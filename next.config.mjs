@@ -39,6 +39,10 @@ const nextConfig = {
         source: '/manifest.webmanifest',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=0, must-revalidate' }],
       },
+      {
+        source: '/reset-pwa.html',
+        headers: [{ key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' }],
+      },
     ];
   },
   // etc.

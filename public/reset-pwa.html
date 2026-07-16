@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Resetting TaskNest</title>
+    <style>
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        background: #f7f5f0;
+        color: #171717;
+        font: 16px/1.5 system-ui, sans-serif;
+      }
+      main { padding: 24px; text-align: center; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <strong>Refreshing TaskNest…</strong>
+      <p id="status">Removing the old offline cache.</p>
+    </main>
+    <script>
+      (async () => {
+        try {
+          if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(registrations.map((registration) => registration.unregister()));
+          }
+          if ('caches' in window) {
+            const keys = await caches.keys();
+            await Promise.all(keys.map((key) => caches.delete(key)));
+          }
+          location.replace('/login?cache_reset=' + Date.now());
+        } catch (error) {
+          document.getElementById('status').textContent =
+            'Reset failed. Clear this site\'s browser data and try again.';
+        }
+      })();
+    </script>
+  </body>
+</html>

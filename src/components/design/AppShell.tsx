@@ -344,6 +344,24 @@ export function AppShell({ children }: AppShellProps) {
  <b style={{ fontSize: 14, fontWeight: 600 }}>Menu</b>
  <div style={{ flex: 1 }} />
  <button
+ type="button"
+ onClick={() => void signOut({ callbackUrl: '/login' })}
+ style={{
+ background: 'transparent',
+ border: 'none',
+ cursor: 'pointer',
+ color: 'var(--tn-fg-muted)',
+ padding: 8,
+ display: 'grid',
+ placeItems: 'center',
+ borderRadius: 'var(--tn-r-md, 6px)',
+ }}
+ aria-label="Sign out"
+ title="Sign out"
+ >
+ <LogOut size={18} />
+ </button>
+ <button
  onClick={() => setMobileOpen(false)}
  style={{
  background: 'transparent',
