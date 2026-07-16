@@ -33,25 +33,26 @@ export const TodayWidget: React.FC = () => {
 
  return (
  <div id="today-dashboard" tabIndex={-1} className="card scroll-mt-24 focus:outline-none">
- <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+ <div className="flex items-start justify-between gap-3">
  <div>
  <h3 className="text-lg font-semibold text-foreground">Today</h3>
- <p className="text-sm text-foreground dark:text-muted-foreground">
+ <p className="hidden text-sm text-foreground dark:text-muted-foreground sm:block">
  Daily log, routines, metrics, and your selected focus.
  </p>
  </div>
  <Link
  href="/attention"
- className="inline-flex items-center gap-2 self-start rounded-lg border px-3 py-2 text-sm font-medium transition-transform hover:-translate-y-0.5"
+ aria-label={attention.total > 0 ? `${attention.overdue} overdue, ${attention.dueToday} due today` : 'No due work today'}
+ className="inline-flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-lg border text-sm font-medium transition-transform hover:-translate-y-0.5 sm:h-auto sm:w-auto sm:px-3 sm:py-2"
  style={{ border: 'var(--tn-line)', background: 'var(--tn-hover)', color: 'var(--tn-fg)' }}
  >
  {attention.total > 0 ? <AlertCircle className="h-4 w-4" style={{ color: 'var(--tn-bad, #c25d63)' }} /> : <Calendar className="h-4 w-4" style={{ color: 'var(--tn-accent)' }} />}
- <span>
+ <span className="hidden sm:inline">
  {attention.total > 0
  ? `${attention.overdue} overdue · ${attention.dueToday} today`
  : 'No due work today'}
  </span>
- <span aria-hidden="true">→</span>
+ <span className="hidden sm:inline" aria-hidden="true">→</span>
  </Link>
  </div>
 

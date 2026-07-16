@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Activity, CheckCircle2, Circle, Flag, Plus, RefreshCw, Star, Target, Zap } from 'lucide-react';
+import { CheckCircle2, Circle, Flag, Plus, Star, Target } from 'lucide-react';
 import {
  AuthRequiredError,
  DailyLogColor,
@@ -208,13 +208,6 @@ export const DailyLogPanel: React.FC = () => {
  void saveDraft(nextDraft, 'Day status logged');
  };
 
- const logBadDay = () => {
- const nextDraft = { ...draft, color: 'red' as DailyLogColor };
- setDraft(nextDraft);
- setSavedAt(null);
- void saveDraft(nextDraft, 'Bad day logged. That still counts.');
- };
-
  const updateOccurrenceStatus = async (occurrence: TodoOccurrenceItem, nextStatus: TodoOccurrenceStatus) => {
  const previous = occurrences;
  setBusyOccurrenceId(occurrence.id);
@@ -321,48 +314,22 @@ export const DailyLogPanel: React.FC = () => {
 
  return (
  <>
- <section
- className="mb-4 rounded-2xl border p-3 sm:p-4"
- style={{
- border: 'var(--tn-line)',
- background: 'color-mix(in srgb, var(--tn-card) 92%, var(--tn-bg))',
- }}
- >
- <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
- <div className="flex items-start gap-2">
- <span
- className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-xl"
- style={{ background: 'var(--tn-hover)', color: 'var(--tn-accent)' }}
- >
- <Activity className="h-4 w-4" />
- </span>
- <div>
- <h4 className="text-sm font-semibold text-foreground">Today</h4>
-<p className="text-xs text-muted-foreground dark:text-muted-foreground">
- Your day is saved underneath as you check routines, enter goal metrics, and end the day.
- </p>
- </div>
- </div>
- <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground dark:text-muted-foreground">
- {savedAt && <span>Saved {savedAt}</span>}
- {isDirty && !savedAt && <span>Unsaved reflection</span>}
- <button
- type="button"
- onClick={() => void loadToday()}
- disabled={loading}
- className="btn btn-secondary !px-3 !py-1.5 text-xs disabled:opacity-50"
- >
- <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
- <span>Refresh</span>
- </button>
- </div>
- </div>
-
- <div className="mb-4">
- <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:text-muted-foreground">
+ <section className="mb-4">
+ <div className="mb-5">
+ <div className="mb-2 flex items-center justify-between gap-3">
+ <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:text-muted-foreground">
  Day status
  </div>
- <div className="grid gap-2 sm:grid-cols-3">
+ <div className="text-xs text-muted-foreground dark:text-muted-foreground" aria-live="polite">
+ {savedAt ? `Saved ${savedAt}` : isDirty ? 'Unsaved' : null}
+ </div>
+ </div>
+ <div
+ className="grid grid-cols-3 gap-1 rounded-xl p-1"
+ style={{ background: 'var(--tn-hover)' }}
+ role="group"
+ aria-label="Day status"
+ >
  {dayStatusOptions.map((option) => {
  const selected = draft.color === option.value;
  return (
@@ -371,17 +338,18 @@ export const DailyLogPanel: React.FC = () => {
  type="button"
  onClick={() => chooseColor(option.value)}
  disabled={loading || savingLog}
- className="rounded-xl border px-3 py-2 text-left transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+ aria-pressed={selected}
+ className="min-w-0 rounded-lg border px-2 py-2 text-center disabled:opacity-60 sm:px-3"
  style={{
- borderColor: selected ? option.token : 'color-mix(in srgb, var(--tn-fg-muted) 22%, transparent)',
+ borderColor: selected ? option.token : 'transparent',
  background: selected
- ? `color-mix(in srgb, ${option.token} 14%, var(--tn-card))`
- : 'var(--tn-card)',
+ ? `color-mix(in srgb, ${option.token} 12%, var(--tn-card))`
+ : 'transparent',
  color: selected ? option.token : 'var(--tn-fg)',
  }}
  >
- <span className="block text-sm font-semibold">{option.label}</span>
- <span className="block text-[11px] text-muted-foreground dark:text-muted-foreground">{option.hint}</span>
+ <span className="block truncate text-xs font-semibold sm:text-sm">{option.label}</span>
+ <span className="hidden text-[11px] text-muted-foreground dark:text-muted-foreground sm:block">{option.hint}</span>
  </button>
  );
  })}
@@ -484,10 +452,7 @@ export const DailyLogPanel: React.FC = () => {
  ) : null}
  </>
  ) : (
- <div
- className="rounded-2xl border p-4"
- style={{ border: 'var(--tn-line)', background: 'var(--tn-card)' }}
- >
+ <div className="py-3">
  <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
  <Target className="h-4 w-4" />
  No active goal routines yet
@@ -495,35 +460,22 @@ export const DailyLogPanel: React.FC = () => {
  <p className="mb-3 text-sm text-muted-foreground dark:text-muted-foreground">
  Create a goal, add recurring todos/metrics to an active task, or use Daily Draft for today&apos;s scratch plan.
  </p>
- <div className="flex flex-wrap gap-2">
+ <div>
  <Link href="/goal" className="btn btn-primary !px-3 !py-2 text-xs">
  <Plus className="h-4 w-4" />
  <span>Create goal</span>
  </Link>
- <button type="button" onClick={() => setEndDayOpen(true)} className="btn btn-secondary !px-3 !py-2 text-xs">
- <Flag className="h-4 w-4" />
- <span>Log day anyway</span>
- </button>
  </div>
  </div>
  )}
  </div>
 
- <div className="flex flex-wrap gap-2">
- <button
- type="button"
- onClick={logBadDay}
- disabled={loading || savingLog}
- className="btn btn-secondary !px-3 !py-2 text-xs disabled:opacity-50"
- >
- <Zap className="h-4 w-4" />
- <span>Log bad day</span>
- </button>
+ <div className="flex justify-end border-t pt-3" style={{ borderColor: 'color-mix(in srgb, var(--tn-fg-muted) 16%, transparent)' }}>
  <button
  type="button"
  onClick={() => setEndDayOpen(true)}
  disabled={loading}
- className="btn btn-primary !px-3 !py-2 text-xs disabled:opacity-50"
+ className="btn btn-primary w-full !px-4 !py-2.5 text-sm disabled:opacity-50 sm:w-auto"
  >
  <Flag className="h-4 w-4" />
  <span>End day</span>
