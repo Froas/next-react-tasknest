@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'tasknest-pwa-v3';
+const CACHE_VERSION = 'tasknest-pwa-v4';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const OFFLINE_URL = '/offline.html';
 const PRECACHE_URLS = [
@@ -42,8 +42,7 @@ self.addEventListener('activate', (event) => {
 function isCacheableStaticAsset(url) {
   return (
     url.origin === self.location.origin &&
-    (url.pathname.startsWith('/_next/static/') ||
-      url.pathname.startsWith('/animals/') ||
+    (url.pathname.startsWith('/animals/') ||
       url.pathname.startsWith('/themes/') ||
       url.pathname.startsWith('/icons/') ||
       url.pathname === '/icon.svg')

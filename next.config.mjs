@@ -27,7 +27,7 @@ const nextConfig = {
     ];
   },
   async headers() {
-    return [
+    const headers = [
       {
         source: '/serviceWorker.js',
         headers: [
@@ -44,6 +44,21 @@ const nextConfig = {
         headers: [{ key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' }],
       },
     ];
+
+    // Turbopack development chunk names are not content-stable. A browser,
+    // service worker, or Cloudflare edge serving an older chunk alongside a
+    // newer module graph causes "module factory is not available" crashes.
+    if (process.env.NODE_ENV !== 'production') {
+      headers.unshift({
+        source: '/_next/:path*',
+        headers: [
+          { key: 'CDN-Cache-Control', value: 'no-store' },
+          { key: 'Cloudflare-CDN-Cache-Control', value: 'no-store' },
+        ],
+      });
+    }
+
+    return headers;
   },
   // etc.
 };
