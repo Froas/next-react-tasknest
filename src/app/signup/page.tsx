@@ -21,8 +21,6 @@ const signUpSchema = yup.object().shape({
  password_hash: yup.string().min(6,"Password should be longer than 6 symbols").required("Password is required"),
 });
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/backend';
-
 const SignUp = () => {
  const router = useRouter();
  const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -40,7 +38,9 @@ const SignUp = () => {
  const onSubmit = async (data: SignUpFormInputs) => {
  setSubmitting(true);
  try {
- await axios.post(`${API_BASE_URL}/users`, data);
+ // Registration goes through Next.js so the browser never follows a FastAPI
+ // slash redirect to the backend's private 127.0.0.1 address.
+ await axios.post('/api/register', data);
  setSuccessMessage("Account created — signing you in…");
  setErrorMessage(null);
 
