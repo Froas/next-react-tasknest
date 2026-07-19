@@ -20,6 +20,7 @@ import { GoalCompletionRulePanel } from './GoalCompletionRulePanel';
 import { JourneyThemeSelector } from '@/components/visualization/JourneyThemeSelector';
 import { formatDate, stripMarkdown } from '@/lib/utils';
 import { STATUS_LABELS } from '@/lib/sort';
+import { Gauge, Map, Repeat2 } from 'lucide-react';
 
 interface GoalDetailViewProps {
  goal: Goal;
@@ -545,19 +546,16 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  showLivePreview
  />
  </section>
- <GoalMetricsPanel goalId={currentGoal.id} />
- <GoalCompletionRulePanel goal={currentGoal} onSaved={updateGoal} />
+ <GoalBranchSection
+ eyebrow="Plan"
+ title="Build the path"
+ description="Milestones define meaningful transitions. Tasks and one-time steps move each transition forward."
+ icon={<Map className="h-5 w-5" />}
+ >
  <GoalTasksPanel
  tasks={goalTasks}
  onAddTask={() => openTaskForm('task', null)}
  />
- <GoalRoutinesPanel
- routines={goalRoutines}
- onAddRoutine={() => openTaskForm('routine', null)}
- onAddTodo={(taskId) => setSelectedRoutineTaskId(taskId)}
- />
-
- {/* Milestones timeline */}
  <MilestonesTimeline
  milestones={currentGoal.milestones || []}
  goalId={currentGoal.id}
@@ -568,6 +566,30 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  openTaskForm('task', milestoneId);
  }}
  />
+ </GoalBranchSection>
+
+ <GoalBranchSection
+ eyebrow="System"
+ title="Build the rhythm"
+ description="Routines are the recurring practices that support the goal alongside the project plan."
+ icon={<Repeat2 className="h-5 w-5" />}
+ >
+ <GoalRoutinesPanel
+ routines={goalRoutines}
+ onAddRoutine={() => openTaskForm('routine', null)}
+ onAddTodo={(taskId) => setSelectedRoutineTaskId(taskId)}
+ />
+ </GoalBranchSection>
+
+ <GoalBranchSection
+ eyebrow="Measure"
+ title="Define evidence"
+ description="Track outcomes and decide how structure, results and consistency determine completion."
+ icon={<Gauge className="h-5 w-5" />}
+ >
+ <GoalMetricsPanel goalId={currentGoal.id} />
+ <GoalCompletionRulePanel goal={currentGoal} onSaved={updateGoal} />
+ </GoalBranchSection>
 
  <ConfirmDialog
  open={showDeleteGoalConfirm}
@@ -594,6 +616,38 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  </div>
  );
 };
+
+const GoalBranchSection: React.FC<{
+ eyebrow: string;
+ title: string;
+ description: string;
+ icon: React.ReactNode;
+ children: React.ReactNode;
+}> = ({ eyebrow, title, description, icon, children }) => (
+ <section
+ className="mb-10 rounded-[28px] border p-4 sm:p-6"
+ style={{
+ border: 'var(--tn-line)',
+ background: 'color-mix(in srgb, var(--tn-card) 88%, var(--tn-bg))',
+ boxShadow: 'var(--tn-shadow)',
+ }}
+ >
+ <header className="mb-6 flex items-start gap-3 border-b pb-5" style={{ borderColor: 'color-mix(in srgb, var(--tn-fg) 9%, transparent)' }}>
+ <span
+ className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+ style={{ background: 'color-mix(in srgb, var(--tn-accent) 11%, var(--tn-card))', color: 'var(--tn-accent)' }}
+ >
+ {icon}
+ </span>
+ <div>
+ <div className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: 'var(--tn-accent)' }}>{eyebrow}</div>
+ <h2 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{title}</h2>
+ <p className="mt-1 max-w-3xl text-sm leading-relaxed text-muted-foreground">{description}</p>
+ </div>
+ </header>
+ <div>{children}</div>
+ </section>
+);
 
 const GoalTasksPanel: React.FC<{
  tasks: Task[];

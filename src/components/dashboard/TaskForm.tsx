@@ -29,6 +29,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
  const [formData, setFormData, clearDraft] = useFormDraft(draftKey, {
  title: initialData?.title || '',
  description: initialData?.description || '',
+ success_criteria: initialData?.success_criteria || '',
  status: initialData?.status || StatusType.OUTSTANDING,
  priority: initialData?.priority || PriorityType.MEDIUM,
  kind: initialData?.kind || 'project',
@@ -73,6 +74,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
  const taskData = {
  title: formData.title,
  description: formData.description,
+ success_criteria: emptyToUndefined(formData.success_criteria),
  status: formData.status.toLowerCase(),
  priority: formData.priority,
  kind: formData.kind,
@@ -151,6 +153,21 @@ export const TaskForm: React.FC<TaskFormProps> = ({
  value={formData.description}
  onChange={(next) => setFormData((prev) => ({ ...prev, description: next }))}
  rows={3}
+ />
+ </div>
+
+ <div>
+ <label htmlFor="success_criteria" className="block text-sm font-medium text-foreground mb-1">
+ Success criteria
+ </label>
+ <textarea
+ id="success_criteria"
+ name="success_criteria"
+ value={formData.success_criteria}
+ onChange={handleChange}
+ rows={2}
+ placeholder="What makes this task complete?"
+ className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
  />
  </div>
 

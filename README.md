@@ -51,6 +51,7 @@ Create a `.env` file in the project root:
 NEXTAUTH_SECRET=
 ALGORITHM=
 NEXTAUTH_URL=
+NEXTAUTH_SESSION_TTL_SECONDS=2592000
 API_URL=http://127.0.0.1:8000
 GOOGLE_CALENDAR_API_KEY=
 TELEGRAM_BOT_TOKEN=
@@ -60,6 +61,10 @@ REDIRECT_URL=
 ```
 
 > Replace placeholders with real credentials for your environment and integrations.
+
+The NextAuth session lasts 30 days and keeps the backend access token out of
+browser storage. While the app is active, NextAuth automatically replaces the
+one-hour access token through the backend refresh endpoint.
 
 The browser uses the same-origin `/backend` path, which Next.js proxies to
 `API_URL`. This means only the Next.js port needs to be exposed when using a

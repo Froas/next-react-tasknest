@@ -253,6 +253,18 @@ const TaskDetailPage: React.FC = () => {
  className={isDone ? 'text-muted-foreground dark:text-muted-foreground' : 'text-foreground dark:text-muted-foreground/60'}
  />
  )}
+ {task.success_criteria && (
+ <div
+ className="mt-4 rounded-xl border px-3 py-2.5"
+ style={{
+ background: 'color-mix(in srgb, var(--tn-accent) 6%, var(--tn-card))',
+ borderColor: 'color-mix(in srgb, var(--tn-accent) 18%, transparent)',
+ }}
+ >
+ <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.1em]" style={{ color: 'var(--tn-accent)' }}>Success criteria</div>
+ <p className="text-sm text-foreground">{task.success_criteria}</p>
+ </div>
+ )}
  </div>
  </div>
  <div className="flex flex-wrap gap-3 text-xs text-muted-foreground dark:text-muted-foreground">

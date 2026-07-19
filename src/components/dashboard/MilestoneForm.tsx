@@ -25,6 +25,7 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({
  const [formData, setFormData, clearDraft] = useFormDraft(draftKey, {
  title: initialData?.title || '',
  description: initialData?.description || '',
+ success_criteria: initialData?.success_criteria || '',
  status: initialData?.status || StatusType.OUTSTANDING,
  due_date: toDateInput(initialData?.due_date),
  end_datetime: toDateInput(initialData?.end_datetime),
@@ -59,10 +60,11 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({
  const milestoneData = {
  title: formData.title,
  description: formData.description || '',
+ success_criteria: formData.success_criteria || undefined,
  status: formData.status as StatusType,
  priority: formData.priority,
  due_date: formData.due_date,
- end_datetime: formData.end_datetime || `${formData.due_date}T18:00:00`,
+ end_datetime: formData.end_datetime || undefined,
  goal_id: goalId,
  };
 
@@ -140,6 +142,20 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({
  </option>
  ))}
  </select>
+ </div>
+ <div>
+ <label htmlFor="success_criteria" className="block text-sm font-medium text-foreground mb-1">
+ Success criteria
+ </label>
+ <textarea
+ id="success_criteria"
+ name="success_criteria"
+ value={formData.success_criteria}
+ onChange={handleChange}
+ rows={2}
+ placeholder="What makes this milestone complete?"
+ className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+ />
  </div>
  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
  

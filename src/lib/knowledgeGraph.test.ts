@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildKnowledgeGraph, extractWikiLinks, layoutKnowledgeGraph } from '@/lib/knowledgeGraph';
+import { buildKnowledgeGraph, extractWikiLinks, getGoalScopeNodeIds, layoutKnowledgeGraph } from '@/lib/knowledgeGraph';
 import { PriorityType, StatusType, type GoalItem } from '@/lib/types';
 
 const goal: GoalItem = {
@@ -44,9 +44,31 @@ describe('knowledge graph', () => {
 
  it('lays node types into deterministic columns', () => {
  const graph = buildKnowledgeGraph([goal], [], []);
- const first = layoutKnowledgeGraph(graph.nodes);
- const second = layoutKnowledgeGraph(graph.nodes);
+ const first = layoutKnowledgeGraph(graph.nodes, graph.edges);
+ const second = layoutKnowledgeGraph(graph.nodes, graph.edges);
  expect(Array.from(first.positions.values())).toEqual(Array.from(second.positions.values()));
  expect(first.positions.get('goal:goal-1')?.x).toBeLessThan(first.positions.get('task:task-1')?.x ?? 0);
+ expect(first.positions.get('goal:goal-1')?.y).toBe(first.positions.get('milestone:milestone-1')?.y);
+ });
+
+ it('focuses on selected goal branches and their direct context', () => {
+ const secondGoal: GoalItem = {
+ ...goal,
+ id: 'goal-2',
+ title: 'Second goal',
+ milestones: [],
+ tasks: [],
+ };
+ const graph = buildKnowledgeGraph([goal, secondGoal], [{
+ id: 'note-1', title: 'Context', body: '', pinned: false, kind: 'note', goal_id: 'goal-1', tag: 'shared',
+ created_at: '2026-07-13T00:00:00Z', updated_at: '2026-07-13T00:00:00Z',
+ }], [{ id: 'tag-1', name: 'shared', goal_id: 'goal-2' }]);
+
+ const scope = getGoalScopeNodeIds(graph, new Set(['goal-1']));
+ expect(scope.has('goal:goal-1')).toBe(true);
+ expect(scope.has('task:task-1')).toBe(true);
+ expect(scope.has('note:note-1')).toBe(true);
+ expect(scope.has('tag:shared')).toBe(true);
+ expect(scope.has('goal:goal-2')).toBe(false);
  });
 });

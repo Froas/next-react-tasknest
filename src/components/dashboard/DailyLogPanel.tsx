@@ -75,7 +75,7 @@ const dayStatusOptions: Array<{
 }> = [
  { value: 'green', label: 'Good', hint: 'solid day', token: 'var(--tn-good, #2f7d50)' },
  { value: 'yellow', label: 'Minimum', hint: 'thread kept', token: '#d69a1f' },
- { value: 'red', label: 'Bad logged', hint: 'still counted', token: 'var(--tn-bad, #c25d63)' },
+ { value: 'red', label: 'Bad', hint: 'still counted', token: 'var(--tn-bad, #c25d63)' },
 ];
 
 const groupKey = (item: Pick<TodoOccurrenceItem | TodayMetricItem, 'goal_id' | 'task_id' | 'goal_title' | 'task_title'>) =>
@@ -324,12 +324,7 @@ export const DailyLogPanel: React.FC = () => {
  {savedAt ? `Saved ${savedAt}` : isDirty ? 'Unsaved' : null}
  </div>
  </div>
- <div
- className="grid grid-cols-3 gap-1 rounded-xl p-1"
- style={{ background: 'var(--tn-hover)' }}
- role="group"
- aria-label="Day status"
- >
+ <div className="grid grid-cols-3 gap-2" role="group" aria-label="Day status">
  {dayStatusOptions.map((option) => {
  const selected = draft.color === option.value;
  return (
@@ -339,16 +334,20 @@ export const DailyLogPanel: React.FC = () => {
  onClick={() => chooseColor(option.value)}
  disabled={loading || savingLog}
  aria-pressed={selected}
- className="min-w-0 rounded-lg border px-2 py-2 text-center disabled:opacity-60 sm:px-3"
+ className="h-11 min-w-0 rounded-xl border px-2 text-center transition-transform active:scale-[0.98] disabled:opacity-60 sm:h-auto sm:min-h-12 sm:px-3 sm:py-2"
  style={{
- borderColor: selected ? option.token : 'transparent',
+ borderColor: selected ? option.token : `color-mix(in srgb, ${option.token} 20%, transparent)`,
  background: selected
- ? `color-mix(in srgb, ${option.token} 12%, var(--tn-card))`
- : 'transparent',
+ ? `color-mix(in srgb, ${option.token} 18%, var(--tn-card))`
+ : `color-mix(in srgb, ${option.token} 7%, var(--tn-card))`,
  color: selected ? option.token : 'var(--tn-fg)',
+ boxShadow: selected ? `inset 0 0 0 1px ${option.token}` : 'none',
  }}
  >
- <span className="block truncate text-xs font-semibold sm:text-sm">{option.label}</span>
+ <span className="flex items-center justify-center gap-1.5 truncate text-xs font-semibold sm:text-sm">
+ <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: option.token }} aria-hidden="true" />
+ {option.label}
+ </span>
  <span className="hidden text-[11px] text-muted-foreground dark:text-muted-foreground sm:block">{option.hint}</span>
  </button>
  );
@@ -691,7 +690,7 @@ const GoalTodayCard: React.FC<GoalTodayCardProps> = ({
  return (
  <div
  key={occurrence.id}
- className="flex items-center gap-2 rounded-xl px-2 py-2 transition-colors"
+ className="grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-2 rounded-xl px-2 py-2 transition-colors sm:flex sm:items-center"
  style={{
  background: done ? 'color-mix(in srgb, var(--tn-good, #2f7d50) 10%, var(--tn-card))' : 'var(--tn-hover)',
  }}
@@ -700,7 +699,7 @@ const GoalTodayCard: React.FC<GoalTodayCardProps> = ({
  type="button"
  onClick={() => onToggleOccurrence(occurrence)}
  disabled={busyOccurrenceId === occurrence.id}
- className="flex min-w-0 flex-1 items-start gap-2 text-left disabled:opacity-60"
+ className="col-span-2 flex min-w-0 items-start gap-2 text-left disabled:opacity-60 sm:flex-1"
  >
  <span
  className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full"
@@ -739,7 +738,7 @@ const GoalTodayCard: React.FC<GoalTodayCardProps> = ({
  value={occurrence.status}
  onChange={(event) => void onOccurrenceStatusChange(occurrence, event.target.value as TodoOccurrenceStatus)}
  disabled={busyOccurrenceId === occurrence.id}
- className="shrink-0 rounded-lg border px-2 py-1 text-xs font-medium outline-none disabled:opacity-60"
+ className="min-w-0 w-full rounded-lg border px-2 py-1 text-xs font-medium outline-none disabled:opacity-60 sm:w-auto sm:shrink-0"
  style={{
  border: 'var(--tn-line)',
  background: 'var(--tn-card)',

@@ -67,6 +67,7 @@ const GoalHeaderCard: React.FC<GoalHeaderCardProps> = ({ goal, progress, progres
  const safeProgress = Math.max(0, Math.min(100, structuralProgress));
  const titleClass = 'text-2xl sm:text-3xl font-bold text-foreground mb-3 leading-tight break-words';
  const descriptionClass = 'text-foreground dark:text-muted-foreground/60 text-lg leading-relaxed max-w-4xl';
+ const criteriaClass = 'text-sm font-medium leading-relaxed text-foreground';
  const renderStatusBadge = (status: StatusType) => (
  <span
  className="inline-flex max-w-full px-3 sm:px-4 py-2 rounded-full text-sm font-medium border"
@@ -150,6 +151,31 @@ const GoalHeaderCard: React.FC<GoalHeaderCardProps> = ({ goal, progress, progres
  className={descriptionClass}
  />
  )}
+ <div
+ className="mt-4 rounded-2xl border p-3.5 sm:p-4"
+ style={{
+ background: 'color-mix(in srgb, var(--tn-accent) 6%, var(--tn-card))',
+ borderColor: 'color-mix(in srgb, var(--tn-accent) 18%, transparent)',
+ }}
+ >
+ <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: 'var(--tn-accent)' }}>
+ Success criteria
+ </div>
+ {onUpdate ? (
+ <InlineText
+ value={goal.success_criteria ?? ''}
+ placeholder="Define what must be true for this goal to be complete…"
+ multiline
+ ariaLabel="Edit goal success criteria"
+ className="-mx-2 px-2 py-1"
+ editClassName={criteriaClass}
+ renderValue={(criteria) => <p className={criteriaClass}>{criteria}</p>}
+ onSave={(success_criteria) => onUpdate({ success_criteria })}
+ />
+ ) : (
+ <p className={criteriaClass}>{goal.success_criteria || 'Not defined yet'}</p>
+ )}
+ </div>
  </div>
 
  {/* Progress section */}

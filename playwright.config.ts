@@ -1,4 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
+import { loadEnvConfig } from '@next/env';
+
+loadEnvConfig(process.cwd());
 
 const baseURL = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:3010';
 const webServerPort = new URL(baseURL).port || '3000';

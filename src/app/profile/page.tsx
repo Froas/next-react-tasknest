@@ -9,7 +9,7 @@ import { downloadJsonFile, parseImportFile } from "@/lib/exportImport";
 import { buildIcs, downloadIcsFile } from "@/lib/icsExport";
 import { toast } from "@/store/useToast";
 import { useNotifications } from "@/store/useNotifications";
-import { NAV_ITEMS, NavItemId, useNavPreferences } from "@/lib/navPreferences";
+import { NAV_GROUP_LABELS, NAV_ITEMS, NavItemId, useNavPreferences } from "@/lib/navPreferences";
 import { useDashboardPreferences } from '@/lib/dashboardPreferences';
 import { DashboardWidgetSettings } from '@/components/dashboard/DashboardWidgetSettings';
 import {
@@ -425,7 +425,7 @@ const ProfilePage = () => {
  id="navigation"
  icon={Navigation}
  title="Navigation"
- description="Choose what appears in the top navbar. Everything else stays available under More."
+ description="Choose what appears in the top navbar. Everything else stays available in purpose-based groups under More."
  action={(
  <TButton onClick={resetPreferences} className="!px-3 !py-2 text-xs">
  <RotateCcw className="h-3.5 w-3.5" /> Reset
@@ -456,7 +456,7 @@ const ProfilePage = () => {
  >
  <div className="min-w-0">
  <div className="truncate text-sm font-semibold text-foreground">{item.name}</div>
- <div className="truncate text-xs text-muted-foreground">{item.href}</div>
+ <div className="truncate text-xs text-muted-foreground">{NAV_GROUP_LABELS[item.group]} · {item.href}</div>
  </div>
  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--tn-fg-muted)' }}>
  <input

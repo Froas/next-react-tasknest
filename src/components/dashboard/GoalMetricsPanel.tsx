@@ -29,7 +29,7 @@ export const GoalMetricsPanel: React.FC<GoalMetricsPanelProps> = ({ goalId }) =>
  const load = async () => {
  try {
  const rows = await metricDefinitionsApi.getAll();
- if (!cancelled) setMetrics(rows.filter((metric) => metric.goal_id === goalId && !metric.task_id));
+ if (!cancelled) setMetrics(rows.filter((metric) => metric.goal_id === goalId && !metric.milestone_id && !metric.task_id));
  } catch (error) {
  if (error instanceof AuthRequiredError) return;
  console.error('Failed to load goal metrics:', error);

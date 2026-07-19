@@ -1,0 +1,243 @@
+.trackingCard {
+ position: relative;
+ padding: 0 !important;
+ gap: 0 !important;
+ overflow: visible;
+ isolation: isolate;
+}
+
+.trackingCard[data-dragging='true'] { opacity: .55; }
+
+.cardLink {
+ display: flex;
+ flex-direction: column;
+ padding: 22px;
+ color: inherit;
+ text-decoration: none;
+}
+
+.cardLink:focus-visible {
+ border-radius: inherit;
+ outline: 2px solid var(--tn-accent);
+ outline-offset: 3px;
+}
+
+.dragHint {
+ position: absolute;
+ left: 8px;
+ top: 23px;
+ z-index: 3;
+ display: grid;
+ width: 22px;
+ height: 28px;
+ place-items: center;
+ border: 0;
+ background: transparent;
+ color: var(--tn-fg-muted);
+ pointer-events: none;
+}
+
+.header {
+ display: grid;
+ grid-template-columns: auto minmax(0, 1fr);
+ gap: 12px;
+ padding-right: 34px;
+}
+
+.titleBlock { min-width: 0; }
+.titleBlock h3 { margin: 1px 0 5px; font-size: 18px; }
+.titleBlock p { margin: 0; display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+
+.identity {
+ font-family: var(--tn-font-display, var(--tn-font-sans));
+ font-weight: 750;
+ text-transform: uppercase;
+}
+
+.statusRow {
+ display: flex;
+ flex-wrap: wrap;
+ align-items: center;
+ gap: 7px;
+ margin-top: 10px;
+}
+
+.status {
+ display: inline-flex;
+ align-items: center;
+ gap: 5px;
+ min-height: 24px;
+ padding: 4px 8px;
+ border-radius: 999px;
+ background: var(--tn-chip);
+ color: var(--tn-fg-muted);
+ font-size: 11px;
+ font-weight: 650;
+}
+
+.status::before {
+ content: '';
+ width: 6px;
+ height: 6px;
+ border-radius: 50%;
+ background: currentColor;
+}
+
+.status[data-tone='active'] { background: var(--tn-st-prog-bg); color: var(--tn-st-prog-fg); }
+.status[data-tone='attention'] { background: color-mix(in srgb, var(--tn-bad) 11%, var(--tn-card)); color: var(--tn-bad); }
+.status[data-tone='complete'] { background: color-mix(in srgb, var(--tn-good) 12%, var(--tn-card)); color: var(--tn-good); }
+
+.due,
+.priority {
+ color: var(--tn-fg-muted);
+ font-size: 11px;
+ font-weight: 550;
+}
+
+.progressBlock {
+ display: grid;
+ gap: 8px;
+ margin-top: 27px;
+}
+
+.progressLabel {
+ color: var(--tn-fg-muted);
+ font-size: 10px;
+ font-weight: 750;
+ letter-spacing: .09em;
+ text-transform: uppercase;
+}
+
+.progressTitle {
+ display: flex;
+ align-items: baseline;
+ justify-content: space-between;
+ gap: 12px;
+}
+
+.progressTitle strong {
+ min-width: 0;
+ color: var(--tn-fg);
+ font-size: 13px;
+ font-weight: 650;
+ line-height: 1.35;
+}
+
+.progressTitle b {
+ color: var(--tn-fg);
+ font-size: 20px;
+ font-variant-numeric: tabular-nums;
+ letter-spacing: -.035em;
+}
+
+.progressDetail { margin: -2px 0 0 !important; font-size: 11px !important; }
+
+.progressTrack {
+ width: 100%;
+ height: 6px;
+ overflow: hidden;
+ border-radius: 999px;
+ background: var(--tn-bar-bg, color-mix(in srgb, var(--tn-fg) 8%, transparent));
+}
+
+.progressFill {
+ display: block;
+ height: 100%;
+ border-radius: inherit;
+ background: var(--tn-accent);
+ transition: width .35s ease;
+}
+
+.lanes {
+ display: grid;
+ grid-template-columns: repeat(3, minmax(0, 1fr));
+ gap: 6px;
+ margin-top: 2px;
+}
+
+.lane { display: grid; gap: 4px; }
+.lane span { color: var(--tn-fg-muted); font-size: 9px; font-weight: 650; }
+.lane i { display: block; height: 3px; overflow: hidden; border-radius: 999px; background: var(--tn-bar-bg, color-mix(in srgb, var(--tn-fg) 8%, transparent)); }
+.lane i::after { content: ''; display: block; width: var(--lane-progress); height: 100%; border-radius: inherit; background: var(--tn-accent); }
+
+.nextStep {
+ display: grid;
+ grid-template-columns: minmax(0, 1fr) auto;
+ gap: 10px;
+ align-items: center;
+ margin-top: 24px;
+ padding: 13px 14px;
+ border: 1px solid color-mix(in srgb, var(--tn-accent) 14%, var(--tn-line-color, transparent));
+ border-radius: var(--tn-r-md, 10px);
+ background: color-mix(in srgb, var(--tn-accent) 5%, var(--tn-card));
+ transition: border-color .2s ease, background .2s ease, transform .2s ease;
+}
+
+.cardLink:hover .nextStep {
+ border-color: color-mix(in srgb, var(--tn-accent) 34%, transparent);
+ background: color-mix(in srgb, var(--tn-accent) 8%, var(--tn-card));
+ transform: translateY(-1px);
+}
+
+.nextCopy { min-width: 0; }
+.nextCopy span { display: block; margin-bottom: 2px; color: var(--tn-fg-muted); font-size: 9px; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; }
+.nextCopy strong { display: block; overflow: hidden; color: var(--tn-fg); font-size: 12px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.nextCopy small { display: block; overflow: hidden; margin-top: 2px; color: var(--tn-fg-muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.nextArrow { color: var(--tn-accent); }
+
+.menuWrap { position: absolute; right: 12px; top: 14px; z-index: 8; }
+.menuButton {
+ display: grid;
+ width: 30px;
+ height: 30px;
+ place-items: center;
+ border: 1px solid transparent;
+ border-radius: 8px;
+ background: transparent;
+ color: var(--tn-fg-muted);
+ cursor: pointer;
+}
+.menuButton:hover,
+.menuButton:focus-visible,
+.menuButton[aria-expanded='true'] { border-color: color-mix(in srgb, var(--tn-fg-muted) 18%, transparent); background: var(--tn-hover); color: var(--tn-fg); outline: 0; }
+
+.menu {
+ position: absolute;
+ right: 0;
+ top: 34px;
+ display: grid;
+ min-width: 152px;
+ padding: 5px;
+ border: var(--tn-line);
+ border-radius: var(--tn-r-md, 10px);
+ background: var(--tn-card);
+ box-shadow: var(--tn-shadow-lg, 0 14px 35px rgba(0,0,0,.14));
+}
+.menu button {
+ display: flex;
+ align-items: center;
+ gap: 8px;
+ width: 100%;
+ padding: 8px 9px;
+ border: 0;
+ border-radius: 7px;
+ background: transparent;
+ color: var(--tn-fg);
+ cursor: pointer;
+ font-size: 12px;
+ text-align: left;
+}
+.menu button:hover { background: var(--tn-hover); }
+.menu .deleteAction { color: var(--tn-bad); }
+
+@media (max-width: 760px) {
+ .cardLink { padding: 18px; }
+ .header { padding-right: 30px; }
+ .dragHint { left: 4px; top: 19px; }
+ .progressBlock { margin-top: 22px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+ .progressFill,
+ .nextStep { transition: none; }
+}

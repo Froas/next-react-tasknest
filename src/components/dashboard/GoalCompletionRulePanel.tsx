@@ -35,14 +35,29 @@ export const CompletionRulePanel: React.FC<CompletionRulePanelProps> = ({ entity
  : currentRule.type === 'hybrid'
  ? currentRule.consistency
  : undefined;
+ const recurringActions = useMemo(() => {
+ const tasks = entityType === 'task'
+ ? [entity as TaskItem]
+ : entityType === 'milestone'
+ ? (entity as MilestoneItem).tasks ?? []
+ : [
+ ...((entity as GoalItem).tasks ?? []),
+ ...((entity as GoalItem).milestones ?? []).flatMap((milestone) => milestone.tasks ?? []),
+ ];
+ return tasks.flatMap((task) => (task.todos ?? [])
+ .filter((todo) => Boolean(todo.repeat_interval))
+ .map((todo) => ({ id: todo.id, title: todo.title, taskTitle: task.title })));
+ }, [entity, entityType]);
  const [ruleType, setRuleType] = useState<RuleType>(currentRule.type);
  const [metrics, setMetrics] = useState<MetricDefinitionItem[]>([]);
  const [metricName, setMetricName] = useState(currentOutcome?.metric_name ?? '');
+ const [metricDefinitionId, setMetricDefinitionId] = useState(currentOutcome?.metric_definition_id ?? '');
  const [startValue, setStartValue] = useState(numericText(currentOutcome?.start_value));
  const [targetValue, setTargetValue] = useState(numericText(currentOutcome?.target_value));
  const [direction, setDirection] = useState<NonNullable<MetricRule['direction']>>(currentOutcome?.direction ?? 'at_least');
  const [requiredDone, setRequiredDone] = useState(numericText(currentConsistency?.required_done ?? 7));
  const [windowDays, setWindowDays] = useState(numericText(currentConsistency?.window_days ?? 7));
+ const [consistencyTodoId, setConsistencyTodoId] = useState(currentConsistency?.todo_id ?? '');
  const [structuralWeight, setStructuralWeight] = useState(numericText(currentRule.type === 'hybrid' ? currentRule.structural_weight ?? 20 : 20));
  const [outcomeWeight, setOutcomeWeight] = useState(numericText(currentRule.type === 'hybrid' ? currentRule.outcome_weight ?? 40 : 40));
  const [consistencyWeight, setConsistencyWeight] = useState(numericText(currentRule.type === 'hybrid' ? currentRule.consistency_weight ?? 40 : 40));
@@ -55,9 +70,9 @@ export const CompletionRulePanel: React.FC<CompletionRulePanelProps> = ({ entity
  if (cancelled) return;
  const taskIds = new Set(metricTaskIds);
  setMetrics(rows.filter((metric) => {
- if (entityType === 'goal') return metric.goal_id === entity.id;
+ if (entityType === 'goal') return metric.goal_id === entity.id && !metric.milestone_id && !metric.task_id;
  if (entityType === 'task') return metric.task_id === entity.id;
- return Boolean(metric.task_id && taskIds.has(metric.task_id));
+ return metric.milestone_id === entity.id || Boolean(metric.task_id && taskIds.has(metric.task_id));
  }));
  })
  .catch((error) => {
@@ -69,13 +84,22 @@ export const CompletionRulePanel: React.FC<CompletionRulePanelProps> = ({ entity
  };
  }, [entity.id, entityType, metricTaskIds]);
 
- const metricOptions = useMemo(
- () => Array.from(new Set(metrics.map((metric) => metric.name))).sort((a, b) => a.localeCompare(b)),
- [metrics],
- );
+ useEffect(() => {
+ if (!metricDefinitionId && metricName && metrics.length) {
+ const matching = metrics.find((metric) => metric.name === metricName);
+ if (matching) setMetricDefinitionId(matching.id);
+ }
+ }, [metricDefinitionId, metricName, metrics]);
+
+ useEffect(() => {
+ if (!consistencyTodoId && recurringActions.length === 1) setConsistencyTodoId(recurringActions[0].id);
+ }, [consistencyTodoId, recurringActions]);
+
+ const metricOptions = useMemo(() => [...metrics].sort((a, b) => a.name.localeCompare(b.name)), [metrics]);
 
  const buildMetricRule = (): MetricRule => ({
  type: 'metric_target',
+ metric_definition_id: metricDefinitionId || undefined,
  metric_name: metricName.trim(),
  ...(startValue.trim() ? { start_value: Number(startValue) } : {}),
  ...(targetValue.trim() ? { target_value: Number(targetValue) } : {}),
@@ -84,6 +108,8 @@ export const CompletionRulePanel: React.FC<CompletionRulePanelProps> = ({ entity
 
  const buildConsistencyRule = (): ConsistencyRule => ({
  type: 'consistency',
+ todo_id: consistencyTodoId || undefined,
+ label: recurringActions.find((action) => action.id === consistencyTodoId)?.title,
  required_done: Math.max(1, Number(requiredDone) || 1),
  window_days: Math.max(1, Number(windowDays) || 7),
  });
@@ -91,6 +117,10 @@ export const CompletionRulePanel: React.FC<CompletionRulePanelProps> = ({ entity
  const saveRule = async () => {
  if ((ruleType === 'metric_target' || ruleType === 'hybrid') && (!metricName.trim() || !targetValue.trim())) {
  toast.error('Choose a metric and target value');
+ return;
+ }
+ if ((ruleType === 'consistency' || ruleType === 'hybrid') && !consistencyTodoId) {
+ toast.error(recurringActions.length ? 'Choose the repeating action to count' : 'Add a repeating action before using consistency');
  return;
  }
  let completionRule: CompletionRule;
@@ -165,9 +195,17 @@ export const CompletionRulePanel: React.FC<CompletionRulePanelProps> = ({ entity
  <div className="mt-4 grid max-w-5xl min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">
  <label className="grid min-w-0 content-start gap-1.5 text-xs text-muted-foreground">
  Metric
- <select value={metricName} onChange={(event) => setMetricName(event.target.value)} className="filter-input h-10 min-h-10 w-full min-w-0 self-start">
+ <select
+ value={metricDefinitionId}
+ onChange={(event) => {
+ const nextId = event.target.value;
+ setMetricDefinitionId(nextId);
+ setMetricName(metrics.find((metric) => metric.id === nextId)?.name ?? '');
+ }}
+ className="filter-input h-10 min-h-10 w-full min-w-0 self-start"
+ >
  <option value="">Choose metric</option>
- {metricOptions.map((name) => <option key={name} value={name}>{name}</option>)}
+ {metricOptions.map((metric) => <option key={metric.id} value={metric.id}>{metric.name}{metric.unit ? ` · ${metric.unit}` : ''}</option>)}
  </select>
  </label>
  <label className="grid min-w-0 content-start gap-1.5 text-xs text-muted-foreground">
@@ -191,7 +229,14 @@ export const CompletionRulePanel: React.FC<CompletionRulePanelProps> = ({ entity
  )}
 
  {showConsistency && (
- <div className="mt-4 grid max-w-3xl min-w-0 gap-3 sm:grid-cols-2">
+ <div className="mt-4 grid max-w-5xl min-w-0 gap-3 sm:grid-cols-3">
+ <label className="grid min-w-0 content-start gap-1.5 text-xs text-muted-foreground">
+ Repeating action
+ <select value={consistencyTodoId} onChange={(event) => setConsistencyTodoId(event.target.value)} className="filter-input h-10 min-h-10 w-full min-w-0 self-start">
+ <option value="">Choose action</option>
+ {recurringActions.map((action) => <option key={action.id} value={action.id}>{action.title} · {action.taskTitle}</option>)}
+ </select>
+ </label>
  <label className="grid min-w-0 content-start gap-1.5 text-xs text-muted-foreground">
  Required completed occurrences
  <input type="number" min="1" value={requiredDone} onChange={(event) => setRequiredDone(event.target.value)} className="filter-input h-10 min-h-10 w-full min-w-0 self-start" />

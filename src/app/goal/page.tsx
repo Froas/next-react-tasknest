@@ -2,12 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { withAuth } from '@/hoc/withAuth';
-import { GoalItem as Goal, StatusType, PriorityType } from '@/lib/types';
+import { GoalItem as Goal, StatusType } from '@/lib/types';
 import { useStore } from '@/store/useStore';
 import { useShallow } from 'zustand/react/shallow';
-import dynamic from 'next/dynamic';
-const GoalForm = dynamic(() => import('@/components/dashboard/GoalForm').then(m => m.GoalForm), { ssr: false });
-import { goalsApi, trashApi } from '@/lib/api';
+import { AuthRequiredError, goalsApi, metricDefinitionsApi, MetricDefinitionItem, trashApi } from '@/lib/api';
 import { priorityWeight } from '@/lib/sort';
 import { toast } from '@/store/useToast';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -15,11 +13,12 @@ import { GridSkeleton } from '@/components/ui/Skeletons';
 import { usePersistentState } from '@/lib/usePersistentState';
 import { useDocumentTitle } from '@/lib/useDocumentTitle';
 import { DropPlacement, moveIdRelative } from '@/lib/reorder';
+import { buildGoalCardView } from '@/features/goals/goalCardView';
 import Link from 'next/link';
-import { GripVertical, Plus, Target, Calendar, Filter } from 'lucide-react';
+import { ArrowRight, Check, GripVertical, MoreHorizontal, Plus, Target, Filter, Trash2 } from 'lucide-react';
+import styles from './GoalsPage.module.css';
 
 const GoalsPage: React.FC = () => {
- const [isCreatingGoal, setIsCreatingGoal] = useState(false);
  const [filterStatus, setFilterStatus] = usePersistentState<StatusType | 'all'>('goal:filter', 'all');
  const [sortBy, setSortBy] = usePersistentState<'custom' | 'title' | 'priority' | 'due'>('goal:sort', 'custom');
  const [isDeleting, setIsDeleting] = useState(false);
@@ -30,6 +29,8 @@ const GoalsPage: React.FC = () => {
  const [draggingGoalId, setDraggingGoalId] = useState<string | null>(null);
  const [dropTargetGoalId, setDropTargetGoalId] = useState<string | null>(null);
  const [dropTargetGoalPlacement, setDropTargetGoalPlacement] = useState<DropPlacement>('before');
+ const [metricDefinitions, setMetricDefinitions] = useState<MetricDefinitionItem[]>([]);
+ const [openMenuId, setOpenMenuId] = useState<string | null>(null);
  useDocumentTitle('Goals');
 
  const goals = useStore((s) => s.goals);
@@ -46,27 +47,30 @@ const GoalsPage: React.FC = () => {
  );
 
  useEffect(() => {
- fetchGoals();
+ void fetchGoals({
+ force: true,
+ silent: useStore.getState().goals.length > 0,
+ });
  }, [fetchGoals]);
 
- const handleGoalSubmit = async (goalData: Partial<Goal>) => {
- try {
- const newGoal = await goalsApi.create({
- title: goalData.title!,
- description: goalData.description!,
- status: goalData.status || StatusType.OUTSTANDING,
- priority: goalData.priority || PriorityType.HIGH,
- start_datetime: goalData.start_datetime,
- end_datetime: goalData.end_datetime,
- journey_theme_id: goalData.journey_theme_id ?? 'mountain',
+ useEffect(() => {
+ let cancelled = false;
+ void metricDefinitionsApi.getAll()
+ .then((rows) => {
+ if (!cancelled) setMetricDefinitions(rows);
+ })
+ .catch((error) => {
+ if (!(error instanceof AuthRequiredError)) console.error('Failed to load goal metric units:', error);
  });
- addGoal(newGoal);
- setIsCreatingGoal(false);
- } catch (error) {
- console.error('Error saving goal:', error);
- toast.error('Failed to save goal');
- }
- };
+ return () => { cancelled = true; };
+ }, []);
+
+ useEffect(() => {
+ if (!openMenuId) return;
+ const closeMenu = () => setOpenMenuId(null);
+ document.addEventListener('pointerdown', closeMenu);
+ return () => document.removeEventListener('pointerdown', closeMenu);
+ }, [openMenuId]);
 
  const softDeleteGoal = async (id: string) => {
  const goal = goals.find((g) => g.id === id);
@@ -155,32 +159,6 @@ const GoalsPage: React.FC = () => {
  setSelectedIds(new Set());
  if (succeeded > 0) toast.success(`Deleted ${succeeded} goal${succeeded === 1 ? '' : 's'}`);
  if (failed > 0) toast.error(`Failed to delete ${failed} goal${failed === 1 ? '' : 's'}`);
- };
-
- const getStatusColor = (status: StatusType) => {
- switch (status) {
- case StatusType.FINISHED:
- return 'status-finished';
- case StatusType.IN_PROGRESS:
- return 'status-in-progress';
- case StatusType.OUTSTANDING:
- return 'status-outstanding';
- default:
- return '';
- }
- };
-
- const getPriorityColor = (priority: PriorityType) => {
- switch (priority) {
- case PriorityType.HIGH:
- return 'priority-high';
- case PriorityType.MEDIUM:
- return 'priority-medium';
- case PriorityType.LOW:
- return 'priority-low';
- default:
- return '';
- }
  };
 
  const searchLower = search.trim().toLowerCase();
@@ -289,13 +267,13 @@ const GoalsPage: React.FC = () => {
  </button>
  </>
  )}
- <button
- onClick={() => setIsCreatingGoal(true)}
+ <Link
+ href="/goal/new"
  className="btn btn-primary page-cta"
  >
  <Plus className="w-4 h-4" />
  <span>Create Goal</span>
- </button>
+ </Link>
  </div>
  </div>
 
@@ -363,9 +341,9 @@ const GoalsPage: React.FC = () => {
  <Target className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--tn-fg-muted)' }} />
  <h3 style={{ fontSize: 20, fontWeight: 600, color: 'var(--tn-fg)', marginBottom: 8, fontFamily: 'var(--tn-font-display, var(--tn-font-sans))' }}>No goals yet</h3>
  <p style={{ color: 'var(--tn-fg-muted)', marginBottom: 24 }}>Create your first goal to start building your roadmap.</p>
- <button onClick={() => setIsCreatingGoal(true)} className="btn btn-primary">
+ <Link href="/goal/new" className="btn btn-primary">
  Create Your First Goal
- </button>
+ </Link>
  </div>
  ) : (
  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -375,6 +353,8 @@ const GoalsPage: React.FC = () => {
  const isDragging = draggingGoalId === goal.id;
  const isDropTarget = dropTargetGoalId === goal.id && draggingGoalId && draggingGoalId !== goal.id;
  const showDropMarker = isDragging && !!dropTargetGoalId && dropTargetGoalId !== goal.id;
+ const card = buildGoalCardView(goal, metricDefinitions);
+ const progressValue = card.progress.value ?? 0;
  return (
  <div key={goal.id} className="min-w-0">
  {showDropMarker && (
@@ -412,9 +392,10 @@ const GoalsPage: React.FC = () => {
  setDraggingGoalId(null);
  setDropTargetGoalId(null);
  }}
- className={`relative bg-card dark:bg-card rounded-lg border p-6 hover:shadow-md transition-shadow ${
+ className={`goal-card ${styles.trackingCard} ${
  canDrag ? 'cursor-grab active:cursor-grabbing' : ''
  }`}
+ data-dragging={isDragging}
  style={{
  borderColor: isDropTarget || isSelected ? 'var(--tn-accent)' : undefined,
  boxShadow: isDropTarget
@@ -422,14 +403,13 @@ const GoalsPage: React.FC = () => {
  : isSelected
  ? '0 0 0 2px color-mix(in srgb, var(--tn-accent) 22%, transparent)'
  : undefined,
- opacity: isDragging ? 0.55 : 1,
  }}
  >
  {canDrag && (
  <button
  type="button"
  draggable={false}
- className="absolute left-3 top-4 rounded p-1 pointer-events-none"
+ className={styles.dragHint}
  title="Drag to reorder"
  aria-label={`Drag ${goal.title} to reorder`}
  >
@@ -440,83 +420,126 @@ const GoalsPage: React.FC = () => {
  />
  </button>
  )}
- <input
- type="checkbox"
- checked={isSelected}
- onChange={() => toggleSelected(goal.id)}
+
+ <div
+ className={styles.menuWrap}
  draggable={false}
- onMouseDown={(e) => e.stopPropagation()}
- aria-label={`Select goal ${goal.title}`}
- className="absolute top-4 right-4 h-4 w-4 rounded border-border"
- style={{ accentColor: 'var(--tn-accent)' }}
- />
+ onPointerDown={(event) => event.stopPropagation()}
+ >
+ <button
+ type="button"
+ className={styles.menuButton}
+ aria-label={`Actions for ${goal.title}`}
+ aria-expanded={openMenuId === goal.id}
+ onClick={(event) => {
+ event.preventDefault();
+ event.stopPropagation();
+ setOpenMenuId((current) => current === goal.id ? null : goal.id);
+ }}
+ >
+ <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+ </button>
+ {openMenuId === goal.id && (
+ <div className={styles.menu} role="menu">
+ <button
+ type="button"
+ role="menuitemcheckbox"
+ aria-checked={isSelected}
+ onClick={() => {
+ toggleSelected(goal.id);
+ setOpenMenuId(null);
+ }}
+ >
+ <Check className="h-3.5 w-3.5" style={{ opacity: isSelected ? 1 : .28 }} aria-hidden="true" />
+ {isSelected ? 'Deselect goal' : 'Select goal'}
+ </button>
+ <button
+ type="button"
+ role="menuitem"
+ className={styles.deleteAction}
+ onClick={() => {
+ setOpenMenuId(null);
+ void softDeleteGoal(goal.id);
+ }}
+ >
+ <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+ Delete goal
+ </button>
+ </div>
+ )}
+ </div>
+
  <Link
  href={`/goal/${goal.id}`}
  draggable={false}
- className="block"
- style={{ paddingLeft: canDrag ? 14 : 0 }}
+ className={styles.cardLink}
+ style={{ paddingLeft: canDrag ? 30 : undefined }}
  >
- <div className="flex items-start justify-between mb-4 pr-8">
- <div className="flex-1">
- <h3 className="text-lg font-semibold text-foreground mb-2">
- {goal.title}
- </h3>
+ <div className={styles.header}>
+ <span className={`gc-ico ${card.visualTone} ${styles.identity}`} aria-hidden="true">
+ {goal.title.trim().charAt(0) || 'G'}
+ </span>
+ <div className={styles.titleBlock}>
+ <h3>{goal.title}</h3>
  {goal.description && (
- <p className="text-sm text-foreground dark:text-muted-foreground mb-3 line-clamp-2">
- {goal.description}
- </p>
+ <p>{goal.description}</p>
  )}
+ <div className={styles.statusRow}>
+ <span className={styles.status} data-tone={card.statusTone}>{card.statusLabel}</span>
+ {card.dueLabel && <span className={styles.due}>{card.dueLabel}</span>}
+ <span className={styles.priority}>{goal.priority} priority</span>
  </div>
  </div>
-
- <div className="flex items-center space-x-2 mb-4">
- <span className={`pill ${getStatusColor(goal.status)}`}>
- {goal.status}
- </span>
- <span className={`pill ${getPriorityColor(goal.priority)}`}>
- {goal.priority}
- </span>
  </div>
 
- {goal.end_datetime && (
- <div className="flex items-center text-xs text-muted-foreground dark:text-muted-foreground mb-4">
- <Calendar className="w-3 h-3 mr-1" />
- <span>Due {new Date(goal.end_datetime).toLocaleDateString()}</span>
+ <div className={styles.progressBlock}>
+ <span className={styles.progressLabel}>{card.progress.label}</span>
+ <div className={styles.progressTitle}>
+ <strong>{card.progress.headline}</strong>
+ {card.progress.value !== null && <b>{card.progress.value}%</b>}
  </div>
- )}
- </Link>
-
- <div className="flex items-center justify-between text-sm text-muted-foreground dark:text-muted-foreground">
- <span>{goal.milestones?.length || 0} milestones</span>
- <button
- draggable={false}
- onMouseDown={(e) => e.stopPropagation()}
- onClick={(e) => {
- e.preventDefault();
- softDeleteGoal(goal.id);
- }}
- className="btn btn-danger-ghost text-xs"
+ {card.progress.detail && <p className={styles.progressDetail}>{card.progress.detail}</p>}
+ <div
+ className={styles.progressTrack}
+ role="progressbar"
+ aria-label={`${card.progress.label} for ${goal.title}`}
+ aria-valuemin={0}
+ aria-valuemax={100}
+ aria-valuenow={card.progress.value ?? undefined}
  >
- Delete
- </button>
+ <span
+ className={styles.progressFill}
+ style={{
+ width: `${progressValue}%`,
+ background: `var(--tn-${card.visualTone}, var(--tn-accent))`,
+ }}
+ />
  </div>
+ {card.progress.lanes && (
+ <div className={styles.lanes} aria-label="Progress by lane">
+ {card.progress.lanes.map((lane) => (
+ <div key={lane.label} className={styles.lane} title={`${lane.label}: ${lane.value ?? 'not configured'}${lane.value === null ? '' : '%'}`}>
+ <span>{lane.label} {lane.value === null ? '—' : `${lane.value}%`}</span>
+ <i style={{ '--lane-progress': `${lane.value ?? 0}%` } as React.CSSProperties} />
+ </div>
+ ))}
+ </div>
+ )}
+ </div>
+
+ <div className={styles.nextStep}>
+ <div className={styles.nextCopy}>
+ <span>Next</span>
+ <strong>{card.nextStep.title}</strong>
+ <small>{card.nextStep.context}</small>
+ </div>
+ <ArrowRight className={`h-4 w-4 ${styles.nextArrow}`} aria-hidden="true" />
+ </div>
+ </Link>
  </div>
  </div>
  );
  })}
- </div>
- )}
-
- {/* Create Goal Modal */}
- {isCreatingGoal && (
- <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
- <div className="bg-card dark:bg-card rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
- <h3 className="text-lg font-semibold text-foreground mb-4">Create New Goal</h3>
- <GoalForm
- onSuccess={handleGoalSubmit}
- onCancel={() => setIsCreatingGoal(false)}
- />
- </div>
  </div>
  )}
 

@@ -25,6 +25,7 @@ export type CompletionRule =
  | { type: 'structural'; auto_completed?: boolean }
  | {
  type: 'metric_target';
+ metric_definition_id?: string;
  metric_name?: string;
  start_value?: number;
  current_value?: number;
@@ -35,6 +36,8 @@ export type CompletionRule =
  | {
  type: 'consistency';
  label?: string;
+ todo_id?: string;
+ todo_ids?: string[];
  current_done?: number;
  required_done?: number;
  window_days?: number;
@@ -56,6 +59,7 @@ export interface BaseEntity {
  id: string;
  title: string;
  description: string;
+ success_criteria?: string;
  start_datetime?: string;
  end_datetime?: string;
  status: StatusType;
@@ -66,6 +70,7 @@ export interface GoalEntity {
  id: string;
  title: string;
  description: string;
+ success_criteria?: string;
  start_datetime?: string;
  end_datetime?: string;
  priority: PriorityType;
@@ -190,6 +195,7 @@ export interface GoalUpdate {
  id: string;
  title?: string;
  description?: string;
+ success_criteria?: string;
  priority?: PriorityType;
  start_datetime?: string;
  end_datetime?: string;
@@ -202,6 +208,7 @@ export interface MilestoneUpdate {
  id: string;
  title?: string;
  description?: string;
+ success_criteria?: string;
  status?: StatusType;
  priority?: PriorityType;
  due_date?: string;
@@ -215,6 +222,7 @@ export interface TaskUpdate {
  id: string;
  title?: string;
  description?: string;
+ success_criteria?: string;
  priority?: PriorityType;
  status?: StatusType;
  start_datetime?: string;

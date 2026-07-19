@@ -29,6 +29,7 @@ export const GoalForm: React.FC<GoalFormProps> = ({
  const [formData, setFormData, clearDraft] = useFormDraft(draftKey, {
  title: goal?.title || '',
  description: goal?.description || '',
+ success_criteria: goal?.success_criteria || '',
  status: goal?.status || StatusType.OUTSTANDING,
  priority: goal?.priority || PriorityType.MEDIUM,
  start_datetime: toDateInput(goal?.start_datetime),
@@ -42,7 +43,6 @@ export const GoalForm: React.FC<GoalFormProps> = ({
  const validate = (): string | null => {
  if (!formData.title.trim()) return 'Title is required';
  if (formData.title.length > 200) return 'Title must be under 200 characters';
- if (!formData.end_datetime) return 'Due date is required';
  if (formData.start_datetime && formData.end_datetime) {
  if (new Date(formData.end_datetime) < new Date(formData.start_datetime)) {
  return 'Due date cannot be before start date';
@@ -129,6 +129,21 @@ export const GoalForm: React.FC<GoalFormProps> = ({
  onChange={(journeyThemeId) => setFormData((prev) => ({ ...prev, journey_theme_id: journeyThemeId }))}
  showLivePreview
  />
+
+ <div>
+ <label htmlFor="success_criteria" className="block text-sm font-medium text-foreground mb-1">
+ Success criteria
+ </label>
+ <textarea
+ id="success_criteria"
+ name="success_criteria"
+ value={formData.success_criteria}
+ onChange={handleChange}
+ rows={3}
+ placeholder="What must be true for this goal to be complete?"
+ className="w-full px-3 py-2 border border-border bg-card text-foreground placeholder:text-muted-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+ />
+ </div>
 
  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
  <div>

@@ -3,19 +3,22 @@ import NextAuth, { DefaultSession } from "next-auth";
 declare module "next-auth" {
   interface User {
     access_token: string;
+    refresh_token: string;
+    expires_in: number;
   }
 
   interface Session extends DefaultSession {
     accessToken?: string;
-    // Inherits `expires: string` (ISO date) from DefaultSession; we pin its
-    // value to our JWT TTL in `pages/api/auth/[...nextauth].ts`.
+    error?: "RefreshAccessTokenError";
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
     accessToken?: string;
+    accessTokenExpires?: number;
+    refreshToken?: string;
     id?: string;
-    exp?: number;
+    error?: "RefreshAccessTokenError";
   }
 }

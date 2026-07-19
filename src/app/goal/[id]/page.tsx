@@ -13,7 +13,7 @@ import { useDocumentTitle } from '@/lib/useDocumentTitle';
 import { goalToMarkdown, downloadMarkdown } from '@/lib/goalToMarkdown';
 import { useRecentGoals } from '@/store/useRecentGoals';
 import { GoalColorPicker } from '@/components/dashboard/GoalColorPicker';
-import { Copy, FileText } from 'lucide-react';
+import { Copy, FileText, WandSparkles } from 'lucide-react';
 
 const GoalDetailView = dynamic(
  () => import('@/components/dashboard/GoalDetailView').then((m) => m.GoalDetailView),
@@ -164,6 +164,14 @@ const GoalDetailPage: React.FC = () => {
  <div className="min-h-screen" style={{ background: 'var(--tn-bg)', color: 'var(--tn-fg)' }}>
  <main className="mx-auto w-full max-w-[1500px] px-4 py-5 sm:px-6 sm:py-8">
  <div className="mb-4 flex flex-wrap justify-end gap-2 no-print">
+ <button
+ onClick={() => router.push(`/goal/${goal.id}/build`)}
+ className="btn btn-primary"
+ title="Open the visual goal builder"
+ >
+ <WandSparkles className="h-4 w-4" />
+ <span>Open builder</span>
+ </button>
  <button
  onClick={handleCopyLink}
  className="btn btn-secondary"

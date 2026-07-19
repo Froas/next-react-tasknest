@@ -24,32 +24,52 @@ export type NavItemId =
  | 'trash'
  | 'activity';
 
+export type NavGroupId =
+ | 'overview'
+ | 'structure'
+ | 'schedule'
+ | 'focus'
+ | 'knowledge'
+ | 'explore'
+ | 'library';
+
+export const NAV_GROUP_LABELS: Record<NavGroupId, string> = {
+ overview: 'Overview',
+ structure: 'Structure',
+ schedule: 'Schedule',
+ focus: 'Focus & review',
+ knowledge: 'Knowledge',
+ explore: 'Explore',
+ library: 'Library',
+};
+
 export interface NavItem {
  id: NavItemId;
  name: string;
  href: string;
+ group: NavGroupId;
 }
 
 export const NAV_ITEMS: NavItem[] = [
- { id: 'today', name: 'Today', href: '/today' },
- { id: 'dashboard', name: 'Dashboard', href: '/' },
- { id: 'goals', name: 'Goals', href: '/goal' },
- { id: 'milestones', name: 'Milestones', href: '/milestone' },
- { id: 'tasks', name: 'Tasks', href: '/task' },
- { id: 'todos', name: 'Todos', href: '/todo' },
- { id: 'events', name: 'Events', href: '/event' },
- { id: 'calendar', name: 'Calendar', href: '/calendar' },
- { id: 'attention', name: 'Attention', href: '/attention' },
- { id: 'notes', name: 'Notes', href: '/notes' },
- { id: 'radar', name: 'Radar', href: '/radar' },
- { id: 'graph', name: 'Graph', href: '/graph' },
- { id: 'tags', name: 'Tags', href: '/tags' },
- { id: 'review', name: 'Review', href: '/review' },
- { id: 'visualization', name: 'Visualization', href: '/visualization' },
- { id: 'templates', name: 'Templates', href: '/templates' },
- { id: 'archive', name: 'Archive', href: '/goal/archive' },
- { id: 'trash', name: 'Trash', href: '/trash' },
- { id: 'activity', name: 'Activity', href: '/activity' },
+ { id: 'today', name: 'Today', href: '/today', group: 'overview' },
+ { id: 'dashboard', name: 'Dashboard', href: '/', group: 'overview' },
+ { id: 'goals', name: 'Goals', href: '/goal', group: 'structure' },
+ { id: 'milestones', name: 'Milestones', href: '/milestone', group: 'structure' },
+ { id: 'tasks', name: 'Tasks', href: '/task', group: 'structure' },
+ { id: 'todos', name: 'Todos', href: '/todo', group: 'structure' },
+ { id: 'events', name: 'Events', href: '/event', group: 'schedule' },
+ { id: 'calendar', name: 'Calendar', href: '/calendar', group: 'schedule' },
+ { id: 'attention', name: 'Attention', href: '/attention', group: 'focus' },
+ { id: 'notes', name: 'Notes', href: '/notes', group: 'knowledge' },
+ { id: 'radar', name: 'Radar', href: '/radar', group: 'explore' },
+ { id: 'graph', name: 'Graph', href: '/graph', group: 'explore' },
+ { id: 'tags', name: 'Tags', href: '/tags', group: 'knowledge' },
+ { id: 'review', name: 'Review', href: '/review', group: 'focus' },
+ { id: 'visualization', name: 'Visualization', href: '/visualization', group: 'explore' },
+ { id: 'templates', name: 'Templates', href: '/templates', group: 'library' },
+ { id: 'archive', name: 'Archive', href: '/goal/archive', group: 'library' },
+ { id: 'trash', name: 'Trash', href: '/trash', group: 'library' },
+ { id: 'activity', name: 'Activity', href: '/activity', group: 'focus' },
 ];
 
 export interface NavPreferences {
@@ -60,7 +80,7 @@ export interface NavPreferences {
 
 export const DEFAULT_NAV_PREFERENCES: NavPreferences = {
  orderedIds: NAV_ITEMS.map((item) => item.id),
- primaryIds: ['today', 'dashboard', 'goals', 'tasks', 'calendar'],
+ primaryIds: ['today', 'dashboard', 'goals', 'tasks', 'calendar', 'visualization'],
  hiddenIds: [],
 };
 
@@ -146,6 +166,18 @@ export function deriveNavItems(preferences: NavPreferences) {
  primaryItems: ordered.filter((item) => primary.has(item.id)),
  moreItems: ordered.filter((item) => !primary.has(item.id)),
  };
+}
+
+export function groupNavItems(items: NavItem[]) {
+ return items.reduce<Array<{ id: NavGroupId; label: string; items: NavItem[] }>>((groups, item) => {
+ const existing = groups.find((group) => group.id === item.group);
+ if (existing) {
+ existing.items.push(item);
+ } else {
+ groups.push({ id: item.group, label: NAV_GROUP_LABELS[item.group], items: [item] });
+ }
+ return groups;
+ }, []);
 }
 
 export function useNavPreferences() {

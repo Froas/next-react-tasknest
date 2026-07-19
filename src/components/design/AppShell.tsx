@@ -11,13 +11,13 @@
  * `--tn-*` design tokens so theme switching repaints chrome instantly.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { Bell, Search, Settings as Cog, Menu, X, ChevronDown, LogOut } from 'lucide-react';
 import { useDesignTheme } from '@/context/DesignThemeContext';
-import { useNavPreferences } from '@/lib/navPreferences';
+import { groupNavItems, useNavPreferences } from '@/lib/navPreferences';
 
 function isActive(pathname: string, href: string): boolean {
  if (href === '/') return pathname === '/';
@@ -34,7 +34,12 @@ export function AppShell({ children }: AppShellProps) {
  const [mobileOpen, setMobileOpen] = useState(false);
  const [moreOpen, setMoreOpen] = useState(false);
  const { theme, current } = useDesignTheme();
- const { primaryItems, moreItems, visibleItems } = useNavPreferences();
+ const { primaryItems, moreItems } = useNavPreferences();
+ const moreGroups = useMemo(() => groupNavItems(moreItems), [moreItems]);
+ const moreGroupColumns = useMemo(() => [
+ moreGroups.filter((_, index) => index % 2 === 0),
+ moreGroups.filter((_, index) => index % 2 === 1),
+ ], [moreGroups]);
 
  useEffect(() => {
  setMobileOpen(false);
@@ -188,44 +193,29 @@ export function AppShell({ children }: AppShellProps) {
  style={{
  position: 'absolute',
  top: 'calc(100% + 4px)',
- right: 0,
- minWidth: 200,
+ left: '50%',
+ transform: 'translateX(-50%)',
+ width: 440,
+ maxWidth: 'min(440px, calc(100vw - 32px))',
  background: 'var(--tn-card)',
  border: 'var(--tn-line)',
  borderRadius: 'var(--tn-r-lg, 8px)',
  boxShadow:
  'var(--tn-shadow, 0 8px 24px rgba(0,0,0,0.15))',
- padding: 6,
+ padding: 14,
  zIndex: 42,
- display: 'flex',
- flexDirection: 'column',
- gap: 1,
+ display: 'grid',
+ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+ gap: 22,
  }}
  >
- {moreItems.map((item) => {
- const active = isActive(pathname, item.href);
- return (
- <Link
- key={item.id}
- href={item.href}
- style={{
- padding: '8px 12px',
- fontSize: 13.5,
- color: active
- ? 'var(--tn-on-accent)'
- : 'var(--tn-fg-muted)',
- background: active
- ? 'var(--tn-accent)'
- : 'transparent',
- borderRadius: 'var(--tn-r-md, 6px)',
- textDecoration: 'none',
- fontWeight: active ? 600 : 500,
- }}
- >
- {item.name}
- </Link>
- );
- })}
+ {moreGroupColumns.map((groups, columnIndex) => (
+ <div key={columnIndex} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+ {groups.map((group) => (
+ <NavGroup key={group.id} label={group.label} items={group.items} pathname={pathname} />
+ ))}
+ </div>
+ ))}
  </div>
  </>
  )}
@@ -375,7 +365,7 @@ export function AppShell({ children }: AppShellProps) {
  <X size={18} />
  </button>
  </div>
- {visibleItems.map((item) => {
+ {primaryItems.map((item) => {
  const active = isActive(pathname, item.href);
  return (
  <Link
@@ -396,6 +386,13 @@ export function AppShell({ children }: AppShellProps) {
  </Link>
  );
  })}
+ {moreGroups.length > 0 && (
+ <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 14, paddingTop: 16, borderTop: 'var(--tn-line)' }}>
+ {moreGroups.map((group) => (
+ <NavGroup key={group.id} label={group.label} items={group.items} pathname={pathname} mobile />
+ ))}
+ </div>
+ )}
  <div
  style={{
  marginTop: 12,
@@ -505,6 +502,58 @@ export function AppShell({ children }: AppShellProps) {
  }
  `}</style>
  </div>
+ );
+}
+
+function NavGroup({
+ label,
+ items,
+ pathname,
+ mobile = false,
+}: {
+ label: string;
+ items: ReturnType<typeof groupNavItems>[number]['items'];
+ pathname: string;
+ mobile?: boolean;
+}) {
+ return (
+ <section style={{ minWidth: 0 }}>
+ <div
+ style={{
+ padding: mobile ? '0 12px 5px' : '0 8px 5px',
+ color: 'var(--tn-fg-muted)',
+ fontSize: 10.5,
+ fontWeight: 700,
+ letterSpacing: '.09em',
+ textTransform: 'uppercase',
+ opacity: 0.72,
+ }}
+ >
+ {label}
+ </div>
+ <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+ {items.map((item) => {
+ const active = isActive(pathname, item.href);
+ return (
+ <Link
+ key={item.id}
+ href={item.href}
+ style={{
+ padding: mobile ? '9px 12px' : '7px 8px',
+ fontSize: mobile ? 14 : 13.5,
+ color: active ? 'var(--tn-on-accent)' : 'var(--tn-fg-muted)',
+ background: active ? 'var(--tn-accent)' : 'transparent',
+ borderRadius: 'var(--tn-r-md, 6px)',
+ textDecoration: 'none',
+ fontWeight: active ? 600 : 500,
+ }}
+ >
+ {item.name}
+ </Link>
+ );
+ })}
+ </div>
+ </section>
  );
 }
 

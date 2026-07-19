@@ -182,17 +182,20 @@ const AttentionPage: React.FC = () => {
  };
 
  return (
- <div className="page" style={{ maxWidth: 1400 }}>
- <div className="page-head">
- <div className="page-eyebrow">Work queue</div>
+ <div className="page min-w-0" style={{ maxWidth: 1400 }}>
+ <div className="page-head !mb-5 !pb-5">
+ <div className="page-eyebrow hidden sm:block">Work queue</div>
  <h1 className="page-title">Attention</h1>
- <p className="page-lede">Due and overdue work, grouped by the goal it belongs to.</p>
+ <p className="page-lede !mt-2 text-sm">Due and overdue work, grouped by goal.</p>
  </div>
 
- <div className="mb-5 flex flex-wrap items-center gap-3">
+ <div className="mb-5 flex min-w-0 items-center gap-2 overflow-x-auto pb-1">
  <span className="pill" style={{ color: 'var(--tn-bad)', borderColor: 'var(--tn-bad)' }}>{overdueCount} overdue</span>
  <span className="pill">{dueTodayCount} due today</span>
- <Link href="/calendar" className="btn btn-secondary !px-3 !py-2 text-xs">Open calendar →</Link>
+ <Link href="/calendar" aria-label="Open calendar" className="btn btn-secondary ml-auto shrink-0 !px-3 !py-2 text-xs">
+ <CalendarClock className="h-4 w-4" />
+ <span className="hidden sm:inline">Open calendar</span>
+ </Link>
  </div>
 
  {groups.length === 0 ? (
@@ -200,7 +203,7 @@ const AttentionPage: React.FC = () => {
  ) : (
  <div className="grid gap-4 xl:grid-cols-2">
  {groups.map((group) => (
- <article key={group.key} className="rounded-2xl border p-4" style={{ border: 'var(--tn-line)', background: 'var(--tn-card)' }}>
+ <article key={group.key} className="min-w-0 overflow-hidden rounded-2xl border p-3 sm:p-4" style={{ border: 'var(--tn-line)', background: 'var(--tn-card)' }}>
  <div className="mb-4 flex items-start justify-between gap-3">
  <div>
  <h2 className="text-base font-semibold text-foreground">
@@ -247,11 +250,11 @@ const AttentionBucket: React.FC<{
 
  return (
  <section className="mb-4 last:mb-0">
- <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+ <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider" style={{ color }}>
  {icon}<span>{title}</span><span>({items.length})</span>
  </div>
- <div className="flex items-center gap-2">
+ <div className="hidden items-center gap-2 sm:flex">
  <button type="button" onClick={() => void snoozeAll(1)} disabled={bulkDays !== null} className="btn btn-secondary !px-2 !py-1 text-xs disabled:opacity-50" title={`Snooze all ${items.length} items for one day`}>
  {bulkDays === 1 ? 'Moving…' : 'All +1d'}
  </button>
@@ -262,13 +265,15 @@ const AttentionBucket: React.FC<{
  </div>
  <div className="space-y-2">
  {items.map((item) => (
- <div key={`${item.itemType}-${item.id}`} className="flex items-center gap-2 rounded-xl border p-2" style={{ border: 'var(--tn-line)', background: tone === 'overdue' ? 'color-mix(in srgb, var(--tn-bad) 8%, var(--tn-card))' : 'var(--tn-hover)' }}>
- <Link href={calendarItemHref(item)} className="min-w-0 flex-1">
+ <div key={`${item.itemType}-${item.id}`} className="flex min-w-0 flex-col gap-2 rounded-xl border p-3 sm:flex-row sm:items-center sm:p-2" style={{ border: 'var(--tn-line)', background: tone === 'overdue' ? 'color-mix(in srgb, var(--tn-bad) 8%, var(--tn-card))' : 'var(--tn-hover)' }}>
+ <Link href={calendarItemHref(item)} className="min-w-0 flex-1 overflow-hidden">
  <span className="block truncate text-sm font-medium text-foreground">{item.title}</span>
  <span className="block truncate text-xs text-muted-foreground dark:text-muted-foreground">{[item.milestoneTitle, item.taskTitle, item.itemType].filter(Boolean).join(' · ')}</span>
  </Link>
- <button type="button" onClick={() => void onSnooze(item, 1)} disabled={bulkDays !== null} className="btn btn-secondary !px-2 !py-1 text-xs disabled:opacity-50" title="Snooze one day"><Clock4 className="h-3.5 w-3.5" />+1d</button>
- <button type="button" onClick={() => void onSnooze(item, 7)} disabled={bulkDays !== null} className="btn btn-secondary !px-2 !py-1 text-xs disabled:opacity-50" title="Snooze one week">+1w</button>
+ <div className="flex shrink-0 items-center justify-end gap-2">
+ <button type="button" onClick={() => void onSnooze(item, 1)} disabled={bulkDays !== null} className="inline-flex min-h-9 items-center gap-1 rounded-lg border px-2.5 text-xs font-medium disabled:opacity-50" style={{ border: 'var(--tn-line)', background: 'var(--tn-card)' }} title="Snooze until tomorrow"><Clock4 className="h-3.5 w-3.5" /><span>Tomorrow</span></button>
+ <button type="button" onClick={() => void onSnooze(item, 7)} disabled={bulkDays !== null} className="inline-flex min-h-9 items-center rounded-lg border px-2.5 text-xs font-medium disabled:opacity-50" style={{ border: 'var(--tn-line)', background: 'var(--tn-card)' }} title="Snooze one week">Next week</button>
+ </div>
  </div>
  ))}
  </div>

@@ -61,8 +61,8 @@ const getAuthHeaders = async (): Promise<{ Authorization: string; 'Content-Type'
  };
 };
 
-// Centralised authed JSON request. Handles 401/403 → session expiration,
-// extracts error detail from the response body, and parses successful JSON.
+// Centralised authed JSON request. A 401 gets one session refresh + retry;
+// a 403 is a normal permission error and must never log the user out.
 type RequestOptions = {
  method?: string;
  body?: unknown;
@@ -79,13 +79,16 @@ async function apiRequest<T>(path: string, options: RequestOptions = {}): Promis
  throw new AuthRequiredError();
  }
 
- let response: Response;
- try {
- response = await fetch(`${API_BASE_URL}${path}`, {
+ const request = (requestHeaders: { Authorization: string; 'Content-Type': string }) =>
+ fetch(`${API_BASE_URL}${path}`, {
  method,
- headers,
+ headers: requestHeaders,
  body: body !== undefined ? JSON.stringify(body) : undefined,
  });
+
+ let response: Response;
+ try {
+ response = await request(headers);
  } catch (networkErr) {
  // Backend is down / CORS rejected / DNS failure. Throw a clear
  // message instead of letting the raw TypeError bubble to React.
@@ -96,9 +99,35 @@ async function apiRequest<T>(path: string, options: RequestOptions = {}): Promis
  );
  }
 
- if (response.status === 401 || response.status === 403) {
+ if (response.status === 401) {
+ // Ask NextAuth for a fresh session. Its JWT callback refreshes the backend
+ // access token when needed. Retrying once also handles a token expiring in
+ // the small window between constructing and sending the original request.
+ memoryAccessToken = undefined;
+ const { getSession } = await import('next-auth/react');
+ const refreshedSession = await getSession();
+ const refreshedToken = refreshedSession?.accessToken;
+
+ if (refreshedToken) {
+ memoryAccessToken = refreshedToken;
+ try {
+ response = await request({
+ Authorization: `Bearer ${refreshedToken}`,
+ 'Content-Type': 'application/json',
+ });
+ } catch (networkErr) {
+ throw new Error(
+ errorMessage
+ ? `${errorMessage} (network unreachable)`
+ : `Can't reach the API at ${API_BASE_URL}`,
+ );
+ }
+ }
+
+ if (response.status === 401) {
  handleSessionExpiration();
  throw new AuthRequiredError('Session expired');
+ }
  }
 
  if (!response.ok) {
@@ -384,6 +413,7 @@ export interface NoteItem {
  kind?: 'note' | 'signal';
  source?: string | null;
  goal_id?: string | null;
+ milestone_id?: string | null;
  task_id?: string | null;
  signal_domain?: SignalDomain | null;
  signal_stake?: SignalStake | null;
@@ -409,6 +439,7 @@ type NotePayload = {
  kind?: 'note' | 'signal';
  source?: string | null;
  goal_id?: string | null;
+ milestone_id?: string | null;
  task_id?: string | null;
  signal_domain?: SignalDomain | null;
  signal_stake?: SignalStake | null;
@@ -629,6 +660,7 @@ export interface MetricDefinitionItem {
  input_type: MetricInputType;
  show_on_today: boolean;
  goal_id?: string | null;
+ milestone_id?: string | null;
  task_id?: string | null;
  position: number;
  created_at: string;
@@ -666,6 +698,7 @@ export const metricDefinitionsApi = {
  input_type?: MetricInputType;
  show_on_today?: boolean;
  goal_id?: string | null;
+ milestone_id?: string | null;
  task_id?: string | null;
  position?: number;
  }) =>
@@ -723,6 +756,19 @@ export interface TemplateItem {
  blueprint?: TemplateBlueprint | null;
  created_at: string;
  user_id: string | null;
+ visibility: 'private' | 'unlisted' | 'public';
+ share_code?: string | null;
+ shared_at?: string | null;
+}
+
+export interface SharedTemplateItem {
+ title: string;
+ description?: string | null;
+ emoji?: string | null;
+ tags?: string[] | null;
+ blueprint?: TemplateBlueprint | null;
+ share_code: string;
+ shared_at?: string | null;
 }
 
 export interface TemplateBlueprintMetric {
@@ -752,6 +798,7 @@ export interface TemplateBlueprintSubtask {
 export interface TemplateBlueprintTask {
  title: string;
  description?: string;
+ success_criteria?: string;
  kind?: 'project' | 'routine' | 'challenge';
  scope?: 'goal' | 'milestone';
  priority?: string;
@@ -767,6 +814,7 @@ export interface TemplateBlueprintTask {
 export interface TemplateBlueprintMilestone {
  title: string;
  description?: string;
+ success_criteria?: string;
  status?: string;
  priority?: string;
  due_date_offset_days?: number;
@@ -777,20 +825,119 @@ export interface TemplateBlueprintMilestone {
 }
 
 export interface TemplateBlueprint {
+ schema_version?: number;
+ source?: {
+ type: 'scratch' | 'goal' | 'import' | 'marketplace';
+ source_id?: string;
+ source_title?: string;
+ };
  status?: string;
  priority?: string;
  duration_days?: number;
+ success_criteria?: string;
  completion_rule?: CompletionRule | null;
+ journey_theme_id?: string;
+ journey_character_id?: string;
  metrics?: TemplateBlueprintMetric[];
  goal_tasks?: TemplateBlueprintTask[];
  milestones?: TemplateBlueprintMilestone[];
 }
 
+export interface AIGoalAllowance {
+ limit: number | null;
+ used: number;
+ remaining: number | null;
+ resets_at: string;
+}
+
+export interface AIGoalPlannerConfig {
+ enabled: boolean;
+ profile: string;
+ provider: string;
+ allowance?: AIGoalAllowance;
+}
+
+export interface AIGoalQuestion {
+ id: string;
+ question: string;
+ answer_type: 'text' | 'number' | 'date' | 'choice';
+ placeholder: string;
+ options: string[];
+}
+
+export interface AIGoalDraft {
+ title: string;
+ description: string;
+ success_criteria: string;
+ blueprint: TemplateBlueprint;
+}
+
+export interface AIGoalPlanResponse {
+ status: 'needs_clarification' | 'ready';
+ questions: AIGoalQuestion[];
+ draft: AIGoalDraft | null;
+ assumptions: string[];
+ meta: { provider: string; model: string; allowance?: AIGoalAllowance };
+}
+
+export interface AIGoalMilestoneRefinement {
+ milestone: TemplateBlueprintMilestone;
+ assumptions: string[];
+ meta: { provider: string; model: string; allowance?: AIGoalAllowance };
+}
+
+export const aiGoalPlansApi = {
+ getConfig: () => apiRequest<AIGoalPlannerConfig>('/user/ai/goal-drafts/config', {
+ errorMessage: 'Failed to load AI planner configuration',
+ }),
+
+ generate: (data: {
+ intent: string;
+ answers?: Array<{ question_id: string; question: string; value: string }>;
+ locale?: 'en';
+ }) => apiRequest<AIGoalPlanResponse>('/user/ai/goal-drafts', {
+ method: 'POST',
+ body: { ...data, answers: data.answers ?? [], locale: data.locale ?? 'en' },
+ errorMessage: 'Failed to generate an AI goal plan',
+ }),
+
+ refineMilestone: (data: {
+ intent: string;
+ answers?: Array<{ question_id: string; question: string; value: string }>;
+ draft: AIGoalDraft;
+ milestone_index: number;
+ instruction?: string;
+ locale?: 'en';
+ }) => apiRequest<AIGoalMilestoneRefinement>('/user/ai/goal-drafts/refine-milestone', {
+ method: 'POST',
+ body: {
+ ...data,
+ answers: data.answers ?? [],
+ instruction: data.instruction ?? 'Make this milestone more concrete, realistic, and immediately actionable.',
+ locale: data.locale ?? 'en',
+ },
+ errorMessage: 'Failed to regenerate the milestone',
+ }),
+};
+
 export const templatesApi = {
  getAll: () => apiRequest<TemplateItem[]>('/user/templates', { errorMessage: 'Failed to fetch templates' }),
 
- create: (data: Omit<TemplateItem, 'id' | 'created_at' | 'user_id'>) =>
+ create: (data: Omit<TemplateItem, 'id' | 'created_at' | 'user_id' | 'visibility' | 'share_code' | 'shared_at'>) =>
  apiRequest<TemplateItem>('/user/templates', { method: 'POST', body: data, errorMessage: 'Failed to create template' }),
+
+ createFromGoal: (data: {
+ goal_id: string;
+ title?: string;
+ description?: string;
+ emoji?: string;
+ tags?: string[];
+ }) =>
+ apiRequest<TemplateItem>('/user/templates/from-goal', {
+ method: 'POST',
+ body: data,
+ errorMessage: 'Failed to create template from goal',
+ }),
 
  update: (data: Partial<TemplateItem> & { id: string }) =>
  apiRequest<TemplateItem>('/user/templates/update', { method: 'PATCH', body: data, errorMessage: 'Failed to update template' }),
@@ -799,6 +946,29 @@ export const templatesApi = {
 
  delete: (id: string) =>
  apiRequest<{ message: string }>(`/user/templates/${id}/delete`, { method: 'DELETE', errorMessage: 'Failed to delete template' }),
+
+ share: (id: string) =>
+ apiRequest<TemplateItem>(`/user/templates/${id}/share`, {
+ method: 'POST',
+ errorMessage: 'Failed to share template',
+ }),
+
+ stopSharing: (id: string) =>
+ apiRequest<TemplateItem>(`/user/templates/${id}/share`, {
+ method: 'DELETE',
+ errorMessage: 'Failed to stop sharing template',
+ }),
+
+ previewShared: (shareCode: string) =>
+ apiRequest<SharedTemplateItem>(`/user/templates/shared/${encodeURIComponent(shareCode)}`, {
+ errorMessage: 'Shared template not found',
+ }),
+
+ importShared: (shareCode: string) =>
+ apiRequest<TemplateItem>(`/user/templates/shared/${encodeURIComponent(shareCode)}/import`, {
+ method: 'POST',
+ errorMessage: 'Failed to import shared template',
+ }),
 
  /** Materialise a template into a real Goal owned by the user. */
  instantiate: (id: string, overrides?: { title_override?: string; start_datetime?: string; end_datetime?: string }) =>

@@ -369,6 +369,27 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
  )}
  onSave={(description) => onUpdate({ description })}
  />
+ <div
+ className="mb-3 rounded-xl border px-3 py-2.5"
+ style={{
+ background: 'color-mix(in srgb, var(--tn-accent) 5%, var(--tn-card))',
+ borderColor: 'color-mix(in srgb, var(--tn-accent) 16%, transparent)',
+ }}
+ >
+ <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.1em]" style={{ color: 'var(--tn-accent)' }}>
+ Success criteria
+ </div>
+ <InlineText
+ value={currentMilestone.success_criteria ?? ''}
+ placeholder="Define what makes this milestone complete…"
+ multiline
+ ariaLabel="Edit milestone success criteria"
+ className="-mx-1 px-1 py-0.5"
+ editClassName="text-sm text-foreground"
+ renderValue={(criteria) => <p className="text-sm text-foreground break-words">{criteria}</p>}
+ onSave={(success_criteria) => onUpdate({ success_criteria })}
+ />
+ </div>
  
  {/* Progress Bar */}
  <div className="mb-3">

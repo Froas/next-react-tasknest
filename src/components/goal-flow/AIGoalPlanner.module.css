@@ -1,0 +1,361 @@
+.planner,
+.unavailable,
+.loading {
+ --ai-surface: var(--gf-surface, var(--tn-card, #fff));
+ --ai-ink: var(--gf-ink, var(--tn-fg, #171717));
+ --ai-muted: var(--gf-muted, var(--tn-fg-muted, #6b6b6b));
+ --ai-accent: var(--gf-accent, var(--tn-accent, #4f6bed));
+ --ai-on-accent: var(--gf-on-accent, var(--tn-on-accent, #fff));
+ --ai-line: color-mix(in srgb, var(--ai-muted) 20%, transparent);
+ width: min(100%, 820px);
+ margin: 0 auto;
+ color: var(--ai-ink);
+ text-align: left;
+}
+
+.loading,
+.unavailable {
+ display: flex;
+ min-height: 380px;
+ flex-direction: column;
+ align-items: center;
+ justify-content: center;
+ gap: 12px;
+ text-align: center;
+}
+
+.unavailable h2 { margin: 0; font-size: clamp(26px, 4vw, 42px); letter-spacing: -.035em; }
+.unavailable p { max-width: 520px; margin: 0 0 8px; color: var(--ai-muted); line-height: 1.6; }
+
+.aiMark {
+ display: grid;
+ width: 48px;
+ height: 48px;
+ margin: 0 auto 12px;
+ place-items: center;
+ border-radius: 16px;
+ background: color-mix(in srgb, var(--ai-accent) 10%, var(--ai-surface));
+ color: var(--ai-accent);
+ box-shadow: 0 14px 44px color-mix(in srgb, var(--ai-accent) 14%, transparent);
+}
+
+.kicker {
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ gap: 6px;
+ color: var(--ai-accent);
+ font-size: 11px;
+ font-weight: 750;
+ letter-spacing: .11em;
+ text-transform: uppercase;
+}
+
+.planner > h2 {
+ max-width: 700px;
+ margin: 9px auto 0;
+ font-size: clamp(32px, 5vw, 56px);
+ letter-spacing: -.05em;
+ line-height: 1.02;
+ text-align: center;
+}
+
+.lead {
+ max-width: 610px;
+ margin: 16px auto 25px;
+ color: var(--ai-muted);
+ font-size: 16px;
+ line-height: 1.6;
+ text-align: center;
+}
+
+.backButton {
+ display: inline-flex;
+ align-items: center;
+ gap: 6px;
+ margin-bottom: 24px;
+ border: 0;
+ background: transparent;
+ color: var(--ai-muted);
+ cursor: pointer;
+ font: inherit;
+ font-size: 12px;
+ font-weight: 650;
+}
+
+.backButton:hover { color: var(--ai-ink); }
+
+.briefForm,
+.questionForm,
+.goalCard,
+.metricCard,
+.milestoneCard,
+.routineList,
+.assumptions {
+ border: 1px solid var(--ai-line);
+ background: color-mix(in srgb, var(--ai-surface) 92%, transparent);
+ box-shadow: 0 20px 60px color-mix(in srgb, var(--ai-accent) 8%, transparent);
+ backdrop-filter: blur(18px);
+}
+
+.briefForm { overflow: hidden; border-radius: 24px; }
+
+.briefForm textarea {
+ display: block;
+ width: 100%;
+ min-height: 180px;
+ resize: vertical;
+ padding: 24px;
+ border: 0;
+ outline: 0;
+ background: transparent;
+ color: var(--ai-ink);
+ font: inherit;
+ font-size: 18px;
+ line-height: 1.55;
+}
+
+.briefForm textarea::placeholder { color: color-mix(in srgb, var(--ai-muted) 70%, transparent); }
+
+.formFooter {
+ display: flex;
+ align-items: center;
+ justify-content: space-between;
+ gap: 12px;
+ padding: 12px 14px 12px 22px;
+ border-top: 1px solid var(--ai-line);
+ color: var(--ai-muted);
+ font-size: 11px;
+}
+
+.formFooter button,
+.primaryButton {
+ display: inline-flex;
+ min-height: 42px;
+ align-items: center;
+ justify-content: center;
+ gap: 7px;
+ padding: 10px 16px;
+ border: 0;
+ border-radius: 13px;
+ background: var(--ai-accent);
+ color: var(--ai-on-accent);
+ cursor: pointer;
+ font: inherit;
+ font-size: 13px;
+ font-weight: 720;
+}
+
+.formFooter button:disabled,
+.primaryButton:disabled,
+.secondaryButton:disabled { cursor: default; opacity: .5; }
+
+.privacyNote { margin: 12px auto 0; color: var(--ai-muted); font-size: 11px; text-align: center; }
+
+.allowancePill {
+ display: flex;
+ width: fit-content;
+ align-items: center;
+ gap: 6px;
+ margin: -11px auto 16px;
+ padding: 7px 10px;
+ border: 1px solid color-mix(in srgb, var(--ai-accent) 20%, transparent);
+ border-radius: 999px;
+ background: color-mix(in srgb, var(--ai-accent) 6%, var(--ai-surface));
+ color: var(--ai-muted);
+ font-size: 10px;
+ font-weight: 650;
+}
+
+.allowanceEmpty {
+ border-color: color-mix(in srgb, var(--gf-danger, #c25d63) 25%, transparent);
+ background: color-mix(in srgb, var(--gf-danger, #c25d63) 6%, var(--ai-surface));
+ color: var(--gf-danger, #c25d63);
+}
+
+.questionForm { display: grid; gap: 18px; margin-top: 28px; padding: 24px; border-radius: 24px; }
+.questionField { display: grid; gap: 9px; }
+.questionField > span { display: flex; align-items: baseline; gap: 10px; font-size: 14px; font-weight: 680; }
+.questionField em { color: var(--ai-accent); font-family: var(--font-geist-mono), monospace; font-size: 11px; font-style: normal; }
+
+.questionField input,
+.questionField select,
+.goalFields input,
+.goalFields textarea,
+.inlineFields input,
+.milestoneBody > label input,
+.taskRow input,
+.breakdownGroup input,
+.breakdownGroup select,
+.routineRow input,
+.routineRow select {
+ width: 100%;
+ min-height: 44px;
+ padding: 10px 12px;
+ border: 1px solid var(--ai-line);
+ border-radius: 12px;
+ outline: 0;
+ background: color-mix(in srgb, var(--ai-surface) 96%, transparent);
+ color: var(--ai-ink);
+ font: inherit;
+ font-size: 13px;
+}
+
+.questionField input:focus,
+.questionField select:focus,
+.goalFields input:focus,
+.goalFields textarea:focus,
+.inlineFields input:focus,
+.milestoneBody > label input:focus,
+.taskRow input:focus,
+.breakdownGroup input:focus,
+.breakdownGroup select:focus,
+.routineRow input:focus,
+.routineRow select:focus {
+ border-color: var(--ai-accent);
+ box-shadow: 0 0 0 3px color-mix(in srgb, var(--ai-accent) 10%, transparent);
+}
+
+.questionForm .primaryButton { justify-self: end; }
+
+.error {
+ max-width: 720px;
+ margin: 14px auto 0;
+ padding: 10px 12px;
+ border: 1px solid color-mix(in srgb, var(--gf-danger, #c25d63) 25%, transparent);
+ border-radius: 12px;
+ background: color-mix(in srgb, var(--gf-danger, #c25d63) 7%, transparent);
+ color: var(--gf-danger, #c25d63);
+ font-size: 12px;
+ text-align: center;
+}
+
+.spinner {
+ display: inline-block;
+ width: 16px;
+ height: 16px;
+ border: 2px solid currentColor;
+ border-right-color: transparent;
+ border-radius: 50%;
+ animation: spin .8s linear infinite;
+}
+
+.preview { width: min(100%, 980px); padding-bottom: 24px; }
+.previewHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+.previewHeader .kicker { justify-content: flex-start; }
+.previewHeader h2 { margin: 8px 0 7px; font-size: clamp(28px, 4vw, 46px); letter-spacing: -.045em; line-height: 1.04; }
+.previewHeader p { max-width: 650px; margin: 0; color: var(--ai-muted); line-height: 1.55; }
+.previewHeader .allowancePill { margin: 10px 0 0; line-height: 1.2; }
+.previewHeaderActions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+
+.secondaryButton {
+ display: inline-flex;
+ min-height: 40px;
+ flex: 0 0 auto;
+ align-items: center;
+ justify-content: center;
+ gap: 7px;
+ padding: 9px 13px;
+ border: 1px solid var(--ai-line);
+ border-radius: 12px;
+ background: color-mix(in srgb, var(--ai-surface) 88%, transparent);
+ color: var(--ai-muted);
+ cursor: pointer;
+ font: inherit;
+ font-size: 12px;
+ font-weight: 680;
+}
+
+.secondaryButton:hover { border-color: color-mix(in srgb, var(--ai-accent) 40%, transparent); color: var(--ai-ink); }
+
+.goalCard { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px; padding: 20px; border-radius: 22px; }
+.cardIcon { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 14px; background: color-mix(in srgb, var(--ai-accent) 9%, var(--ai-surface)); color: var(--ai-accent); }
+.goalFields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.goalFields label,
+.inlineFields label,
+.milestoneBody > label { display: grid; gap: 6px; color: var(--ai-muted); font-size: 11px; font-weight: 650; }
+.goalFields label:first-child,
+.goalFields label:nth-child(2),
+.goalFields label:nth-child(3) { grid-column: 1 / -1; }
+.goalFields textarea { min-height: 74px; resize: vertical; padding: 11px 12px; }
+.smallField { position: relative; max-width: 160px; }
+.smallField span { position: absolute; right: 12px; bottom: 14px; color: var(--ai-muted); font-size: 11px; }
+
+.completionModeCard { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 14px; padding: 13px 16px; border: 1px solid var(--ai-line); border-radius: 16px; background: color-mix(in srgb, var(--ai-surface) 90%, transparent); }
+.completionModeCard > div { display: grid; gap: 2px; }
+.completionModeCard span { color: var(--ai-accent); font-size: 9px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
+.completionModeCard strong { font-size: 13px; }
+.completionModeCard select { min-height: 38px; padding: 7px 10px; border: 1px solid var(--ai-line); border-radius: 10px; outline: 0; background: var(--ai-surface); color: var(--ai-ink); font: inherit; font-size: 12px; }
+.completionModeCard select:focus { border-color: var(--ai-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ai-accent) 10%, transparent); }
+
+.metricCard { display: grid; gap: 13px; margin-top: 14px; padding: 16px 18px; border-radius: 18px; color: var(--ai-accent); }
+.metricIntro { display: flex; align-items: center; gap: 8px; }
+.metricCard span { color: var(--ai-accent); font-size: 10px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
+.editableMetricFields { display: grid; grid-template-columns: 1.4fr .65fr .7fr .7fr 1fr; gap: 8px; }
+.editableMetricFields label { display: grid; gap: 5px; color: var(--ai-muted); font-size: 10px; font-weight: 650; }
+.editableMetricFields input,
+.editableMetricFields select { width: 100%; min-width: 0; min-height: 40px; padding: 8px 10px; border: 1px solid var(--ai-line); border-radius: 10px; outline: 0; background: var(--ai-surface); color: var(--ai-ink); font: inherit; font-size: 12px; }
+.editableMetricFields input:focus,
+.editableMetricFields select:focus { border-color: var(--ai-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ai-accent) 10%, transparent); }
+.metricSummary { display: grid; gap: 3px; padding-top: 2px; color: var(--ai-ink); }
+.metricCard strong { font-size: 14px; }
+.metricCard small { color: var(--ai-muted); }
+
+.planSection { margin-top: 28px; }
+.sectionHeading { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; color: var(--ai-accent); }
+.sectionHeading div { display: grid; gap: 2px; }
+.sectionHeading span { font-size: 10px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
+.sectionHeading h3 { margin: 0; color: var(--ai-ink); font-size: 18px; }
+.milestoneList { display: grid; gap: 12px; }
+.milestoneCard { display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 14px; padding: 16px; border-radius: 18px; }
+.milestoneNumber { display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid color-mix(in srgb, var(--ai-accent) 26%, transparent); border-radius: 50%; color: var(--ai-accent); font-family: var(--font-geist-mono), monospace; font-size: 12px; }
+.milestoneBody { display: grid; gap: 12px; }
+.inlineFields { display: grid; grid-template-columns: minmax(0, 1fr) 100px auto auto; align-items: end; gap: 9px; }
+.dayField input { text-align: center; }
+.refineButton { display: inline-flex; min-height: 38px; align-items: center; justify-content: center; gap: 6px; padding: 8px 10px; border: 1px solid color-mix(in srgb, var(--ai-accent) 24%, transparent); border-radius: 10px; background: color-mix(in srgb, var(--ai-accent) 7%, var(--ai-surface)); color: var(--ai-accent); cursor: pointer; font: inherit; font-size: 11px; font-weight: 700; }
+.refineButton:disabled { cursor: default; opacity: .55; }
+.iconButton { display: grid; width: 38px; height: 38px; place-items: center; border: 0; border-radius: 10px; background: transparent; color: var(--ai-muted); cursor: pointer; }
+.iconButton:hover { background: color-mix(in srgb, var(--gf-danger, #c25d63) 8%, transparent); color: var(--gf-danger, #c25d63); }
+.taskList { display: grid; gap: 7px; }
+.taskBlock { display: grid; gap: 7px; }
+.taskRow { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: center; gap: 7px; }
+.taskRow > span { color: var(--ai-muted); font-family: var(--font-geist-mono), monospace; font-size: 10px; text-align: center; }
+.taskRow input { min-height: 38px; padding: 8px 10px; }
+.taskRow .iconButton { width: 34px; height: 34px; }
+.taskBreakdown { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 8px; margin-left: 33px; }
+.breakdownGroup { display: grid; align-content: start; gap: 5px; padding: 8px; border: 1px solid var(--ai-line); border-radius: 11px; background: color-mix(in srgb, var(--ai-surface) 84%, transparent); }
+.breakdownGroup > span { color: var(--ai-accent); font-size: 9px; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; }
+.breakdownGroup input,
+.breakdownGroup select { min-height: 34px; padding: 7px 9px; font-size: 11px; }
+.todoDraftRow { display: grid; grid-template-columns: minmax(0, 1fr) 86px; align-items: center; gap: 5px; }
+
+.routineList { display: grid; gap: 8px; padding: 14px; border-radius: 18px; }
+.routineRow { display: grid; grid-template-columns: minmax(0, 1fr) 140px auto; align-items: center; gap: 8px; }
+
+.assumptions { margin-top: 20px; padding: 14px 16px; border-radius: 15px; color: var(--ai-muted); font-size: 12px; }
+.assumptions summary { cursor: pointer; color: var(--ai-ink); font-weight: 650; }
+.assumptions ul { margin: 10px 0 0; padding-left: 20px; line-height: 1.65; }
+
+.previewActions { display: flex; align-items: center; justify-content: flex-end; gap: 9px; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--ai-line); }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 680px) {
+ .previewHeader { flex-direction: column; }
+ .previewHeaderActions { justify-content: flex-start; }
+ .goalCard { grid-template-columns: 1fr; }
+ .goalFields { grid-template-columns: 1fr; }
+ .goalFields label { grid-column: 1 !important; }
+ .milestoneCard { grid-template-columns: 1fr; }
+ .editableMetricFields { grid-template-columns: 1fr 1fr; }
+ .editableMetricFields label:first-child,
+ .editableMetricFields label:last-child { grid-column: 1 / -1; }
+ .inlineFields { grid-template-columns: minmax(0, 1fr) 95px auto; }
+ .inlineFields > label:first-child { grid-column: 1 / -1; }
+ .routineRow { grid-template-columns: minmax(0, 1fr) auto; }
+ .routineRow select { grid-column: 1 / -1; grid-row: 2; }
+ .taskBreakdown { grid-template-columns: 1fr; margin-left: 0; }
+ .todoDraftRow { grid-template-columns: minmax(0, 1fr) 90px; }
+ .previewActions { flex-direction: column-reverse; align-items: stretch; }
+ .previewActions button { width: 100%; }
+}

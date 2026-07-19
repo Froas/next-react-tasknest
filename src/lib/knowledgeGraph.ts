@@ -155,6 +155,57 @@ export const buildKnowledgeGraph = (
  return { nodes: Array.from(nodes.values()), edges: Array.from(edges.values()) };
 };
 
+/**
+ * Returns a focused slice of the graph for one or more goals. The slice keeps
+ * the goal hierarchy plus notes, signals, and tags directly connected to it,
+ * without pulling in another goal through a shared tag.
+ */
+export const getGoalScopeNodeIds = (
+ graph: KnowledgeGraph,
+ goalEntityIds: ReadonlySet<string>,
+): Set<string> => {
+ const nodeById = new Map(graph.nodes.map((node) => [node.id, node]));
+ const scoped = new Set(
+ Array.from(goalEntityIds, (id) => `goal:${id}`).filter((id) => nodeById.has(id)),
+ );
+
+ const children = new Map<string, string[]>();
+ graph.edges.forEach((edge) => {
+ if (edge.kind !== 'contains') return;
+ children.set(edge.from, [...(children.get(edge.from) ?? []), edge.to]);
+ });
+ const queue = Array.from(scoped);
+ while (queue.length > 0) {
+ const parent = queue.shift();
+ if (!parent) continue;
+ (children.get(parent) ?? []).forEach((child) => {
+ if (scoped.has(child)) return;
+ scoped.add(child);
+ queue.push(child);
+ });
+ }
+
+ const connectedContext = new Set<string>();
+ graph.edges.forEach((edge) => {
+ if (edge.kind !== 'links') return;
+ const from = nodeById.get(edge.from);
+ const to = nodeById.get(edge.to);
+ if (scoped.has(edge.from) && (to?.type === 'note' || to?.type === 'signal')) connectedContext.add(edge.to);
+ if (scoped.has(edge.to) && (from?.type === 'note' || from?.type === 'signal')) connectedContext.add(edge.from);
+ });
+ connectedContext.forEach((id) => scoped.add(id));
+
+ graph.edges.forEach((edge) => {
+ if (edge.kind !== 'tagged') return;
+ const from = nodeById.get(edge.from);
+ const to = nodeById.get(edge.to);
+ if (scoped.has(edge.from) && to?.type === 'tag') scoped.add(edge.to);
+ if (scoped.has(edge.to) && from?.type === 'tag') scoped.add(edge.from);
+ });
+
+ return scoped;
+};
+
 const addTaskChildren = (
  taskId: string,
  task: GoalItem['milestones'][number]['tasks'][number],
@@ -175,15 +226,98 @@ const addTaskChildren = (
 
 export type PositionedKnowledgeNode = KnowledgeNode & { x: number; y: number };
 
-export const layoutKnowledgeGraph = (nodes: KnowledgeNode[]) => {
- const grouped = new Map<number, KnowledgeNode[]>();
- nodes.forEach((node) => grouped.set(node.depth, [...(grouped.get(node.depth) ?? []), node]));
+const NODE_WIDTH = 208;
+const NODE_HEIGHT = 54;
+const COLUMN_GAP = 248;
+const ROW_GAP = 72;
+const BRANCH_GAP = 28;
+const PADDING_X = 120;
+const PADDING_Y = 54;
+const CONTEXT_TYPES = new Set<KnowledgeNodeType>(['note', 'signal', 'tag']);
+
+export const layoutKnowledgeGraph = (nodes: KnowledgeNode[], edges: KnowledgeEdge[] = []) => {
+ const nodeById = new Map(nodes.map((node) => [node.id, node]));
  const positions = new Map<string, PositionedKnowledgeNode>();
- grouped.forEach((rows, depth) => {
- rows.sort((a, b) => a.label.localeCompare(b.label)).forEach((node, index) => {
- positions.set(node.id, { ...node, x: 110 + depth * 235, y: 65 + index * 68 });
+ const children = new Map<string, KnowledgeNode[]>();
+ nodes.forEach((node) => {
+ if (!node.parentId || !nodeById.has(node.parentId) || CONTEXT_TYPES.has(node.type)) return;
+ children.set(node.parentId, [...(children.get(node.parentId) ?? []), node]);
+ });
+ children.forEach((rows) => rows.sort(compareNodes));
+
+ const hierarchyNodes = nodes.filter((node) => !CONTEXT_TYPES.has(node.type));
+ const roots = hierarchyNodes
+ .filter((node) => !node.parentId || !nodeById.has(node.parentId))
+ .sort(compareNodes);
+ let nextY = PADDING_Y;
+ const visiting = new Set<string>();
+
+ const placeBranch = (node: KnowledgeNode): number => {
+ if (positions.has(node.id)) return positions.get(node.id)?.y ?? nextY;
+ if (visiting.has(node.id)) {
+ const y = nextY;
+ nextY += ROW_GAP;
+ positions.set(node.id, { ...node, x: PADDING_X + node.depth * COLUMN_GAP, y });
+ return y;
+ }
+ visiting.add(node.id);
+ const childRows = children.get(node.id) ?? [];
+ const childYs = childRows.map(placeBranch);
+ const y = childYs.length > 0
+ ? (childYs[0] + childYs[childYs.length - 1]) / 2
+ : nextY;
+ if (childYs.length === 0) nextY += ROW_GAP;
+ positions.set(node.id, { ...node, x: PADDING_X + node.depth * COLUMN_GAP, y });
+ visiting.delete(node.id);
+ return y;
+ };
+
+ roots.forEach((root, index) => {
+ placeBranch(root);
+ if (root.type === 'goal' && index < roots.length - 1) nextY += BRANCH_GAP;
+ });
+ hierarchyNodes.filter((node) => !positions.has(node.id)).sort(compareNodes).forEach(placeBranch);
+
+ const edgeNeighbors = new Map<string, string[]>();
+ edges.forEach((edge) => {
+ if (!nodeById.has(edge.from) || !nodeById.has(edge.to)) return;
+ edgeNeighbors.set(edge.from, [...(edgeNeighbors.get(edge.from) ?? []), edge.to]);
+ edgeNeighbors.set(edge.to, [...(edgeNeighbors.get(edge.to) ?? []), edge.from]);
+ });
+
+ const contextByDepth = new Map<number, KnowledgeNode[]>();
+ nodes.filter((node) => CONTEXT_TYPES.has(node.type)).forEach((node) => {
+ contextByDepth.set(node.depth, [...(contextByDepth.get(node.depth) ?? []), node]);
+ });
+ Array.from(contextByDepth.entries()).sort(([a], [b]) => a - b).forEach(([depth, rows]) => {
+ const anchored = rows.map((node) => {
+ const neighborYs = (edgeNeighbors.get(node.id) ?? [])
+ .map((id) => positions.get(id)?.y)
+ .filter((value): value is number => typeof value === 'number');
+ return {
+ node,
+ anchor: neighborYs.length > 0 ? neighborYs.reduce((sum, value) => sum + value, 0) / neighborYs.length : Number.POSITIVE_INFINITY,
+ };
+ }).sort((a, b) => a.anchor - b.anchor || compareNodes(a.node, b.node));
+ let columnY = PADDING_Y - ROW_GAP;
+ anchored.forEach(({ node, anchor }) => {
+ const desiredY = Number.isFinite(anchor) ? anchor : columnY + ROW_GAP;
+ const y = Math.max(desiredY, columnY + ROW_GAP);
+ positions.set(node.id, { ...node, x: PADDING_X + depth * COLUMN_GAP, y });
+ columnY = y;
  });
  });
- const maxRows = Math.max(1, ...Array.from(grouped.values()).map((rows) => rows.length));
- return { positions, width: 1400, height: Math.max(620, 110 + maxRows * 68) };
+
+ const maxDepth = Math.max(0, ...nodes.map((node) => node.depth));
+ const maxY = Math.max(PADDING_Y, ...Array.from(positions.values()).map((node) => node.y));
+ return {
+ positions,
+ nodeWidth: NODE_WIDTH,
+ nodeHeight: NODE_HEIGHT,
+ width: Math.max(680, PADDING_X * 2 + maxDepth * COLUMN_GAP + NODE_WIDTH),
+ height: Math.max(420, maxY + NODE_HEIGHT / 2 + PADDING_Y),
+ };
 };
+
+const compareNodes = (a: KnowledgeNode, b: KnowledgeNode) =>
+ a.depth - b.depth || a.label.localeCompare(b.label) || a.id.localeCompare(b.id);

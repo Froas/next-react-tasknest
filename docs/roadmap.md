@@ -83,6 +83,23 @@ MVP behavior:
 
 ## Feature candidates
 
+### Template marketplace
+
+Purpose: let people discover, evaluate, and install reusable goal systems after
+the unlisted share-code flow has proven the template format and privacy model.
+
+Status: planned. Private templates and unlisted code sharing are the foundation;
+the marketplace is intentionally not part of the first sharing MVP.
+
+Candidate scope:
+
+- Add explicit `public` publishing separately from private and unlisted access.
+- Publish immutable template versions so installed copies remain reproducible.
+- Add author profiles, categories, search, previews, install counts, and ratings.
+- Add reporting, moderation, takedown, and safe handling of copied content.
+- Let users opt into updates instead of silently changing installed templates.
+- Strip private source identifiers and personal goal data from every published version.
+
 ### Metric history, statistics, and native health sync
 
 Purpose: turn persisted daily metric entries into useful trends and prepare the
