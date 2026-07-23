@@ -24,9 +24,10 @@ const fieldClass =
 
 const TaskFields: React.FC<{
   task: TemplateDraftTask;
+  scope: "goal" | "milestone";
   onChange: (next: TemplateDraftTask) => void;
   onRemove: () => void;
-}> = ({ task, onChange, onRemove }) => (
+}> = ({ task, scope, onChange, onRemove }) => (
   <div className="rounded-lg border border-border p-3 space-y-3">
     <div className="flex items-start gap-2">
       <input
@@ -57,9 +58,14 @@ const TaskFields: React.FC<{
         }
         aria-label="Task type"
       >
-        <option value="project">Project</option>
-        <option value="routine">Routine</option>
-        <option value="challenge">Challenge</option>
+        {scope === "goal" ? (
+          <option value="routine">Routine</option>
+        ) : (
+          <>
+            <option value="project">Project</option>
+            <option value="challenge">Challenge</option>
+          </>
+        )}
       </select>
       <select
         className={fieldClass}
@@ -119,6 +125,33 @@ const TaskFields: React.FC<{
         />
       </div>
     )}
+    {task.kind === "challenge" && (
+      <div className="rounded-lg border border-border p-3 space-y-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <label className="text-xs font-medium text-muted-foreground">
+            Tracking
+            <select className={`${fieldClass} mt-1`} value={task.trackingMode ?? "bounded"} onChange={(event) => onChange({ ...task, trackingMode: event.target.value as TemplateDraftTask["trackingMode"] })}>
+              <option value="bounded">Until target</option>
+              <option value="staged">Evolves</option>
+            </select>
+          </label>
+          <label className="text-xs font-medium text-muted-foreground">
+            Completions
+            <input className={`${fieldClass} mt-1`} type="number" min={1} value={task.requiredCompletions ?? 7} onChange={(event) => onChange({ ...task, requiredCompletions: event.target.valueAsNumber || 7 })} />
+          </label>
+          <label className="text-xs font-medium text-muted-foreground">
+            Window, days
+            <input className={`${fieldClass} mt-1`} type="number" min={1} value={task.windowDays ?? 7} onChange={(event) => onChange({ ...task, windowDays: event.target.valueAsNumber || 7 })} />
+          </label>
+        </div>
+        {task.trackingMode === "staged" && (
+          <div className="grid grid-cols-[minmax(0,1fr)_6rem] gap-3">
+            <input className={fieldClass} value={task.routineSeriesKey ?? ""} onChange={(event) => onChange({ ...task, routineSeriesKey: event.target.value })} placeholder="Progression name" aria-label="Progression name" />
+            <input className={fieldClass} type="number" min={1} value={task.stageOrder ?? 1} onChange={(event) => onChange({ ...task, stageOrder: event.target.valueAsNumber || 1 })} aria-label="Stage order" />
+          </div>
+        )}
+      </div>
+    )}
   </div>
 );
 
@@ -141,7 +174,7 @@ export const TemplateBuilderModal: React.FC<Props> = ({
   const addGoalTask = () =>
     setDraft((current) => ({
       ...current,
-      goalTasks: [...current.goalTasks, emptyDraftTask()],
+      goalTasks: [...current.goalTasks, emptyDraftTask("routine")],
     }));
 
   const addMilestone = () =>
@@ -293,9 +326,9 @@ export const TemplateBuilderModal: React.FC<Props> = ({
         <section className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h4 className="text-sm font-semibold">Always-on tasks</h4>
+              <h4 className="text-sm font-semibold">Goal routines</h4>
               <p className="text-xs text-muted-foreground">
-                Goal-level projects, routines, or challenges.
+                Always-on practices that support the whole goal.
               </p>
             </div>
             <button
@@ -303,13 +336,14 @@ export const TemplateBuilderModal: React.FC<Props> = ({
               className="btn btn-secondary"
               onClick={addGoalTask}
             >
-              <Plus className="h-4 w-4" /> Task
+              <Plus className="h-4 w-4" /> Routine
             </button>
           </div>
           {draft.goalTasks.map((task, index) => (
             <TaskFields
               key={`goal-task-${index}`}
               task={task}
+              scope="goal"
               onChange={(next) =>
                 setDraft((current) => ({
                   ...current,
@@ -425,6 +459,7 @@ export const TemplateBuilderModal: React.FC<Props> = ({
                 <TaskFields
                   key={`milestone-${milestoneIndex}-task-${taskIndex}`}
                   task={task}
+                  scope="milestone"
                   onChange={(next) =>
                     setDraft((current) => ({
                       ...current,

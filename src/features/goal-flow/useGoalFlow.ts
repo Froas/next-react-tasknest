@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { goalsApi, metricDefinitionsApi, milestonesApi, subtasksApi, tasksApi, todosApi, type MetricDefinitionItem } from '@/lib/api';
-import { GoalItem, MilestoneItem, PriorityType, StatusType, TaskItem } from '@/lib/types';
+import { GoalItem, MilestoneItem, PriorityType, StatusType, TaskItem, TaskKind } from '@/lib/types';
 import { useStore } from '@/store/useStore';
 import { toast } from '@/store/useToast';
 import {
@@ -13,6 +13,11 @@ import {
 } from './goalMeasurement';
 
 export type GoalFlowActionMode = 'once' | 'routine';
+export type GoalFlowTrackingDraft = {
+ trackingMode?: 'bounded' | 'staged';
+ routineSeriesKey?: string;
+ stageOrder?: number;
+};
 
 const normalizeTask = (task: TaskItem): TaskItem => ({
  ...task,
@@ -230,7 +235,7 @@ export function useGoalFlow(initialGoalId?: string) {
  const created = await milestonesApi.create({
  title,
  description: '',
- status: StatusType.OUTSTANDING,
+ status: milestones.length === 0 ? StatusType.STARTED : StatusType.OUTSTANDING,
  priority: PriorityType.MEDIUM,
  goal_id: goal.id,
  position: milestones.length + 1,
@@ -286,19 +291,27 @@ export function useGoalFlow(initialGoalId?: string) {
  toast.success('Milestone details saved');
  };
 
- const createTask = async (milestone: MilestoneItem, title: string) => {
+ const createTask = async (milestone: MilestoneItem, title: string, kind: Extract<TaskKind, 'project' | 'challenge'> = 'project') => {
  if (!goal) return;
  const created = await tasksApi.create({
  title,
  description: '',
- status: StatusType.OUTSTANDING,
+ status: kind === 'challenge' && [StatusType.STARTED, StatusType.IN_PROGRESS].includes(milestone.status)
+ ? StatusType.STARTED
+ : StatusType.OUTSTANDING,
  priority: PriorityType.MEDIUM,
- kind: 'project',
+ kind,
  scope: 'milestone',
  goal_id: goal.id,
  milestone_id: milestone.id,
  todos: [],
  subtasks: [],
+ completion_rule: kind === 'challenge' ? {
+ type: 'consistency',
+ label: title,
+ required_done: 7,
+ window_days: 7,
+ } : { type: 'structural' },
  });
  const normalized = normalizeTask(created);
  setMilestones((items) => items.map((item) => (
@@ -358,8 +371,17 @@ export function useGoalFlow(initialGoalId?: string) {
  title: string,
  mode: GoalFlowActionMode,
  repeatInterval: string,
+ tracking: GoalFlowTrackingDraft = {},
  ) => {
  if (mode === 'routine') {
+ const parentMilestone = task.milestone_id
+ ? milestones.find((milestone) => milestone.id === task.milestone_id)
+ : undefined;
+ const trackingState = task.kind === 'routine'
+ ? 'active'
+ : parentMilestone && [StatusType.STARTED, StatusType.IN_PROGRESS].includes(parentMilestone.status)
+ ? 'active'
+ : 'planned';
  const created = await todosApi.create({
  title,
  description: '',
@@ -367,6 +389,14 @@ export function useGoalFlow(initialGoalId?: string) {
  priority: PriorityType.MEDIUM,
  repeat_interval: repeatInterval,
  task_id: task.id,
+ tracking_mode: task.kind === 'routine' ? 'ongoing' : task.kind === 'challenge' ? tracking.trackingMode ?? 'bounded' : undefined,
+ tracking_state: task.kind === 'routine' || task.kind === 'challenge' ? trackingState : undefined,
+ routine_series_key: task.kind === 'challenge' && tracking.trackingMode === 'staged'
+ ? tracking.routineSeriesKey?.trim() || task.title
+ : undefined,
+ stage_order: task.kind === 'challenge' && tracking.trackingMode === 'staged'
+ ? Math.max(1, tracking.stageOrder ?? 1)
+ : 1,
  });
  updateTodoInGoals(created);
  updateTaskChildren(task.id, (item) => ({ ...item, todos: [...item.todos, created] }));

@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { CompletionRule, MilestoneItem, TaskItem, TodoItem } from '@/lib/types';
 import { MetricDefinitionItem } from '@/lib/api';
-import { GoalFlowActionMode, useGoalFlow } from '@/features/goal-flow/useGoalFlow';
+import { GoalFlowActionMode, GoalFlowTrackingDraft, useGoalFlow } from '@/features/goal-flow/useGoalFlow';
 import { GoalMeasurementDraft } from '@/features/goal-flow/goalMeasurement';
 import { useDocumentTitle } from '@/lib/useDocumentTitle';
 import { CompletionRuleSetup, GoalFlowRecurringAction, GoalMeasureSetup } from './GoalMeasureSetup';
@@ -307,6 +307,7 @@ export function GoalCreationFlow({ goalId }: { goalId?: string }) {
  onSaveMilestoneMeasurement={saveMilestoneMeasurement}
  onSaveTaskMeasurement={saveTaskMeasurement}
  metrics={goalMetrics}
+ recurringActions={recurringActions}
  dragDisabled={reorderingMilestones}
  onDragEnd={() => void commitMilestoneOrder()}
  onKeyboardMove={(direction) => moveMilestoneByKeyboard(index, direction)}
@@ -340,6 +341,7 @@ export function GoalCreationFlow({ goalId }: { goalId?: string }) {
  onUpdate={updateTask}
  onSaveMeasurement={saveTaskMeasurement}
  metrics={goalMetrics}
+ recurringActions={recurringActions}
  onCreateAction={createAction}
  />
  ))}
@@ -452,6 +454,7 @@ function MilestoneNode({
  onSaveMilestoneMeasurement,
  onSaveTaskMeasurement,
  metrics,
+ recurringActions,
  dragDisabled,
  onDragEnd,
  onKeyboardMove,
@@ -459,19 +462,20 @@ function MilestoneNode({
 }: {
  milestone: MilestoneItem;
  index: number;
- onCreateTask: (milestone: MilestoneItem, title: string) => Promise<void>;
+ onCreateTask: (milestone: MilestoneItem, title: string, kind?: 'project' | 'challenge') => Promise<void>;
  onUpdate: (milestone: MilestoneItem, patch: Pick<MilestoneItem, 'success_criteria' | 'due_date'>) => Promise<void>;
  onUpdateTask: (task: TaskItem, patch: Pick<TaskItem, 'success_criteria' | 'due_date'>) => Promise<void>;
  onSaveMilestoneMeasurement: (milestone: MilestoneItem, draft: GoalMeasurementDraft) => Promise<void>;
  onSaveTaskMeasurement: (task: TaskItem, draft: GoalMeasurementDraft) => Promise<void>;
  metrics: MetricDefinitionItem[];
+ recurringActions: GoalFlowRecurringAction[];
  dragDisabled: boolean;
  onDragEnd: () => void;
  onKeyboardMove: (direction: -1 | 1) => void;
- onCreateAction: (task: TaskItem, title: string, mode: GoalFlowActionMode, repeatInterval: string) => Promise<void>;
+ onCreateAction: (task: TaskItem, title: string, mode: GoalFlowActionMode, repeatInterval: string, tracking?: GoalFlowTrackingDraft) => Promise<void>;
 }) {
  const dragControls = useDragControls();
- const recurringActions = recurringActionsForTasks(milestone.tasks);
+ const [newTaskKind, setNewTaskKind] = useState<'project' | 'challenge'>('project');
  const metric = metricForRule(metrics, milestone.completion_rule, 'milestone', milestone.id);
  return (
  <Reorder.Item
@@ -542,16 +546,25 @@ function MilestoneNode({
  onUpdate={onUpdateTask}
  onSaveMeasurement={onSaveTaskMeasurement}
  metrics={metrics}
+ recurringActions={recurringActions}
  onCreateAction={onCreateAction}
  />
  ))}
  </div>
  )}
 
+ <div className={styles.modeSwitch} aria-label="New milestone task type">
+ <button type="button" className={newTaskKind === 'project' ? styles.activeMode : ''} onClick={() => setNewTaskKind('project')}>
+ <ListTodo size={13} /> One-time task
+ </button>
+ <button type="button" className={newTaskKind === 'challenge' ? styles.activeMode : ''} onClick={() => setNewTaskKind('challenge')}>
+ <Repeat2 size={13} /> Challenge
+ </button>
+ </div>
  <QuickAdd
- label="Add task"
- placeholder="A concrete piece of work for this milestone"
- onCreate={(title) => onCreateTask(milestone, title)}
+ label={newTaskKind === 'challenge' ? 'Add challenge' : 'Add task'}
+ placeholder={newTaskKind === 'challenge' ? 'A behavior to prove through repetition' : 'A concrete piece of work for this milestone'}
+ onCreate={(title) => onCreateTask(milestone, title, newTaskKind)}
  subtle
  />
  </div>
@@ -565,6 +578,7 @@ function TaskNode({
  onUpdate,
  onSaveMeasurement,
  metrics,
+ recurringActions,
  onCreateAction,
 }: {
  task: TaskItem;
@@ -572,15 +586,18 @@ function TaskNode({
  onUpdate: (task: TaskItem, patch: Pick<TaskItem, 'success_criteria' | 'due_date'>) => Promise<void>;
  onSaveMeasurement: (task: TaskItem, draft: GoalMeasurementDraft) => Promise<void>;
  metrics: MetricDefinitionItem[];
- onCreateAction: (task: TaskItem, title: string, mode: GoalFlowActionMode, repeatInterval: string) => Promise<void>;
+ recurringActions: GoalFlowRecurringAction[];
+ onCreateAction: (task: TaskItem, title: string, mode: GoalFlowActionMode, repeatInterval: string, tracking?: GoalFlowTrackingDraft) => Promise<void>;
 }) {
  const [draft, setDraft] = useState('');
- const [mode, setMode] = useState<GoalFlowActionMode>(routineContainer ? 'routine' : 'once');
+ const [mode, setMode] = useState<GoalFlowActionMode>(routineContainer || task.kind === 'challenge' ? 'routine' : 'once');
  const [repeat, setRepeat] = useState('daily');
+ const [trackingMode, setTrackingMode] = useState<'bounded' | 'staged'>('bounded');
+ const [routineSeriesKey, setRoutineSeriesKey] = useState('');
+ const [stageOrder, setStageOrder] = useState(1);
  const [busy, setBusy] = useState(false);
  const [error, setError] = useState<string | null>(null);
  const actions = [...task.subtasks.map((item) => ({ ...item, mode: 'once' as const })), ...task.todos.map((item) => ({ ...item, mode: 'routine' as const }))];
- const recurringActions = recurringActionsForTasks([task]);
  const metric = metricForRule(metrics, task.completion_rule, 'task', task.id);
 
  const submit = async (event: FormEvent) => {
@@ -590,7 +607,11 @@ function TaskNode({
  setBusy(true);
  setError(null);
  try {
- await onCreateAction(task, title, mode, repeat);
+ await onCreateAction(task, title, mode, repeat, {
+ trackingMode,
+ routineSeriesKey,
+ stageOrder,
+ });
  setDraft('');
  } catch (cause) {
  setError(cause instanceof Error ? cause.message : 'Could not add action');
@@ -602,9 +623,9 @@ function TaskNode({
  return (
  <article className={`${styles.taskNode} ${routineContainer ? styles.routineNode : ''}`}>
  <div className={styles.taskHeader}>
- <span className={styles.taskGlyph}>{routineContainer ? <Repeat2 size={15} /> : <Flag size={15} />}</span>
+ <span className={styles.taskGlyph}>{routineContainer || task.kind === 'challenge' ? <Repeat2 size={15} /> : <Flag size={15} />}</span>
  <div>
- <span className={styles.nodeLabel}>{routineContainer ? 'Routine' : 'Task'}</span>
+ <span className={styles.nodeLabel}>{routineContainer ? 'Routine' : task.kind === 'challenge' ? 'Challenge' : 'Task'}</span>
  <h4>{task.title}</h4>
  {task.description && <p>{task.description}</p>}
  </div>
@@ -635,13 +656,16 @@ function TaskNode({
  {action.mode === 'routine' ? <Repeat2 size={13} /> : <Check size={13} />}
  <span>{action.title}</span>
  {action.mode === 'routine' && <small>{(action as TodoItem).repeat_interval}</small>}
+ {action.mode === 'routine' && (action as TodoItem).tracking_mode === 'staged' && (
+ <small>Stage {(action as TodoItem).stage_order ?? 1}</small>
+ )}
  </li>
  ))}
  </ul>
  )}
 
  <form className={styles.actionComposer} onSubmit={submit}>
- {!routineContainer && (
+ {task.kind === 'challenge' && !routineContainer && (
  <div className={styles.modeSwitch}>
  <button type="button" className={mode === 'once' ? styles.activeMode : ''} onClick={() => setMode('once')}>
  <ListTodo size={13} /> One-time
@@ -662,23 +686,24 @@ function TaskNode({
  {REPEAT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
  </select>
  )}
+ {mode === 'routine' && task.kind === 'challenge' && (
+ <select value={trackingMode} onChange={(event) => setTrackingMode(event.target.value as 'bounded' | 'staged')} aria-label="Challenge tracking">
+ <option value="bounded">Until target</option>
+ <option value="staged">Evolves</option>
+ </select>
+ )}
  <button disabled={!draft.trim() || busy} aria-label="Add action"><Plus size={16} /></button>
  </div>
+ {mode === 'routine' && task.kind === 'challenge' && trackingMode === 'staged' && (
+ <div className={styles.actionInputRow}>
+ <input value={routineSeriesKey} onChange={(event) => setRoutineSeriesKey(event.target.value)} placeholder="Progression name" aria-label="Progression name" />
+ <input type="number" min={1} value={stageOrder} onChange={(event) => setStageOrder(Math.max(1, event.target.valueAsNumber || 1))} aria-label="Stage order" />
+ </div>
+ )}
  {error && <small className={styles.error}>{error}</small>}
  </form>
  </article>
  );
-}
-
-function recurringActionsForTasks(tasks: TaskItem[]): GoalFlowRecurringAction[] {
- return tasks.flatMap((task) => (task.todos ?? [])
- .filter((todo) => Boolean(todo.repeat_interval))
- .map((todo) => ({
- id: todo.id,
- title: todo.title,
- repeatInterval: todo.repeat_interval,
- routineTitle: task.title,
- })));
 }
 
 function metricForRule(

@@ -652,6 +652,7 @@ const Home = () => {
  goalId={selectedGoal.id}
  milestoneId={selectedTask.milestone_id ?? ''}
  taskId={selectedTask.id}
+ taskKind={selectedTask.kind}
  defaultKind={actionFormKind}
  onSuccess={handleCreateAction}
  onCancel={() => {

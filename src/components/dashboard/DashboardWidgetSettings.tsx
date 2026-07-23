@@ -61,11 +61,11 @@ export const DashboardWidgetSettings: React.FC<DashboardWidgetSettingsProps> = (
       .map((id) => DASHBOARD_WIDGETS.find((widget) => widget.id === id))
       .filter((widget): widget is (typeof DASHBOARD_WIDGETS)[number] => widget?.area === area);
     return (
-      <section className="space-y-3">
+      <section className="space-y-2.5">
         <div>
-          <h3 className="text-lg font-semibold" style={{ color: 'var(--tn-fg)' }}>{title}</h3>
-          <p className="text-sm" style={{ color: 'var(--tn-fg-muted)' }}>
-            Drag cards to reorder. Arrow controls remain available for keyboard and touch.
+          <h3 className="text-sm font-semibold" style={{ color: 'var(--tn-fg)' }}>{title}</h3>
+          <p className="mt-0.5 text-xs" style={{ color: 'var(--tn-fg-muted)' }}>
+            Drag to reorder, or use the arrow controls.
           </p>
         </div>
         <div className="space-y-2">
@@ -90,7 +90,7 @@ export const DashboardWidgetSettings: React.FC<DashboardWidgetSettingsProps> = (
                   event.preventDefault();
                   dropOn(widget.id);
                 }}
-                className="flex flex-wrap items-center gap-3 rounded-xl p-3 transition"
+                className="flex flex-wrap items-center gap-2.5 rounded-xl p-2.5 transition"
                 style={{
                   border: draggedId === widget.id ? '1px solid var(--tn-accent)' : 'var(--tn-line)',
                   background: 'var(--tn-card)',
@@ -104,14 +104,14 @@ export const DashboardWidgetSettings: React.FC<DashboardWidgetSettingsProps> = (
                 />
                 <button
                   type="button"
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-lg"
+                  className="grid h-8 w-8 shrink-0 place-items-center rounded-lg"
                   style={{ background: 'var(--tn-bg)', color: isHidden ? 'var(--tn-fg-muted)' : 'var(--tn-accent)' }}
                   onClick={() => toggle(widget.id)}
                   aria-label={isHidden ? `Show ${widget.name}` : `Hide ${widget.name}`}
                 >
                   {isHidden ? <EyeOff size={17} /> : <Eye size={17} />}
                 </button>
-                <span className="min-w-[180px] flex-1">
+                <span className="min-w-[160px] flex-1">
                   <strong className="block text-sm" style={{ color: 'var(--tn-fg)' }}>{widget.name}</strong>
                   <small className="block truncate" style={{ color: 'var(--tn-fg-muted)' }}>{widget.description}</small>
                 </span>
@@ -122,7 +122,7 @@ export const DashboardWidgetSettings: React.FC<DashboardWidgetSettingsProps> = (
                     onChange={(event) => setPreferences((current) => (
                       setDashboardWidgetSize(current, widget.id, event.target.value as DashboardWidgetSize, device)
                     ))}
-                    className="filter-input min-w-[104px] py-2"
+                    className="filter-input min-w-[100px] py-1.5"
                     aria-label={`${widget.name} size`}
                   >
                     {widget.sizes.map((candidate) => (
@@ -133,7 +133,7 @@ export const DashboardWidgetSettings: React.FC<DashboardWidgetSettingsProps> = (
                 <span className="flex shrink-0 gap-1">
                   <button
                     type="button"
-                    className="grid h-9 w-9 place-items-center rounded-lg disabled:opacity-30"
+                    className="grid h-8 w-8 place-items-center rounded-lg disabled:opacity-30"
                     style={{ border: 'var(--tn-line)', color: 'var(--tn-fg)' }}
                     disabled={index === 0}
                     onClick={() => setPreferences((current) => moveDashboardWidget(current, widget.id, -1, device))}
@@ -143,7 +143,7 @@ export const DashboardWidgetSettings: React.FC<DashboardWidgetSettingsProps> = (
                   </button>
                   <button
                     type="button"
-                    className="grid h-9 w-9 place-items-center rounded-lg disabled:opacity-30"
+                    className="grid h-8 w-8 place-items-center rounded-lg disabled:opacity-30"
                     style={{ border: 'var(--tn-line)', color: 'var(--tn-fg)' }}
                     disabled={index === definitions.length - 1}
                     onClick={() => setPreferences((current) => moveDashboardWidget(current, widget.id, 1, device))}
@@ -161,7 +161,7 @@ export const DashboardWidgetSettings: React.FC<DashboardWidgetSettingsProps> = (
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div
         className="grid grid-cols-2 rounded-xl p-1"
         style={{ border: 'var(--tn-line)', background: 'var(--tn-surface-2, var(--tn-bg))' }}

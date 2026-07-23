@@ -278,6 +278,10 @@ const TaskDetailPage: React.FC = () => {
  <CompletionRulePanel
  entity={task}
  entityType="task"
+ relatedRecurringTasks={goal ? [
+ ...(goal.tasks ?? []),
+ ...(goal.milestones ?? []).flatMap((item) => item.tasks ?? []),
+ ] : []}
  onSaved={(entity) => {
  updateTaskInGoals(entity as Task);
  void fetchGoals({ force: true, silent: true });

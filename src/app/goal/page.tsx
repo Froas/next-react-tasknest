@@ -15,15 +15,30 @@ import { useDocumentTitle } from '@/lib/useDocumentTitle';
 import { DropPlacement, moveIdRelative } from '@/lib/reorder';
 import { buildGoalCardView } from '@/features/goals/goalCardView';
 import Link from 'next/link';
-import { ArrowRight, Check, GripVertical, MoreHorizontal, Plus, Target, Filter, Trash2 } from 'lucide-react';
+import {
+ Archive,
+ ArrowRight,
+ Check,
+ CheckCircle2,
+ CheckSquare2,
+ Filter,
+ GripVertical,
+ MoreHorizontal,
+ Plus,
+ RotateCcw,
+ Target,
+ Trash2,
+ X,
+} from 'lucide-react';
 import styles from './GoalsPage.module.css';
 
 const GoalsPage: React.FC = () => {
  const [filterStatus, setFilterStatus] = usePersistentState<StatusType | 'all'>('goal:filter', 'all');
  const [sortBy, setSortBy] = usePersistentState<'custom' | 'title' | 'priority' | 'due'>('goal:sort', 'custom');
- const [isDeleting, setIsDeleting] = useState(false);
+ const [isBulkWorking, setIsBulkWorking] = useState(false);
  const [search, setSearch] = useState('');
  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+ const [selectionMode, setSelectionMode] = useState(false);
  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
  const [showArchive, setShowArchive] = usePersistentState<boolean>('goal:showArchive', false);
  const [draggingGoalId, setDraggingGoalId] = useState<string | null>(null);
@@ -72,6 +87,26 @@ const GoalsPage: React.FC = () => {
  return () => document.removeEventListener('pointerdown', closeMenu);
  }, [openMenuId]);
 
+ useEffect(() => {
+ const availableIds = new Set(goals.map((goal) => goal.id));
+ setSelectedIds((current) => {
+ const next = new Set(Array.from(current).filter((id) => availableIds.has(id)));
+ return next.size === current.size ? current : next;
+ });
+ }, [goals]);
+
+ useEffect(() => {
+ if (!selectionMode) return;
+ const leaveSelectionMode = (event: KeyboardEvent) => {
+ if (event.key !== 'Escape') return;
+ setSelectedIds(new Set());
+ setSelectionMode(false);
+ setOpenMenuId(null);
+ };
+ document.addEventListener('keydown', leaveSelectionMode);
+ return () => document.removeEventListener('keydown', leaveSelectionMode);
+ }, [selectionMode]);
+
  const softDeleteGoal = async (id: string) => {
  const goal = goals.find((g) => g.id === id);
  if (!goal) return;
@@ -104,6 +139,8 @@ const GoalsPage: React.FC = () => {
  };
 
  const toggleSelected = (id: string) => {
+ if (isBulkWorking) return;
+ setSelectionMode(true);
  setSelectedIds((prev) => {
  const next = new Set(prev);
  if (next.has(id)) next.delete(id);
@@ -112,53 +149,75 @@ const GoalsPage: React.FC = () => {
  });
  };
 
- const performBulkComplete = async () => {
- if (selectedIds.size === 0) return;
- setIsDeleting(true);
- const ids = Array.from(selectedIds);
- const stamp = new Date().toISOString();
+ const leaveSelectionMode = () => {
+ setSelectedIds(new Set());
+ setSelectionMode(false);
+ setOpenMenuId(null);
+ };
+
+ const performBulkStatusUpdate = async (
+ ids: string[],
+ status: StatusType,
+ successVerb: 'Completed' | 'Archived' | 'Restored',
+ ) => {
+ if (ids.length === 0) return;
+ setIsBulkWorking(true);
+ const stamp = status === StatusType.IN_PROGRESS ? undefined : new Date().toISOString();
  const results = await Promise.allSettled(
- ids.map((id) => goalsApi.update({ id, status: StatusType.FINISHED, end_datetime: stamp }))
+ ids.map((id) => goalsApi.update({ id, status, end_datetime: stamp }))
  );
- let succeeded = 0;
- let failed = 0;
+ const succeededIds = new Set<string>();
+ const failedIds = new Set<string>();
  results.forEach((res, i) => {
  if (res.status === 'fulfilled') {
- // Preserve client-side stamp if backend stripped it from response.
- updateGoal({ ...res.value, end_datetime: res.value.end_datetime ?? stamp });
- succeeded += 1;
+ updateGoal({
+ ...res.value,
+ ...(stamp && { end_datetime: res.value.end_datetime ?? stamp }),
+ });
+ succeededIds.add(ids[i]);
  } else {
- console.error(`Failed to complete goal ${ids[i]}:`, res.reason);
- failed += 1;
+ console.error(`Failed to update goal ${ids[i]}:`, res.reason);
+ failedIds.add(ids[i]);
  }
  });
- setIsDeleting(false);
- setSelectedIds(new Set());
- if (succeeded > 0) toast.success(`Completed ${succeeded} goal${succeeded === 1 ? '' : 's'}`);
- if (failed > 0) toast.error(`Failed to complete ${failed} goal${failed === 1 ? '' : 's'}`);
+ setIsBulkWorking(false);
+ const nextSelectedIds = new Set(Array.from(selectedIds).filter((id) => !succeededIds.has(id)));
+ setSelectedIds(nextSelectedIds);
+ if (nextSelectedIds.size === 0) setSelectionMode(false);
+ if (succeededIds.size > 0) {
+ toast.success(`${successVerb} ${succeededIds.size} goal${succeededIds.size === 1 ? '' : 's'}`);
+ }
+ if (failedIds.size > 0) {
+ toast.error(`Failed to update ${failedIds.size} goal${failedIds.size === 1 ? '' : 's'}`);
+ }
  };
 
  const performBulkDelete = async () => {
  if (selectedIds.size === 0) return;
- setIsDeleting(true);
+ setIsBulkWorking(true);
  const ids = Array.from(selectedIds);
  const results = await Promise.allSettled(ids.map((id) => goalsApi.delete(id)));
- let succeeded = 0;
- let failed = 0;
+ const succeededIds = new Set<string>();
+ const failedIds = new Set<string>();
  results.forEach((res, i) => {
  if (res.status === 'fulfilled') {
  deleteGoalFromStore(ids[i]);
- succeeded += 1;
+ succeededIds.add(ids[i]);
  } else {
  console.error(`Failed to delete goal ${ids[i]}:`, res.reason);
- failed += 1;
+ failedIds.add(ids[i]);
  }
  });
- setIsDeleting(false);
+ setIsBulkWorking(false);
  setConfirmBulkDelete(false);
- setSelectedIds(new Set());
- if (succeeded > 0) toast.success(`Deleted ${succeeded} goal${succeeded === 1 ? '' : 's'}`);
- if (failed > 0) toast.error(`Failed to delete ${failed} goal${failed === 1 ? '' : 's'}`);
+ setSelectedIds(failedIds);
+ if (failedIds.size === 0) setSelectionMode(false);
+ if (succeededIds.size > 0) {
+ toast.success(`Deleted ${succeededIds.size} goal${succeededIds.size === 1 ? '' : 's'}`);
+ }
+ if (failedIds.size > 0) {
+ toast.error(`Failed to delete ${failedIds.size} goal${failedIds.size === 1 ? '' : 's'}`);
+ }
  };
 
  const searchLower = search.trim().toLowerCase();
@@ -205,6 +264,27 @@ const GoalsPage: React.FC = () => {
  }
  });
 
+ const visibleGoalIds = sortedGoals.map((goal) => goal.id);
+ const allVisibleSelected = visibleGoalIds.length > 0
+ && visibleGoalIds.every((id) => selectedIds.has(id));
+ const selectedGoals = goals.filter((goal) => selectedIds.has(goal.id));
+ const activeSelectedIds = selectedGoals
+ .filter((goal) => !isArchived(goal.status))
+ .map((goal) => goal.id);
+ const archivedSelectedIds = selectedGoals
+ .filter((goal) => isArchived(goal.status))
+ .map((goal) => goal.id);
+
+ const toggleAllVisible = () => {
+ if (isBulkWorking) return;
+ setSelectedIds((current) => {
+ const next = new Set(current);
+ if (allVisibleSelected) visibleGoalIds.forEach((id) => next.delete(id));
+ else visibleGoalIds.forEach((id) => next.add(id));
+ return next;
+ });
+ };
+
  const persistGoalOrder = async (targetGoalId: string, placement: DropPlacement) => {
  if (!draggingGoalId || draggingGoalId === targetGoalId) return;
  const previousOrder = customOrderedIds;
@@ -241,32 +321,16 @@ const GoalsPage: React.FC = () => {
  </div>
  
  <div className="page-head-actions">
- {selectedIds.size > 0 && (
- <>
- <span className="text-sm text-foreground dark:text-muted-foreground/60">
- {selectedIds.size} selected
- </span>
  <button
- onClick={() => setSelectedIds(new Set())}
- className="px-3 py-2 text-sm text-foreground dark:text-muted-foreground/60 bg-muted dark:bg-card rounded-lg hover:bg-muted dark:hover:bg-muted"
+ type="button"
+ onClick={() => selectionMode ? leaveSelectionMode() : setSelectionMode(true)}
+ className="btn btn-secondary"
+ aria-pressed={selectionMode}
+ disabled={isBulkWorking}
  >
- Clear
+ {selectionMode ? <X className="w-4 h-4" /> : <CheckSquare2 className="w-4 h-4" />}
+ <span>{selectionMode ? 'Done selecting' : 'Select'}</span>
  </button>
- <button
- onClick={performBulkComplete}
- disabled={isDeleting}
- className="btn btn-primary"
- >
- Mark done
- </button>
- <button
- onClick={() => setConfirmBulkDelete(true)}
- className="btn btn-danger"
- >
- Delete selected
- </button>
- </>
- )}
  <Link
  href="/goal/new"
  className="btn btn-primary page-cta"
@@ -335,6 +399,68 @@ const GoalsPage: React.FC = () => {
  )}
  </div>
 
+ {selectionMode && (
+ <section className={styles.bulkBar} aria-label="Bulk goal actions">
+ <div className={styles.bulkSummary} aria-live="polite">
+ <CheckSquare2 className="h-5 w-5" aria-hidden="true" />
+ <strong>{selectedIds.size} selected</strong>
+ {isBulkWorking && <span className={styles.bulkWorking}>Working…</span>}
+ <button type="button" onClick={toggleAllVisible} disabled={visibleGoalIds.length === 0 || isBulkWorking}>
+ {allVisibleSelected ? 'Deselect visible' : `Select all visible (${visibleGoalIds.length})`}
+ </button>
+ {selectedIds.size > 0 && (
+ <button type="button" onClick={() => setSelectedIds(new Set())} disabled={isBulkWorking}>
+ Clear
+ </button>
+ )}
+ </div>
+ <div className={styles.bulkActions}>
+ {activeSelectedIds.length > 0 && (
+ <>
+ <button
+ type="button"
+ className="btn btn-secondary"
+ disabled={isBulkWorking}
+ onClick={() => void performBulkStatusUpdate(activeSelectedIds, StatusType.FINISHED, 'Completed')}
+ >
+ <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+ Mark done
+ </button>
+ <button
+ type="button"
+ className="btn btn-secondary"
+ disabled={isBulkWorking}
+ onClick={() => void performBulkStatusUpdate(activeSelectedIds, StatusType.CANCELLED, 'Archived')}
+ >
+ <Archive className="h-4 w-4" aria-hidden="true" />
+ Archive
+ </button>
+ </>
+ )}
+ {archivedSelectedIds.length > 0 && (
+ <button
+ type="button"
+ className="btn btn-secondary"
+ disabled={isBulkWorking}
+ onClick={() => void performBulkStatusUpdate(archivedSelectedIds, StatusType.IN_PROGRESS, 'Restored')}
+ >
+ <RotateCcw className="h-4 w-4" aria-hidden="true" />
+ Restore
+ </button>
+ )}
+ <button
+ type="button"
+ className="btn btn-danger"
+ disabled={selectedIds.size === 0 || isBulkWorking}
+ onClick={() => setConfirmBulkDelete(true)}
+ >
+ <Trash2 className="h-4 w-4" aria-hidden="true" />
+ Delete
+ </button>
+ </div>
+ </section>
+ )}
+
  {/* Goals Grid */}
  {sortedGoals.length === 0 ? (
  <div className="card" style={{ textAlign: 'center', padding: 48 }}>
@@ -349,7 +475,7 @@ const GoalsPage: React.FC = () => {
  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
  {sortedGoals.map((goal) => {
  const isSelected = selectedIds.has(goal.id);
- const canDrag = sortBy === 'custom';
+ const canDrag = sortBy === 'custom' && !selectionMode;
  const isDragging = draggingGoalId === goal.id;
  const isDropTarget = dropTargetGoalId === goal.id && draggingGoalId && draggingGoalId !== goal.id;
  const showDropMarker = isDragging && !!dropTargetGoalId && dropTargetGoalId !== goal.id;
@@ -396,6 +522,7 @@ const GoalsPage: React.FC = () => {
  canDrag ? 'cursor-grab active:cursor-grabbing' : ''
  }`}
  data-dragging={isDragging}
+ data-selected={isSelected}
  style={{
  borderColor: isDropTarget || isSelected ? 'var(--tn-accent)' : undefined,
  boxShadow: isDropTarget
@@ -405,6 +532,19 @@ const GoalsPage: React.FC = () => {
  : undefined,
  }}
  >
+ {selectionMode && (
+ <button
+ type="button"
+ className={styles.selectToggle}
+ data-selected={isSelected}
+ aria-pressed={isSelected}
+ aria-label={`${isSelected ? 'Deselect' : 'Select'} ${goal.title}`}
+ disabled={isBulkWorking}
+ onClick={() => toggleSelected(goal.id)}
+ >
+ {isSelected && <Check className="h-4 w-4" aria-hidden="true" />}
+ </button>
+ )}
  {canDrag && (
  <button
  type="button"
@@ -443,18 +583,6 @@ const GoalsPage: React.FC = () => {
  <div className={styles.menu} role="menu">
  <button
  type="button"
- role="menuitemcheckbox"
- aria-checked={isSelected}
- onClick={() => {
- toggleSelected(goal.id);
- setOpenMenuId(null);
- }}
- >
- <Check className="h-3.5 w-3.5" style={{ opacity: isSelected ? 1 : .28 }} aria-hidden="true" />
- {isSelected ? 'Deselect goal' : 'Select goal'}
- </button>
- <button
- type="button"
  role="menuitem"
  className={styles.deleteAction}
  onClick={() => {
@@ -473,7 +601,13 @@ const GoalsPage: React.FC = () => {
  href={`/goal/${goal.id}`}
  draggable={false}
  className={styles.cardLink}
- style={{ paddingLeft: canDrag ? 30 : undefined }}
+ style={{ paddingLeft: canDrag || selectionMode ? 42 : undefined }}
+ onClick={(event) => {
+ if (!selectionMode) return;
+ event.preventDefault();
+ if (isBulkWorking) return;
+ toggleSelected(goal.id);
+ }}
  >
  <div className={styles.header}>
  <span className={`gc-ico ${card.visualTone} ${styles.identity}`} aria-hidden="true">
@@ -546,12 +680,12 @@ const GoalsPage: React.FC = () => {
  <ConfirmDialog
  open={confirmBulkDelete}
  title={`Delete ${selectedIds.size} goal${selectedIds.size === 1 ? '' : 's'}`}
- description="All linked milestones, tasks, and todos under these goals will be removed. This action cannot be undone."
+ description="All linked milestones, tasks, and todos under these goals will be moved to Trash, where they can be restored."
  destructive
  confirmLabel={`Delete ${selectedIds.size}`}
- busy={isDeleting}
+ busy={isBulkWorking}
  onConfirm={performBulkDelete}
- onCancel={() => !isDeleting && setConfirmBulkDelete(false)}
+ onCancel={() => !isBulkWorking && setConfirmBulkDelete(false)}
  />
  </div>
  );

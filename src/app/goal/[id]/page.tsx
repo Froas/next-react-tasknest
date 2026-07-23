@@ -166,7 +166,8 @@ const GoalDetailPage: React.FC = () => {
  <div className="mb-4 flex flex-wrap justify-end gap-2 no-print">
  <button
  onClick={() => router.push(`/goal/${goal.id}/build`)}
- className="btn btn-primary"
+ className="btn"
+ style={{ background: 'var(--tn-accent)', borderColor: 'var(--tn-accent)', color: 'var(--tn-on-accent)' }}
  title="Open the visual goal builder"
  >
  <WandSparkles className="h-4 w-4" />

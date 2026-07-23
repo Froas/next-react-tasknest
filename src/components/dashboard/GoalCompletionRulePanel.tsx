@@ -18,12 +18,13 @@ interface CompletionRulePanelProps {
  entityType: CompletionRuleEntityType;
  onSaved: (entity: CompletionRuleEntity) => void;
  metricTaskIds?: string[];
+ relatedRecurringTasks?: TaskItem[];
 }
 
 const numericText = (value: number | undefined) => value === undefined ? '' : String(value);
 const EMPTY_TASK_IDS: string[] = [];
 
-export const CompletionRulePanel: React.FC<CompletionRulePanelProps> = ({ entity, entityType, onSaved, metricTaskIds = EMPTY_TASK_IDS }) => {
+export const CompletionRulePanel: React.FC<CompletionRulePanelProps> = ({ entity, entityType, onSaved, metricTaskIds = EMPTY_TASK_IDS, relatedRecurringTasks = [] }) => {
  const currentRule = entity.completion_rule ?? { type: 'structural' as const };
  const currentOutcome = currentRule.type === 'metric_target'
  ? currentRule
@@ -37,7 +38,7 @@ export const CompletionRulePanel: React.FC<CompletionRulePanelProps> = ({ entity
  : undefined;
  const recurringActions = useMemo(() => {
  const tasks = entityType === 'task'
- ? [entity as TaskItem]
+ ? [entity as TaskItem, ...relatedRecurringTasks.filter((task) => task.id !== entity.id)]
  : entityType === 'milestone'
  ? (entity as MilestoneItem).tasks ?? []
  : [
@@ -47,7 +48,7 @@ export const CompletionRulePanel: React.FC<CompletionRulePanelProps> = ({ entity
  return tasks.flatMap((task) => (task.todos ?? [])
  .filter((todo) => Boolean(todo.repeat_interval))
  .map((todo) => ({ id: todo.id, title: todo.title, taskTitle: task.title })));
- }, [entity, entityType]);
+ }, [entity, entityType, relatedRecurringTasks]);
  const [ruleType, setRuleType] = useState<RuleType>(currentRule.type);
  const [metrics, setMetrics] = useState<MetricDefinitionItem[]>([]);
  const [metricName, setMetricName] = useState(currentOutcome?.metric_name ?? '');
@@ -57,7 +58,7 @@ export const CompletionRulePanel: React.FC<CompletionRulePanelProps> = ({ entity
  const [direction, setDirection] = useState<NonNullable<MetricRule['direction']>>(currentOutcome?.direction ?? 'at_least');
  const [requiredDone, setRequiredDone] = useState(numericText(currentConsistency?.required_done ?? 7));
  const [windowDays, setWindowDays] = useState(numericText(currentConsistency?.window_days ?? 7));
- const [consistencyTodoId, setConsistencyTodoId] = useState(currentConsistency?.todo_id ?? '');
+ const [consistencyTodoId, setConsistencyTodoId] = useState(currentConsistency?.todo_id ?? currentConsistency?.todo_ids?.[0] ?? '');
  const [structuralWeight, setStructuralWeight] = useState(numericText(currentRule.type === 'hybrid' ? currentRule.structural_weight ?? 20 : 20));
  const [outcomeWeight, setOutcomeWeight] = useState(numericText(currentRule.type === 'hybrid' ? currentRule.outcome_weight ?? 40 : 40));
  const [consistencyWeight, setConsistencyWeight] = useState(numericText(currentRule.type === 'hybrid' ? currentRule.consistency_weight ?? 40 : 40));

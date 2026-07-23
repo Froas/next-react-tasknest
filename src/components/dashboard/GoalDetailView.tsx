@@ -6,7 +6,7 @@ import { GoalItem as Goal, MilestoneItem as Milestone, StatusType, PriorityType,
 import { MilestoneForm } from './MilestoneForm';
 import { TaskForm } from './TaskForm';
 import { ActionForm, ActionKind } from './ActionForm';
-import { milestonesApi, eventsApi, goalsApi } from '@/lib/api';
+import { milestonesApi, eventsApi, goalsApi, tasksApi, todosApi } from '@/lib/api';
 import { useStore } from '@/store/useStore';
 import { useShallow } from 'zustand/react/shallow';
 import { calculateGoalProgress, calculateGoalProgressLanes } from '@/lib/progress';
@@ -21,6 +21,7 @@ import { JourneyThemeSelector } from '@/components/visualization/JourneyThemeSel
 import { formatDate, stripMarkdown } from '@/lib/utils';
 import { STATUS_LABELS } from '@/lib/sort';
 import { Gauge, Map, Repeat2 } from 'lucide-react';
+import { InlineSelect, InlineText } from '@/components/ui/InlineEdit';
 
 interface GoalDetailViewProps {
  goal: Goal;
@@ -329,6 +330,28 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  toast.success(kind === 'todo' ? 'Routine todo added' : 'Routine subtask added');
  };
 
+ const handleRoutineInlineUpdate = async (taskId: string, data: Partial<Task>) => {
+ try {
+ const updatedTask = await tasksApi.update({ id: taskId, ...data });
+ updateTaskInGoals(updatedTask);
+ } catch (error) {
+ console.error('Failed to update routine:', error);
+ toast.error('Failed to update routine');
+ throw error;
+ }
+ };
+
+ const handleRoutineTodoInlineUpdate = async (todoId: string, data: Partial<Todo>) => {
+ try {
+ const updatedTodo = await todosApi.update({ id: todoId, ...data });
+ updateTodoInGoals(updatedTodo);
+ } catch (error) {
+ console.error('Failed to update routine todo:', error);
+ toast.error('Failed to update routine todo');
+ throw error;
+ }
+ };
+
 
  const progress = calculateGoalProgress(currentGoal);
  const progressLanes = calculateGoalProgressLanes(currentGoal);
@@ -459,14 +482,6 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  + Milestone
  </button>
  <button
- onClick={() => {
- openTaskForm('task', null);
- }}
- className="btn btn-secondary flex-1 justify-center sm:flex-none"
- >
- + Task
- </button>
- <button
  onClick={() => window.print()}
  title="Print goal as a clean document"
  className="btn btn-secondary no-print flex-1 justify-center sm:flex-none"
@@ -496,7 +511,7 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
 
  <Modal
  open={isCreatingTask}
- title={taskFormMode === 'routine' ? 'Add Goal Routine' : selectedMilestoneId ? 'Add Milestone Task' : 'Add Goal Task'}
+ title={taskFormMode === 'routine' ? 'Add Goal Routine' : 'Add Milestone Task'}
  onClose={() => {
  setIsCreatingTask(false);
  setTaskFormMode('task');
@@ -526,6 +541,7 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  goalId={goal.id}
  milestoneId=""
  taskId={selectedRoutineTaskId}
+ taskKind="routine"
  defaultKind="todo"
  onSuccess={handleCreateRoutineAction}
  onCancel={() => setSelectedRoutineTaskId(null)}
@@ -552,10 +568,7 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  description="Milestones define meaningful transitions. Tasks and one-time steps move each transition forward."
  icon={<Map className="h-5 w-5" />}
  >
- <GoalTasksPanel
- tasks={goalTasks}
- onAddTask={() => openTaskForm('task', null)}
- />
+ {goalTasks.length > 0 && <GoalTasksPanel tasks={goalTasks} />}
  <MilestonesTimeline
  milestones={currentGoal.milestones || []}
  goalId={currentGoal.id}
@@ -578,6 +591,8 @@ export const GoalDetailView: React.FC<GoalDetailViewProps> = ({
  routines={goalRoutines}
  onAddRoutine={() => openTaskForm('routine', null)}
  onAddTodo={(taskId) => setSelectedRoutineTaskId(taskId)}
+ onRoutineUpdate={handleRoutineInlineUpdate}
+ onTodoUpdate={handleRoutineTodoInlineUpdate}
  />
  </GoalBranchSection>
 
@@ -651,8 +666,7 @@ const GoalBranchSection: React.FC<{
 
 const GoalTasksPanel: React.FC<{
  tasks: Task[];
- onAddTask: () => void;
-}> = ({ tasks, onAddTask }) => {
+}> = ({ tasks }) => {
  const completedTasks = tasks.filter((task) => task.status === StatusType.FINISHED).length;
 
  return (
@@ -667,7 +681,7 @@ const GoalTasksPanel: React.FC<{
  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
  <div>
  <div className="flex flex-wrap items-center gap-2">
- <h2 className="text-xl font-semibold text-foreground">Goal Tasks</h2>
+ <h2 className="text-xl font-semibold text-foreground">Legacy Goal Tasks</h2>
  {tasks.length > 0 && (
  <span
  className="rounded-full px-2.5 py-1 text-xs font-medium"
@@ -678,22 +692,11 @@ const GoalTasksPanel: React.FC<{
  )}
  </div>
  <p className="text-sm text-muted-foreground dark:text-muted-foreground">
- One-off project work linked directly to this goal. These tasks contribute to Structural Progress.
+ Existing goal-level project work remains editable. New one-off tasks and challenges are created inside milestones.
  </p>
  </div>
- <button type="button" onClick={onAddTask} className="btn btn-primary w-full justify-center sm:w-auto">
- + Goal Task
- </button>
  </div>
 
- {tasks.length === 0 ? (
- <div
- className="rounded-2xl border p-4 text-sm"
- style={{ border: 'var(--tn-line)', background: 'var(--tn-card)', color: 'var(--tn-fg-muted)' }}
- >
- No goal-level project tasks yet. Milestone tasks remain in the timeline below.
- </div>
- ) : (
  <div className="grid gap-3 lg:grid-cols-2">
  {tasks.map((task) => {
  const subtasks = task.subtasks ?? [];
@@ -759,7 +762,6 @@ const GoalTasksPanel: React.FC<{
  );
  })}
  </div>
- )}
  </section>
  );
 };
@@ -768,7 +770,9 @@ const GoalRoutinesPanel: React.FC<{
  routines: Task[];
  onAddRoutine: () => void;
  onAddTodo: (taskId: string) => void;
-}> = ({ routines, onAddRoutine, onAddTodo }) => (
+ onRoutineUpdate: (taskId: string, data: Partial<Task>) => void | Promise<void>;
+ onTodoUpdate: (todoId: string, data: Partial<Todo>) => void | Promise<void>;
+}> = ({ routines, onAddRoutine, onAddTodo, onRoutineUpdate, onTodoUpdate }) => (
  <section
  className="mb-8 rounded-3xl border p-4 sm:p-5"
  style={{
@@ -808,12 +812,25 @@ const GoalRoutinesPanel: React.FC<{
  >
  <div className="mb-3 flex items-start justify-between gap-3">
  <div className="min-w-0">
- <h3 className="truncate text-base font-semibold text-foreground">{routine.title}</h3>
- {routine.description && (
- <p className="mt-1 line-clamp-2 text-sm text-muted-foreground dark:text-muted-foreground">
- {routine.description}
- </p>
- )}
+ <InlineText
+ value={routine.title}
+ required
+ ariaLabel={`Edit ${routine.title} title`}
+ className="-mx-2 px-2 py-0.5"
+ editClassName="text-base font-semibold text-foreground"
+ renderValue={(title) => <h3 className="truncate text-base font-semibold text-foreground">{title}</h3>}
+ onSave={(title) => onRoutineUpdate(routine.id, { title })}
+ />
+ <InlineText
+ value={routine.description ?? ''}
+ placeholder="Add a description…"
+ multiline
+ ariaLabel={`Edit ${routine.title} description`}
+ className="-mx-2 mt-1 px-2 py-0.5 text-sm text-muted-foreground"
+ editClassName="text-sm text-foreground"
+ renderValue={(description) => <p className="line-clamp-2 text-sm text-muted-foreground">{description}</p>}
+ onSave={(description) => onRoutineUpdate(routine.id, { description })}
+ />
  </div>
  <span
  className="rounded-full px-2 py-1 text-xs font-medium"
@@ -838,10 +855,23 @@ const GoalRoutinesPanel: React.FC<{
  className="h-2 w-2 flex-shrink-0 rounded-full"
  style={{ background: 'var(--tn-accent)' }}
  />
- <span className="min-w-0 flex-1 truncate text-foreground">{todo.title}</span>
- <span className="flex-shrink-0 text-xs text-muted-foreground dark:text-muted-foreground">
- {todo.repeat_interval || 'recurring'}
- </span>
+ <InlineText
+ value={todo.title}
+ required
+ ariaLabel={`Edit ${todo.title} title`}
+ className="min-w-0 flex-1 truncate px-1 text-foreground"
+ editClassName="text-sm text-foreground"
+ onSave={(title) => onTodoUpdate(todo.id, { title })}
+ />
+ <InlineSelect
+ value={todo.repeat_interval || 'daily'}
+ options={['daily', 'weekly', 'monthly', 'yearly'] as const}
+ ariaLabel={`Edit ${todo.title} repeat interval`}
+ className="shrink-0 rounded-full px-2 py-1 text-xs capitalize text-muted-foreground"
+ selectClassName="text-xs capitalize"
+ renderValue={(repeatInterval) => <span className="capitalize">{repeatInterval}</span>}
+ onSave={(repeat_interval) => onTodoUpdate(todo.id, { repeat_interval })}
+ />
  </li>
  ))}
  </ul>

@@ -51,16 +51,54 @@ One-off work and recurring work must not be mixed in Today generation.
 - `Todo` during transition: recurring todo definition/template.
 - `TodoOccurrence`: the dated fact for one recurring todo on one day.
 
-`TodoOccurrence` is generated only for active recurring todos:
+`TodoOccurrence` is generated only for recurring todos in today's active scope.
+New definitions use an explicit lifecycle:
+
+- `ongoing + active`: a goal routine that remains on Today until paused;
+- `bounded + active`: a challenge action shown until its completion rule is met;
+- `staged + active`: the current level of an evolving challenge;
+- `planned`: a future challenge/stage that must not generate occurrences yet;
+- `graduated`: completed tracking contract, retained as history.
+
+The general eligibility rules are:
 
 - todo is not deleted;
 - todo status is active: outstanding, started, or in progress;
 - todo has `repeat_interval`;
 - parent task is active;
 - parent goal is active;
-- if the task belongs to a milestone, that milestone is active.
+- goal-level routine tasks stay active across milestones;
+- explicit lifecycle definitions are generated only while `tracking_state` is
+  `active` and `active_from` is not in the future;
+- legacy definitions without lifecycle fields retain the current-milestone
+  fallback: explicitly `started` / `in progress`, or the first `outstanding`
+  milestone when none is explicitly current.
 
 Do not generate occurrences for every legacy `Todo` blindly.
+When a recurring definition leaves the active scope, an untouched `open`
+occurrence is a disposable prompt and is removed; completed or otherwise
+resolved occurrences remain as history. Goal-planning normalization must also
+prevent the same routine title from being created both as a stable goal routine
+and as a milestone task todo.
+For already-existing plans, exact legacy duplicates in the same goal/frequency
+collapse to the goal-scoped row on Today without deleting either definition.
+
+When a staged challenge reaches its consistency target, its definition becomes
+`graduated`; the next definition with the same goal-local
+`routine_series_key` and a higher `stage_order` becomes active on the next
+logical day. Its task and milestone are started automatically. This prevents
+both stages from appearing on the same day.
+
+### Task taxonomy
+
+- Goal → Task(kind=`routine`, scope=`goal`) → recurring Todo definitions.
+- Milestone → Task(kind=`project`, scope=`milestone`) → one-off Subtasks.
+- Milestone → Task(kind=`challenge`, scope=`milestone`) → optional setup
+  Subtasks plus recurring Todo definitions governed by a completion rule.
+
+New project and challenge tasks cannot be created directly at goal scope.
+Legacy goal-level project tasks remain readable/editable for compatibility.
+Today checks `TodoOccurrence`, never the Task or Todo definition itself.
 
 ### Due/overdue tasks preserve goal context
 
@@ -230,8 +268,8 @@ Implemented transition fields:
 - `scope`: goal, milestone
 - `scheduled_date`
 
-Goal-level routine tasks continue across milestones. Milestone-level tasks only
-appear while their milestone is active.
+Goal-level routine tasks continue across milestones. Project and challenge
+tasks belong to milestones.
 
 ### TodoDefinition
 
@@ -241,7 +279,12 @@ Rename/evolve current `Todo` into the repeatable template:
 - `title`
 - `description`
 - `recurrence`
-- `active`
+- `tracking_mode`: ongoing, bounded, staged
+- `tracking_state`: planned, active, graduated, paused
+- `routine_series_key`
+- `stage_order`
+- `active_from`
+- `graduated_at`
 - `full_version`
 - `minimum_version`
 
@@ -366,8 +409,8 @@ Status: implemented as a compatibility layer.
   - `scope = milestone`
   - `kind = project`
   - `goal_id` from parent milestone.
-- Add support for goal-level tasks.
-- Goal detail can create goal-level tasks/routines.
+- Preserve legacy goal-level project tasks, but create only goal-level routines.
+- Goal detail creates project/challenge tasks inside milestones and routines at goal scope.
 - Today/calendar read `scheduled_date` first and then fall back to `due_date`.
 
 ### Phase 3 — introduce TodoOccurrence
@@ -404,15 +447,16 @@ Status: implemented.
   - set `finalized_by = auto`.
 - Keep manual End Day as an optional checkout with `finalized_by = manual`.
 
-### Phase 6 — Template v2
+### Phase 6 — Template v3
 
 Status: implemented for backend materialisation and frontend starter templates.
 
 - Template blueprints can now create:
-  - goal-level routine/challenge/project tasks;
+  - goal-level routine tasks (legacy goal projects still import);
   - milestone-level project/challenge tasks;
   - one-off `Subtask` rows;
   - recurring `Todo` definitions with `repeat_interval`;
+  - bounded and staged tracking lifecycle fields;
   - goal-level and task-level `MetricDefinition` rows.
 - Legacy templates that only contain milestones/tasks still work, but they do
   not create Today routines or metrics.
@@ -444,6 +488,21 @@ Status: implemented for goals, milestones, and tasks.
 - Compute outcome and consistency progress from tasks, occurrences, and metrics.
 - Show structural, outcome, and consistency lanes separately on entity detail pages.
 - Automatically complete and reopen entities when persisted rule facts change.
+- Auto-completed challenges stay completed after their bounded tracking
+  contract graduates, even after the sliding window moves forward.
+
+### Phase 9.1 — challenge lifecycle
+
+Status: implemented.
+
+- Challenge completion defaults to 7 check-ins within 7 days and is editable.
+- A challenge may count its own recurring Todo or an existing goal routine.
+- Bounded definitions graduate at completion.
+- Staged definitions activate the next goal-local stage on the next day.
+- Today exposes compact target/stage context without exposing lifecycle state
+  controls in the normal flow.
+- Goal Builder, AI plans, templates/share, and profile export/import preserve
+  lifecycle fields.
 
 ### Phase 10 — Radar integration
 

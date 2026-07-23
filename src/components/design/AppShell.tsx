@@ -30,6 +30,7 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
  const pathname = usePathname() ?? '/';
+ const isGoalFlow = pathname === '/goal/new' || /^\/goal\/[^/]+\/build$/.test(pathname);
  const router = useRouter();
  const [mobileOpen, setMobileOpen] = useState(false);
  const [moreOpen, setMoreOpen] = useState(false);
@@ -246,7 +247,7 @@ export function AppShell({ children }: AppShellProps) {
  />
  </IconButton>
  <IconButton
- onClick={() => router.push('/profile#navigation')}
+ onClick={() => router.push('/profile')}
  ariaLabel="Settings"
  className="tn-shell-icon-optional"
  >
@@ -284,11 +285,11 @@ export function AppShell({ children }: AppShellProps) {
 
  {/* Main content */}
  <main
- className="tn-shell-main"
+ className={`tn-shell-main ${isGoalFlow ? 'tn-shell-main--full-bleed' : ''}`}
  style={{
- maxWidth: 1400,
- margin: '0 auto',
- padding: '24px',
+ maxWidth: isGoalFlow ? 'none' : 1400,
+ margin: isGoalFlow ? 0 : '0 auto',
+ padding: isGoalFlow ? 0 : '24px',
  minHeight: 'calc(100vh - 60px)',
  }}
  >
@@ -451,6 +452,9 @@ export function AppShell({ children }: AppShellProps) {
 
  {/* Inline styles for breakpoint behaviour */}
  <style jsx>{`
+ :global(main.tn-shell-main.tn-shell-main--full-bleed) {
+ padding: 0 !important;
+ }
  @media (max-width: 880px) {
  :global(.tn-shell-bar) {
  padding: 10px 16px !important;

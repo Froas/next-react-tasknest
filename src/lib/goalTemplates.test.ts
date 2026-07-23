@@ -32,6 +32,10 @@ describe('starter goal templates', () => {
  routines.some((task) => (task.todos?.length ?? 0) > 0),
  `${template.id} should create recurring definitions for Today`,
  ).toBe(true);
+ expect(
+ routines.flatMap((task) => task.todos ?? []).every((todo) => todo.tracking_mode === 'ongoing'),
+ `${template.id} goal routines should stay active until explicitly paused`,
+ ).toBe(true);
  }
  });
 
@@ -50,6 +54,11 @@ describe('starter goal templates', () => {
  `${template.id} todos should have recurrence`,
  ).toBe(true);
  expect(subtasks.length, `${template.id} should include structural subtasks`).toBeGreaterThan(0);
+ expect(
+ tasks.filter((task) => task.kind === 'challenge').flatMap((task) => task.todos ?? [])
+ .every((todo) => todo.tracking_mode === 'bounded' || todo.tracking_mode === 'staged'),
+ `${template.id} challenges should carry an explicit tracking contract`,
+ ).toBe(true);
  }
  });
 

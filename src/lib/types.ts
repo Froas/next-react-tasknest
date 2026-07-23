@@ -19,6 +19,8 @@ export enum PriorityType {
 
 export type TaskKind = 'project' | 'routine' | 'challenge';
 export type TaskScope = 'goal' | 'milestone';
+export type TrackingMode = 'ongoing' | 'bounded' | 'staged';
+export type TrackingState = 'planned' | 'active' | 'graduated' | 'paused';
 export type JourneyThemeId = 'mountain' | 'world-tree' | 'cosmic' | 'volcano' | 'ocean' | 'castle';
 
 export type CompletionRule =
@@ -96,6 +98,12 @@ export interface TodoItem extends BaseEntity {
  next_due_date?: string;
  repeat_interval?: string;
  position?: number;
+ tracking_mode?: TrackingMode | null;
+ tracking_state?: TrackingState | null;
+ routine_series_key?: string | null;
+ stage_order?: number;
+ active_from?: string | null;
+ graduated_at?: string | null;
 }
 
 export interface TaskItem extends BaseEntity {

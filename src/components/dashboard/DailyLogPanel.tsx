@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle2, Circle, Flag, Plus, Star, Target } from 'lucide-react';
+import { CheckCircle2, Circle, Flag, Pin, Plus, Star, Target } from 'lucide-react';
 import {
  AuthRequiredError,
  DailyLogColor,
@@ -19,6 +19,8 @@ import { toast } from '@/store/useToast';
 import { notifyTodayDataChanged } from '@/lib/todaySync';
 import { useStore } from '@/store/useStore';
 import { useTodoStreaks } from '@/store/useTodoStreaks';
+import { usePinnedGoals } from '@/store/usePinnedGoals';
+import { pickDefaultTodayGoalId, pickDefaultTodayScope } from '@/lib/todayScope';
 
 type DailyLogDraft = {
  color: DailyLogColor | null;
@@ -99,8 +101,20 @@ const parseMetricNumber = (value: string) => {
 
 const isCompletedOccurrence = (status: TodoOccurrenceStatus) => status === 'done' || status === 'minimum';
 
+const trackingDetail = (occurrence: TodoOccurrenceItem) => {
+ const parts: string[] = [];
+ if (occurrence.tracking_mode === 'staged') parts.push(`Stage ${occurrence.stage_order ?? 1}`);
+ if (occurrence.tracking_required_done) {
+ parts.push(`${occurrence.tracking_current_done ?? 0}/${occurrence.tracking_required_done}`);
+ }
+ return parts.join(' · ');
+};
+
 export const DailyLogPanel: React.FC = () => {
  const fetchGoals = useStore((state) => state.fetchGoals);
+ const pinnedGoalIds = usePinnedGoals((state) => state.pinned);
+ const togglePinnedGoal = usePinnedGoals((state) => state.toggle);
+ const promotePinnedGoal = usePinnedGoals((state) => state.promote);
  const [log, setLog] = useState<DailyLogItem | null>(null);
  const [draft, setDraft] = useState<DailyLogDraft>(emptyDraft);
  const [occurrences, setOccurrences] = useState<TodoOccurrenceItem[]>([]);
@@ -112,6 +126,7 @@ export const DailyLogPanel: React.FC = () => {
  const [busyOccurrenceId, setBusyOccurrenceId] = useState<string | null>(null);
  const [savingMetricId, setSavingMetricId] = useState<string | null>(null);
  const [selectedGoalKey, setSelectedGoalKey] = useState<string>('focus');
+ const scopeSelectedByUser = useRef(false);
 
  const loadToday = async () => {
  setLoading(true);
@@ -164,7 +179,6 @@ export const DailyLogPanel: React.FC = () => {
  }, [metrics, occurrences]);
 
  const completedCount = occurrences.filter((item) => isCompletedOccurrence(item.status)).length;
- const selectedGroup = groups.find((group) => group.key === selectedGoalKey) ?? null;
  const focusGroups = useMemo(
  () => groups
  .map((group) => ({ ...group, todos: group.todos.filter((item) => item.is_focus) }))
@@ -173,6 +187,29 @@ export const DailyLogPanel: React.FC = () => {
  );
  const focusedOccurrences = focusGroups.flatMap((group) => group.todos);
  const focusedCompletedCount = focusedOccurrences.filter((item) => isCompletedOccurrence(item.status)).length;
+ const defaultPinnedGoalId = pickDefaultTodayGoalId(groups, pinnedGoalIds);
+ const defaultGoalKey = pickDefaultTodayScope(groups, pinnedGoalIds, focusedOccurrences.length);
+ const activeGoalKey = scopeSelectedByUser.current ? selectedGoalKey : defaultGoalKey;
+ const selectedGroup = groups.find((group) => group.key === activeGoalKey) ?? null;
+
+ const selectGoalScope = (key: string) => {
+ scopeSelectedByUser.current = true;
+ setSelectedGoalKey(key);
+ };
+
+ const toggleGoalPin = (group: TodayGroup) => {
+ if (!group.goalId) return;
+ const isTodayDefault = defaultPinnedGoalId === group.goalId;
+ if (isTodayDefault) {
+ togglePinnedGoal(group.goalId);
+ scopeSelectedByUser.current = false;
+ } else {
+ promotePinnedGoal(group.goalId);
+ scopeSelectedByUser.current = true;
+ setSelectedGoalKey(group.key);
+ }
+ toast.success(isTodayDefault ? 'Today default removed' : 'Today default updated');
+ };
 
  const updateDraft = (patch: Partial<DailyLogDraft>) => {
  setDraft((current) => ({ ...current, ...patch }));
@@ -380,29 +417,31 @@ export const DailyLogPanel: React.FC = () => {
  aria-label="Filter routines and metrics by goal"
  >
  <GoalScopeTab
- active={selectedGoalKey === 'focus'}
+ active={activeGoalKey === 'focus'}
  label="Focus"
  detail={`${focusedCompletedCount}/${focusedOccurrences.length}`}
- onClick={() => setSelectedGoalKey('focus')}
+ onClick={() => selectGoalScope('focus')}
  />
  <GoalScopeTab
- active={selectedGoalKey === 'all'}
+ active={activeGoalKey === 'all'}
  label="All"
  detail={`${completedCount}/${occurrences.length}`}
- onClick={() => setSelectedGoalKey('all')}
+ onClick={() => selectGoalScope('all')}
  />
  {groups.map((group) => (
  <GoalScopeTab
  key={group.key}
- active={selectedGoalKey === group.key}
+ active={activeGoalKey === group.key}
  label={group.title}
  detail={`${group.todos.filter((item) => isCompletedOccurrence(item.status)).length}/${group.todos.length}`}
- onClick={() => setSelectedGoalKey(group.key)}
+ onClick={() => selectGoalScope(group.key)}
+ pinned={Boolean(group.goalId && defaultPinnedGoalId === group.goalId)}
+ onTogglePin={group.goalId ? () => toggleGoalPin(group) : undefined}
  />
  ))}
  </div>
 
- {selectedGoalKey === 'focus' ? (
+ {activeGoalKey === 'focus' ? (
  focusGroups.length > 0 ? (
  <div className="space-y-3">
  {focusGroups.map((group) => (
@@ -426,13 +465,13 @@ export const DailyLogPanel: React.FC = () => {
  <p className="mt-1">Open a goal and use the star beside a routine to add it here for today.</p>
  </div>
  )
- ) : selectedGoalKey === 'all' ? (
+ ) : activeGoalKey === 'all' ? (
  <div className="grid gap-2 md:grid-cols-2">
  {groups.map((group) => (
  <GoalTodayOverviewCard
  key={group.key}
  group={group}
- onSelect={() => setSelectedGoalKey(group.key)}
+ onSelect={() => selectGoalScope(group.key)}
  />
  ))}
  </div>
@@ -595,17 +634,23 @@ const GoalScopeTab: React.FC<{
  label: string;
  detail: string;
  onClick: () => void;
-}> = ({ active, label, detail, onClick }) => (
- <button
- type="button"
- onClick={onClick}
- className="flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs transition-colors"
+ pinned?: boolean;
+ onTogglePin?: () => void;
+}> = ({ active, label, detail, onClick, pinned = false, onTogglePin }) => (
+ <div
+ className="flex shrink-0 items-stretch rounded-xl border text-left text-xs transition-colors"
  style={{
  border: active ? 'var(--tn-line)' : '1px solid color-mix(in srgb, var(--tn-fg-muted) 30%, transparent)',
  background: active ? 'var(--tn-active)' : 'var(--tn-card)',
  color: 'var(--tn-fg)',
  boxShadow: active ? 'var(--tn-shadow)' : undefined,
  }}
+ >
+ <button
+ type="button"
+ onClick={onClick}
+ aria-pressed={active}
+ className="flex min-w-0 items-center gap-2 rounded-xl px-3 py-2 text-left"
  >
  <span className="max-w-36 truncate font-semibold">{label}</span>
  <span
@@ -618,6 +663,23 @@ const GoalScopeTab: React.FC<{
  {detail}
  </span>
  </button>
+ {onTogglePin && (
+ <button
+ type="button"
+ onClick={onTogglePin}
+ aria-pressed={pinned}
+ aria-label={pinned ? `Unpin ${label} as Today default` : `Pin ${label} as Today default`}
+ title={pinned ? 'Unpin Today default' : 'Open this goal by default'}
+ className="mr-1 flex w-8 shrink-0 items-center justify-center rounded-lg"
+ style={{
+ background: pinned ? 'color-mix(in srgb, var(--tn-accent) 16%, transparent)' : 'transparent',
+ color: pinned ? 'var(--tn-accent)' : 'var(--tn-fg-muted)',
+ }}
+ >
+ <Pin className="h-3.5 w-3.5" fill={pinned ? 'currentColor' : 'none'} />
+ </button>
+ )}
+ </div>
 );
 
 const GoalTodayOverviewCard: React.FC<{
@@ -687,6 +749,7 @@ const GoalTodayCard: React.FC<GoalTodayCardProps> = ({
  <div className="mb-3 space-y-1">
  {group.todos.map((occurrence) => {
  const done = isCompletedOccurrence(occurrence.status);
+ const tracking = trackingDetail(occurrence);
  return (
  <div
  key={occurrence.id}
@@ -714,6 +777,11 @@ const GoalTodayCard: React.FC<GoalTodayCardProps> = ({
  {(occurrence.task_title || occurrence.milestone_title) && (
  <span className="block truncate text-xs text-muted-foreground dark:text-muted-foreground">
  {[occurrence.milestone_title, occurrence.task_title].filter(Boolean).join(' · ')}
+ </span>
+ )}
+ {tracking && (
+ <span className="block truncate text-xs font-medium" style={{ color: 'var(--tn-accent)' }}>
+ {tracking}
  </span>
  )}
  </span>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SubtaskItem as Subtask, TodoItem as Todo, StatusType, PriorityType } from '@/lib/types';
+import { SubtaskItem as Subtask, TodoItem as Todo, StatusType, PriorityType, TaskKind } from '@/lib/types';
 import { subtasksApi, todosApi } from '@/lib/api';
 import { toDateInput, toDateTimeInput } from '@/lib/utils';
 import { USER_FACING_STATUSES, STATUS_LABELS } from '@/lib/sort';
@@ -17,6 +17,7 @@ interface ActionFormProps {
  goalId: string;
  milestoneId: string;
  taskId: string;
+ taskKind?: TaskKind;
  defaultKind?: ActionKind;
  initialData?: Partial<Subtask | Todo>;
  onSuccess: (item: Subtask | Todo, kind: ActionKind, goalId: string, milestoneId: string, taskId: string) => void;
@@ -35,6 +36,7 @@ export const ActionForm: React.FC<ActionFormProps> = ({
  goalId,
  milestoneId,
  taskId,
+ taskKind = 'project',
  defaultKind = 'subtask',
  initialData,
  onSuccess,
@@ -64,6 +66,11 @@ export const ActionForm: React.FC<ActionFormProps> = ({
  end_datetime: toDateTimeInput(initialData?.end_datetime ?? defaultEndIso),
  repeat_interval: initialRepeat,
  next_due_date: toDateInput((initialData as Partial<Todo> | undefined)?.next_due_date),
+ tracking_mode: (initialData as Partial<Todo> | undefined)?.tracking_mode
+ ?? (taskKind === 'routine' ? 'ongoing' : taskKind === 'challenge' ? 'bounded' : ''),
+ tracking_state: (initialData as Partial<Todo> | undefined)?.tracking_state ?? '',
+ routine_series_key: (initialData as Partial<Todo> | undefined)?.routine_series_key ?? '',
+ stage_order: String((initialData as Partial<Todo> | undefined)?.stage_order ?? 1),
  });
 
  const [isSubmitting, setIsSubmitting] = useState(false);
@@ -79,6 +86,9 @@ export const ActionForm: React.FC<ActionFormProps> = ({
  }
  if (kind === 'todo' && !formData.repeat_interval) {
  return 'Pick a repeat interval for recurring actions';
+ }
+ if (kind === 'todo' && formData.tracking_mode === 'staged' && !formData.routine_series_key.trim()) {
+ return 'Give this progression a name';
  }
  return null;
  };
@@ -105,6 +115,10 @@ export const ActionForm: React.FC<ActionFormProps> = ({
  end_datetime: formData.end_datetime,
  repeat_interval: formData.repeat_interval,
  next_due_date: formData.next_due_date,
+ tracking_mode: formData.tracking_mode || undefined,
+ tracking_state: formData.tracking_state || undefined,
+ routine_series_key: formData.tracking_mode === 'staged' ? formData.routine_series_key : undefined,
+ stage_order: formData.tracking_mode === 'staged' ? Math.max(1, Number(formData.stage_order) || 1) : 1,
  task_id: taskId,
  } as Omit<Todo, 'id'>;
  const todo = initialData?.id
@@ -294,6 +308,7 @@ export const ActionForm: React.FC<ActionFormProps> = ({
  </div>
 
  {kind === 'todo' && (
+ <div className="space-y-3">
  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
  <div>
  <label htmlFor="repeat_interval" className="block text-sm font-medium text-foreground dark:text-muted-foreground/60 mb-1">
@@ -325,6 +340,30 @@ export const ActionForm: React.FC<ActionFormProps> = ({
  onChange={handleChange}
  className="w-full px-3 py-2 border border-border dark:border-border bg-card dark:bg-card text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
  />
+ </div>
+ {taskKind === 'challenge' && (
+ <div className="rounded-xl border p-3" style={{ border: 'var(--tn-line)', background: 'var(--tn-hover)' }}>
+ <div>
+ <label htmlFor="tracking_mode" className="mb-1 block text-sm font-medium text-foreground">Tracking</label>
+ <select id="tracking_mode" name="tracking_mode" value={formData.tracking_mode} onChange={handleChange} className="w-full rounded-lg border border-border bg-card px-3 py-2 text-foreground">
+ <option value="bounded">Until challenge target</option>
+ <option value="staged">Evolves to a next level</option>
+ </select>
+ </div>
+ {formData.tracking_mode === 'staged' && (
+ <div className="mt-3 grid grid-cols-[minmax(0,1fr)_7rem] gap-3">
+ <div>
+ <label htmlFor="routine_series_key" className="mb-1 block text-sm font-medium text-foreground">Progression name</label>
+ <input id="routine_series_key" name="routine_series_key" value={formData.routine_series_key} onChange={handleChange} placeholder="e.g. Bedtime progression" className="w-full rounded-lg border border-border bg-card px-3 py-2 text-foreground" />
+ </div>
+ <div>
+ <label htmlFor="stage_order" className="mb-1 block text-sm font-medium text-foreground">Stage</label>
+ <input id="stage_order" name="stage_order" type="number" min="1" value={formData.stage_order} onChange={handleChange} className="w-full rounded-lg border border-border bg-card px-3 py-2 text-foreground" />
+ </div>
+ </div>
+ )}
+ </div>
+ )}
  </div>
  </div>
  )}

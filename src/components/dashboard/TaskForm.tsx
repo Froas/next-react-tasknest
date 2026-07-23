@@ -23,6 +23,9 @@ export const TaskForm: React.FC<TaskFormProps> = ({
  onCancel,
  initialData,
 }) => {
+ const initialConsistency = initialData?.completion_rule?.type === 'consistency'
+ ? initialData.completion_rule
+ : undefined;
  const draftKey = initialData?.id
  ? `task:edit:${initialData.id}`
  : `task:new:${initialData?.scope || (milestoneId ? 'milestone' : 'goal')}:${initialData?.kind || 'project'}:${milestoneId ?? goalId}`;
@@ -38,6 +41,8 @@ export const TaskForm: React.FC<TaskFormProps> = ({
  scheduled_date: toOptionalDateTimeInput(initialData?.scheduled_date),
  start_datetime: toOptionalDateTimeInput(initialData?.start_datetime),
  end_datetime: toOptionalDateTimeInput(initialData?.end_datetime),
+ required_done: String(initialConsistency?.required_done ?? 7),
+ window_days: String(initialConsistency?.window_days ?? 7),
  });
 
  const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,7 +51,9 @@ export const TaskForm: React.FC<TaskFormProps> = ({
  const validate = (): string | null => {
  if (!formData.title.trim()) return 'Title is required';
  if (formData.title.length > 200) return 'Title must be under 200 characters';
- if (formData.scope === 'milestone' && !milestoneId) return 'Pick a milestone for milestone-scoped tasks';
+ if (formData.kind !== 'routine' && !milestoneId && !initialData?.id) {
+ return 'Project and challenge tasks belong to a milestone';
+ }
  if (formData.start_datetime && formData.end_datetime) {
  if (new Date(formData.end_datetime) < new Date(formData.start_datetime)) {
  return 'End time cannot be before start time';
@@ -71,6 +78,19 @@ export const TaskForm: React.FC<TaskFormProps> = ({
  setError(null);
 
  try {
+ const effectiveScope = formData.kind === 'routine'
+ ? 'goal'
+ : milestoneId
+ ? 'milestone'
+ : formData.scope;
+ const completionRule = formData.kind === 'challenge'
+ ? {
+ type: 'consistency' as const,
+ label: formData.title,
+ required_done: Math.max(1, Number(formData.required_done) || 7),
+ window_days: Math.max(1, Number(formData.window_days) || 7),
+ }
+ : initialData?.completion_rule;
  const taskData = {
  title: formData.title,
  description: formData.description,
@@ -78,13 +98,14 @@ export const TaskForm: React.FC<TaskFormProps> = ({
  status: formData.status.toLowerCase(),
  priority: formData.priority,
  kind: formData.kind,
- scope: formData.scope,
+ scope: effectiveScope,
  due_date: emptyToUndefined(formData.due_date),
  scheduled_date: emptyToUndefined(formData.scheduled_date),
  start_datetime: emptyToUndefined(formData.start_datetime),
  end_datetime: emptyToUndefined(formData.end_datetime),
  goal_id: goalId,
- milestone_id: formData.scope === 'milestone' ? milestoneId : undefined,
+ milestone_id: effectiveScope === 'milestone' ? milestoneId : undefined,
+ completion_rule: completionRule,
  todos: [],
  subtasks: []
  } as Omit<Task, 'id'>;
@@ -95,7 +116,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
  } else {
  task = await tasksApi.create(taskData);
  }
- onSuccess(task, goalId, formData.scope === 'milestone' ? milestoneId : undefined);
+ onSuccess(task, goalId, effectiveScope === 'milestone' ? milestoneId : undefined);
  clearDraft();
  } catch (err) {
  setError(err instanceof Error ? err.message : 'Failed to save task');
@@ -111,6 +132,12 @@ export const TaskForm: React.FC<TaskFormProps> = ({
  setFormData(prev => ({
  ...prev,
  [name]: value,
+ ...(name === 'kind'
+ ? {
+ scope: value === 'routine' ? 'goal' : milestoneId ? 'milestone' : prev.scope,
+ status: !initialData?.id && value !== 'project' ? StatusType.STARTED : prev.status,
+ }
+ : {}),
  }));
  };
 
@@ -223,10 +250,29 @@ export const TaskForm: React.FC<TaskFormProps> = ({
  onChange={handleChange}
  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
  >
- <option value="goal">Goal-level routine / task</option>
- <option value="milestone" disabled={!milestoneId}>Milestone task</option>
+ <option value="goal" disabled={formData.kind !== 'routine'}>Goal routine</option>
+ <option value="milestone" disabled={!milestoneId || formData.kind === 'routine'}>Milestone task / challenge</option>
  </select>
  </div>
+
+ {formData.kind === 'challenge' && (
+ <div className="rounded-xl border border-border p-3">
+ <div className="mb-2">
+ <strong className="text-sm text-foreground">Daily completion target</strong>
+ <p className="text-xs text-muted-foreground">Today records Todo occurrences; reaching this target completes the challenge.</p>
+ </div>
+ <div className="grid grid-cols-2 gap-3">
+ <label className="text-sm text-foreground">
+ Required completions
+ <input name="required_done" type="number" min="1" value={formData.required_done} onChange={handleChange} className="mt-1 w-full rounded-lg border border-border px-3 py-2" />
+ </label>
+ <label className="text-sm text-foreground">
+ Window, days
+ <input name="window_days" type="number" min="1" value={formData.window_days} onChange={handleChange} className="mt-1 w-full rounded-lg border border-border px-3 py-2" />
+ </label>
+ </div>
+ </div>
+ )}
 
  <div>
  <label htmlFor="kind" className="block text-sm font-medium text-foreground mb-1">

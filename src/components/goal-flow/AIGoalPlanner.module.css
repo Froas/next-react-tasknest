@@ -167,6 +167,10 @@
  font-weight: 650;
 }
 
+.planner > h2 + .allowancePill {
+ margin-top: 14px;
+}
+
 .allowanceEmpty {
  border-color: color-mix(in srgb, var(--gf-danger, #c25d63) 25%, transparent);
  background: color-mix(in srgb, var(--gf-danger, #c25d63) 6%, var(--ai-surface));
@@ -312,7 +316,7 @@
 .milestoneBody { display: grid; gap: 12px; }
 .inlineFields { display: grid; grid-template-columns: minmax(0, 1fr) 100px auto auto; align-items: end; gap: 9px; }
 .dayField input { text-align: center; }
-.refineButton { display: inline-flex; min-height: 38px; align-items: center; justify-content: center; gap: 6px; padding: 8px 10px; border: 1px solid color-mix(in srgb, var(--ai-accent) 24%, transparent); border-radius: 10px; background: color-mix(in srgb, var(--ai-accent) 7%, var(--ai-surface)); color: var(--ai-accent); cursor: pointer; font: inherit; font-size: 11px; font-weight: 700; }
+.refineButton { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 6px; padding: 8px 10px; border: 1px solid color-mix(in srgb, var(--ai-accent) 24%, transparent); border-radius: 10px; background: color-mix(in srgb, var(--ai-accent) 7%, var(--ai-surface)); color: var(--ai-accent); cursor: pointer; font: inherit; font-size: 11px; font-weight: 700; }
 .refineButton:disabled { cursor: default; opacity: .55; }
 .iconButton { display: grid; width: 38px; height: 38px; place-items: center; border: 0; border-radius: 10px; background: transparent; color: var(--ai-muted); cursor: pointer; }
 .iconButton:hover { background: color-mix(in srgb, var(--gf-danger, #c25d63) 8%, transparent); color: var(--gf-danger, #c25d63); }

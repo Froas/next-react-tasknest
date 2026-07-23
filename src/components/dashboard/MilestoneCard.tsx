@@ -143,19 +143,28 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
  }
  };
 
- const handleQuickAddTask = async (title: string) => {
+ const handleQuickAddTask = async (title: string, kind: 'project' | 'challenge') => {
  try {
  const created = await tasksApi.create({
  title,
  description: '',
- status: StatusType.OUTSTANDING,
+ status: kind === 'challenge' ? StatusType.STARTED : StatusType.OUTSTANDING,
  priority: PriorityType.MEDIUM,
+ kind,
+ scope: 'milestone',
+ goal_id: goalId,
  milestone_id: currentMilestone.id,
  todos: [],
  subtasks: [],
+ completion_rule: kind === 'challenge' ? {
+ type: 'consistency',
+ label: title,
+ required_done: 7,
+ window_days: 7,
+ } : { type: 'structural' },
  });
  addTaskToMilestoneInGoal(created, currentMilestone.id, goalId);
- toast.success('Task added');
+ toast.success(kind === 'challenge' ? 'Challenge added' : 'Task added');
  } catch (err) {
  console.error('Failed to quick-add task:', err);
  toast.error('Failed to add task');
@@ -192,6 +201,29 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
  } catch (error) {
  console.error('Error updating task:', error);
  toast.error('Failed to update task');
+ throw error;
+ }
+ };
+
+ const handleSubtaskUpdate = async (subtaskId: string, subtaskData: Partial<import('@/lib/types').SubtaskItem>) => {
+ try {
+ const updatedSubtask = await subtasksApi.update({ id: subtaskId, ...subtaskData });
+ updateSubtaskInGoals(updatedSubtask);
+ } catch (error) {
+ console.error('Error updating subtask:', error);
+ toast.error('Failed to update step');
+ throw error;
+ }
+ };
+
+ const handleTodoUpdate = async (todoId: string, todoData: Partial<Todo>) => {
+ try {
+ const updatedTodo = await todosApi.update({ id: todoId, ...todoData });
+ updateTodoInGoals(updatedTodo);
+ } catch (error) {
+ console.error('Error updating todo:', error);
+ toast.error('Failed to update repeating action');
+ throw error;
  }
  };
 
@@ -484,6 +516,9 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
  onTaskToggle={(taskId, status) => handleTaskToggle(taskId, 'task', status)}
  onSubtaskToggle={(subtaskId, status, parentTaskId) => parentTaskId && handleTaskToggle(subtaskId, 'subtask', status, parentTaskId)}
  onTodoToggle={(todoId, status, parentTaskId) => parentTaskId && handleTaskToggle(todoId, 'todo', status, parentTaskId)}
+ onTaskUpdate={handleTaskUpdate}
+ onSubtaskUpdate={handleSubtaskUpdate}
+ onTodoUpdate={handleTodoUpdate}
  onAddTask={() => setIsCreatingTask(true)}
  onQuickAddTask={handleQuickAddTask}
  onReorderTask={handleReorderTask}
@@ -521,6 +556,7 @@ export default function MilestoneCard({ milestone, goalId, onUpdate, onDelete, o
  goalId={goalId}
  milestoneId={currentMilestone.id}
  taskId={actionTarget.task.id}
+ taskKind={actionTarget.task.kind}
  defaultKind={actionTarget.kind}
  onSuccess={handleActionSuccess}
  onCancel={() => setActionTarget(null)}

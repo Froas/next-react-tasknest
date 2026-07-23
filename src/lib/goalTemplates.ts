@@ -15,6 +15,10 @@ export interface TemplateTodoDefinition {
  recurrence?: string;
  priority?: PriorityType;
  status?: StatusType;
+ tracking_mode?: 'ongoing' | 'bounded' | 'staged';
+ tracking_state?: 'planned' | 'active' | 'graduated' | 'paused';
+ routine_series_key?: string;
+ stage_order?: number;
 }
 
 export interface TemplateSubtask {
@@ -128,10 +132,16 @@ const booleanMetric = (name: string, showOnToday = true): TemplateMetric => ({
  show_on_today: showOnToday,
 });
 
-const recurringTodo = (title: string, priority: PriorityType = PriorityType.MEDIUM): TemplateTodoDefinition => ({
+const recurringTodo = (
+ title: string,
+ priority: PriorityType = PriorityType.MEDIUM,
+ trackingMode: 'ongoing' | 'bounded' | 'staged' = 'ongoing',
+): TemplateTodoDefinition => ({
  title,
  repeat_interval: daily,
  priority,
+ tracking_mode: trackingMode,
+ ...(trackingMode === 'ongoing' ? { tracking_state: 'active' as const } : {}),
 });
 
 const routineTask = (
@@ -186,10 +196,11 @@ const challengeTask = (
  priority,
  due_date_offset_days: dueDateOffsetDays,
  todos: todoTitles.map((todoTitle, todoIndex) =>
- recurringTodo(todoTitle, todoIndex === 0 ? priority : PriorityType.MEDIUM),
+ recurringTodo(todoTitle, todoIndex === 0 ? priority : PriorityType.MEDIUM, 'bounded'),
  ),
  subtasks: steps.map((stepTitle) => ({ title: stepTitle, priority })),
  metrics,
+ completion_rule: consistencyRule(title, 7, 7),
 });
 
 const milestone = (
@@ -205,7 +216,16 @@ const milestone = (
  due_date_offset_days: dueDateOffsetDays,
  priority,
  status,
- tasks,
+ tasks: tasks.map((task) => task.kind === 'challenge' ? {
+ ...task,
+ status: status === StatusType.STARTED || status === StatusType.IN_PROGRESS
+ ? StatusType.STARTED
+ : StatusType.OUTSTANDING,
+ todos: task.todos?.map((todo) => ({
+ ...todo,
+ tracking_state: status === StatusType.STARTED || status === StatusType.IN_PROGRESS ? 'active' : 'planned',
+ })),
+ } : task),
 });
 
 const startedBlueprint = (

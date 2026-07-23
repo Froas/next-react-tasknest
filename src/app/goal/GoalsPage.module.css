@@ -8,6 +8,11 @@
 
 .trackingCard[data-dragging='true'] { opacity: .55; }
 
+.trackingCard[data-selected='true'] {
+ border-color: var(--tn-accent);
+ box-shadow: 0 0 0 2px color-mix(in srgb, var(--tn-accent) 22%, transparent);
+}
+
 .cardLink {
  display: flex;
  flex-direction: column;
@@ -36,6 +41,68 @@
  color: var(--tn-fg-muted);
  pointer-events: none;
 }
+
+.selectToggle {
+ position: absolute;
+ left: 12px;
+ top: 17px;
+ z-index: 9;
+ display: grid;
+ width: 24px;
+ height: 24px;
+ place-items: center;
+ border: 1.5px solid color-mix(in srgb, var(--tn-fg-muted) 45%, transparent);
+ border-radius: 7px;
+ background: var(--tn-card);
+ color: var(--tn-on-accent, #fff);
+ cursor: pointer;
+ transition: background .15s ease, border-color .15s ease, transform .15s ease;
+}
+
+.selectToggle:hover { border-color: var(--tn-accent); transform: scale(1.04); }
+.selectToggle:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; }
+.selectToggle[data-selected='true'] { border-color: var(--tn-accent); background: var(--tn-accent); }
+.selectToggle:disabled { cursor: wait; opacity: .65; transform: none; }
+
+.bulkBar {
+ position: sticky;
+ top: 12px;
+ z-index: 20;
+ display: flex;
+ align-items: center;
+ justify-content: space-between;
+ gap: 16px;
+ margin: -12px 0 24px;
+ padding: 12px 14px;
+ border: 1px solid color-mix(in srgb, var(--tn-accent) 28%, var(--tn-line-color, transparent));
+ border-radius: var(--tn-r-lg, 14px);
+ background: color-mix(in srgb, var(--tn-accent) 7%, var(--tn-card));
+ box-shadow: var(--tn-shadow-md, 0 8px 24px rgba(0, 0, 0, .08));
+}
+
+.bulkSummary,
+.bulkActions {
+ display: flex;
+ align-items: center;
+ gap: 8px;
+ flex-wrap: wrap;
+}
+
+.bulkSummary { color: var(--tn-fg); font-size: 13px; }
+.bulkSummary > svg { color: var(--tn-accent); }
+.bulkWorking { color: var(--tn-fg-muted); font-size: 12px; }
+.bulkSummary button {
+ padding: 6px 8px;
+ border: 0;
+ border-radius: 7px;
+ background: transparent;
+ color: var(--tn-accent);
+ cursor: pointer;
+ font: inherit;
+ font-weight: 650;
+}
+.bulkSummary button:hover { background: var(--tn-hover); }
+.bulkSummary button:disabled { cursor: default; opacity: .5; }
 
 .header {
  display: grid;
@@ -235,6 +302,8 @@
  .header { padding-right: 30px; }
  .dragHint { left: 4px; top: 19px; }
  .progressBlock { margin-top: 22px; }
+ .bulkBar { position: static; align-items: stretch; flex-direction: column; margin-top: -8px; }
+ .bulkActions > :global(.btn) { flex: 1; justify-content: center; }
 }
 
 @media (prefers-reduced-motion: reduce) {

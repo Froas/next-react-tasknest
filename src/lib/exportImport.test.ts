@@ -53,6 +53,10 @@ const goal: GoalItem = {
  priority: PriorityType.MEDIUM,
  task_id: 'routine-1',
  repeat_interval: 'daily',
+ tracking_mode: 'staged',
+ tracking_state: 'active',
+ routine_series_key: 'recovery',
+ stage_order: 2,
  },
  ],
  subtasks: [],
@@ -85,6 +89,12 @@ describe('buildExportPayload', () => {
 
  expect(payload.tasks.map((task) => task.id)).toContain('routine-1');
  expect(payload.todos.map((todo) => todo.id)).toContain('todo-1');
+ expect(payload.todos.find((todo) => todo.id === 'todo-1')).toMatchObject({
+ tracking_mode: 'staged',
+ tracking_state: 'active',
+ routine_series_key: 'recovery',
+ stage_order: 2,
+ });
  expect(payload.goals[0].completion_rule).toEqual({ type: 'structural' });
  expect(payload.tasks.find((task) => task.id === 'routine-1')?.completion_rule).toEqual({
  type: 'consistency',

@@ -604,6 +604,13 @@ export interface TodoOccurrenceItem {
  goal_title?: string | null;
  milestone_id?: string | null;
  milestone_title?: string | null;
+ tracking_mode?: 'ongoing' | 'bounded' | 'staged' | null;
+ tracking_state?: 'planned' | 'active' | 'graduated' | 'paused' | null;
+ routine_series_key?: string | null;
+ stage_order?: number;
+ tracking_current_done?: number | null;
+ tracking_required_done?: number | null;
+ tracking_window_days?: number | null;
 }
 
 export const todoOccurrencesApi = {
@@ -785,6 +792,10 @@ export interface TemplateBlueprintTodo {
  recurrence?: string;
  priority?: string;
  status?: string;
+ tracking_mode?: 'ongoing' | 'bounded' | 'staged';
+ tracking_state?: 'planned' | 'active' | 'graduated' | 'paused';
+ routine_series_key?: string;
+ stage_order?: number;
 }
 
 export interface TemplateBlueprintSubtask {
