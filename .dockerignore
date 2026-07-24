@@ -1,0 +1,21 @@
+# Local dependencies and build output are rebuilt inside the image.
+node_modules
+.next
+
+# Repository metadata is unnecessary in the Docker build context.
+.git
+
+# Never copy local configuration or secrets into an image.
+.env
+.env.*
+
+# Development and operating-system artifacts.
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+
+# Test output and local tooling caches are not needed at runtime.
+coverage
+playwright-report
+test-results

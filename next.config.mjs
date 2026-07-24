@@ -7,6 +7,9 @@ const withBundleAnalyzer = createBundleAnalyzer({
 });
 
 const nextConfig = {
+  // Produce the minimal Node.js server consumed by the Docker runtime stage.
+  // This keeps source dependencies and development tooling out of the image.
+  output: 'standalone',
   // Mobile E2E uses an isolated build directory so it can run next to a
   // developer's active `next dev` process without corrupting either cache.
   distDir: process.env.NEXT_DIST_DIR || '.next',
